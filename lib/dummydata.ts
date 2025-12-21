@@ -1,0 +1,32 @@
+export const COURSES = [
+  {
+    id: "fe-basic",
+    title: "Frontend Warrior",
+    description: "Kuasai dasar HTML, CSS, dan Javascript modern untuk membangun antarmuka web yang memukau.",
+    xpReward: 500,
+    lessonsCount: 12,
+    difficulty: "Beginner",
+    image: "🎨", // Bisa diganti URL gambar nanti
+    color: "bg-pink-100 text-pink-600",
+  },
+  {
+    id: "react-mastery",
+    title: "React JS Mastery",
+    description: "Pelajari komponen, hooks, dan state management dengan React 19 dan Next.js.",
+    xpReward: 1200,
+    lessonsCount: 24,
+    difficulty: "Intermediate",
+    image: "⚛️",
+    color: "bg-blue-100 text-blue-600",
+  },
+  {
+    id: "backend-ninja",
+    title: "Backend Ninja",
+    description: "Bangun API yang cepat dan aman menggunakan Node.js, Bun, dan PostgreSQL.",
+    xpReward: 1500,
+    lessonsCount: 18,
+    difficulty: "Advanced",
+    image: "🛡️",
+    color: "bg-emerald-100 text-emerald-600",
+  },
+];

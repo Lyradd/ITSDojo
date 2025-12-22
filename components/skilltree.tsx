@@ -10,16 +10,14 @@ import ReactFlow, {
   useEdgesState, 
   Position
 } from 'reactflow';
-import 'reactflow/dist/style.css'; // Wajib import CSS ini
+import 'reactflow/dist/style.css';
 import { Lock, CheckCircle, PlayCircle } from 'lucide-react';
 
-// Tipe data untuk Node Custom kita
 const nodeDefaults = {
   sourcePosition: Position.Bottom,
   targetPosition: Position.Top,
 };
 
-// Data Dummy: Peta Materi (Nanti ini dari Database)
 const initialNodes: Node[] = [
   { 
     id: '1', 
@@ -59,8 +57,6 @@ export function SkillTree() {
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
-  // Custom Node Styling (Agar terlihat gamified)
-  // Di project nyata, ini bisa dipisah ke file komponen sendiri
   const nodeTypes = {
     default: ({ data }: any) => {
       let icon = <Lock className="w-4 h-4 text-zinc-400" />;
@@ -86,7 +82,7 @@ export function SkillTree() {
   return (
     <div className="h-[500px] w-full border rounded-xl bg-zinc-50 overflow-hidden">
       <ReactFlow
-        nodes={nodes.map(n => ({ ...n, type: 'default' }))} // Paksa semua pakai custom style
+        nodes={nodes.map(n => ({ ...n, type: 'default' }))}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

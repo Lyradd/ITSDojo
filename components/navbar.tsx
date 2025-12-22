@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/lib/store";
-import { Trophy, Flame } from "lucide-react"; // Ikon untuk gamifikasi
+import { Trophy, Flame } from "lucide-react";
 
 export function Navbar() {
   const { xp, level, xpToNextLevel, name } = useUserStore();
 
-  // Hitung persentase progress level
+
   const progress = Math.min((xp / xpToNextLevel) * 100, 100);
 
   return (
@@ -29,10 +29,10 @@ export function Navbar() {
           </Link>
         </nav>
 
-        {/* User Stats (Gamifikasi) */}
+        {/* User Stats */}
         <div className="flex items-center gap-4">
           
-          {/* Daily Streak (Contoh statis dulu) */}
+          {/* Daily Streak */}
           <div className="hidden md:flex items-center gap-1 text-orange-500 font-bold text-sm">
             <Flame className="h-4 w-4 fill-current" />
             <span>3</span>

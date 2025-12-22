@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useUserStore } from "@/lib/store"; // Import store global
+import { useUserStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,25 +19,24 @@ import { Loader2, LogIn } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  
-  // Mengambil fungsi login dari store
-  const { login } = useUserStore(); 
+  const { login } = useUserStore();
   
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false); // State untuk Remember Me
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulasi proses login ke server (delay 1 detik)
+    
+    if (rememberMe) {
+      console.log("User memilih Remember Me");
+
+    }
+
     setTimeout(() => {
-      // 1. Update state global menjadi "Sudah Login"
       login();
-      
-      // 2. Stop loading
       setIsLoading(false);
-      
-      // 3. Arahkan ke halaman utama (Dashboard)
       router.push("/");
     }, 1000);
   };
@@ -61,8 +60,8 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="nama@mahasiswa.its.ac.id"
-                required
+                placeholder="nrp@student.its.ac.id"
+                // required <-- TESTING
               />
             </div>
             <div className="space-y-2">
@@ -75,8 +74,30 @@ export default function LoginPage() {
                   Lupa password?
                 </Link>
               </div>
-              <Input id="password" type="password" required />
+              <Input 
+                id="password" 
+                type="password" 
+                // required <-- TESTING
+              />
             </div>
+
+            {/* --- FITUR REMEMBER ME --- */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="remember"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <label
+                htmlFor="remember"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-600 dark:text-zinc-400"
+              >
+                Ingat saya
+              </label>
+            </div>
+            {/* ------------------------- */}
             
             <Button className="w-full bg-blue-600 hover:bg-blue-700" type="submit" disabled={isLoading}>
               {isLoading ? (
@@ -106,6 +127,7 @@ export default function LoginPage() {
           </div>
           
           <Button variant="outline" className="w-full" disabled={isLoading}>
+            {/* Ikon Google Sederhana */}
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

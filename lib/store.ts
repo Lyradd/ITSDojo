@@ -1,38 +1,34 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface UserState {
-  // Auth State
-  isLoggedIn: boolean; // <-- Tambahan baru
-  
-  // Data User
+  isLoggedIn: boolean;
   name: string;
   level: number;
   xp: number;
   xpToNextLevel: number;
-  coins: number;
   
-  // Actions
-  login: () => void;   // <-- Tambahan baru
-  logout: () => void;  // <-- Tambahan baru
+
+  activeCourseId: string; 
+
+  login: () => void;
+  logout: () => void;
   addXp: (amount: number) => void;
-  levelUp: () => void;
+  setActiveCourse: (courseId: string) => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
-  // Default: Belum login
-  isLoggedIn: false, 
-
-  // Initial Data
+  isLoggedIn: false,
   name: "Daryl",
   level: 1,
   xp: 0,
   xpToNextLevel: 100,
-  coins: 0,
+  
+  activeCourseId: "fe-basic", 
 
-  // Actions
-  login: () => set({ isLoggedIn: true }), // Ubah status jadi login
-  logout: () => set({ isLoggedIn: false }), // Ubah status jadi logout
-
+  login: () => set({ isLoggedIn: true }),
+  logout: () => set({ isLoggedIn: false }),
+  
   addXp: (amount) => set((state) => {
     const newXp = state.xp + amount;
     if (newXp >= state.xpToNextLevel) {
@@ -40,11 +36,10 @@ export const useUserStore = create<UserState>((set) => ({
         level: state.level + 1,
         xp: newXp - state.xpToNextLevel,
         xpToNextLevel: state.xpToNextLevel * 1.5,
-        coins: state.coins + 50,
       };
     }
     return { xp: newXp };
   }),
 
-  levelUp: () => set((state) => ({ level: state.level + 1 })),
+  setActiveCourse: (courseId) => set({ activeCourseId: courseId }),
 }));

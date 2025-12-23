@@ -11,15 +11,16 @@ import {
   Flame, 
   Trophy, 
   Zap, 
-  ArrowRight, 
   Lock, 
   CheckCircle, 
   Star, 
   GraduationCap, 
   BookOpen 
 } from "lucide-react";
+import { triggerConfetti } from "@/lib/utils"; 
+import { AnimatedNumber } from "@/components/ui/animated-number"; 
 
-// --- DATA KONTEN DUMMY (Konten berbeda tiap kursus) ---
+// --- 1. DATA KONTEN DUMMY  ---
 const COURSE_CONTENT: any = {
   "fe-basic": {
     unitTitle: "Unit 1: HTML & CSS Basics",
@@ -50,6 +51,20 @@ const COURSE_CONTENT: any = {
   }
 };
 
+// --- 2. KOMPONEN STAT WIDGET ---
+const StatWidget = ({ icon: Icon, color, label, value }: any) => (
+  <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-sm">
+    <Icon className={`w-6 h-6 ${color}`} fill="currentColor" />
+    <div>
+      <div className="font-bold text-lg leading-none">
+        {/* Gunakan AnimatedNumber hanya jika value adalah angka */}
+        {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
+      </div>
+      <div className="text-xs text-zinc-400 font-bold uppercase">{label}</div>
+    </div>
+  </div>
+);
+
 export default function LearnPage() {
   const router = useRouter();
   
@@ -61,9 +76,9 @@ export default function LearnPage() {
     xp, 
     activeCourseId, 
     streak, 
-    dailyGoals,      // Data Goals
-    addXp,           // Action tambah XP
-    completeLesson   // Action selesai lesson
+    dailyGoals,      
+    addXp,           
+    completeLesson   
   } = useUserStore(); 
 
   const [isMounted, setIsMounted] = useState(false);
@@ -78,22 +93,15 @@ export default function LearnPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  // 1. Ambil Detail Kursus Aktif
+  // Logika Data Kursus
   const activeCourse = COURSES.find(c => c.id === activeCourseId) || COURSES[0];
-  
-  // 2. Ambil Konten Unit sesuai ID (Fallback ke default jika tidak ada)
   const currentContent = COURSE_CONTENT[activeCourseId] || COURSE_CONTENT["fe-basic"];
 
-  // Komponen Widget Stat Kecil
-  const StatWidget = ({ icon: Icon, color, label, value }: any) => (
-    <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-sm">
-      <Icon className={`w-6 h-6 ${color}`} fill="currentColor" />
-      <div>
-        <div className="font-bold text-lg leading-none">{value}</div>
-        <div className="text-xs text-zinc-400 font-bold uppercase">{label}</div>
-      </div>
-    </div>
-  );
+  // Fungsi Wrapper: Update Store + Efek Visual
+  const handleSimulateLesson = () => {
+    completeLesson();
+    triggerConfetti();
+  };
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -104,7 +112,7 @@ export default function LearnPage() {
            ========================================= */}
         <div className="flex flex-col gap-6">
           
-          {/* Header Kursus Aktif (Warna mengikuti kursus) */}
+          {/* Header Kursus Aktif */}
           <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors duration-500 ${
             activeCourseId === 'fe-basic' ? 'bg-pink-600 shadow-pink-600/20' : 
             activeCourseId === 'react-mastery' ? 'bg-blue-600 shadow-blue-600/20' : 
@@ -128,7 +136,7 @@ export default function LearnPage() {
             </Link>
           </div>
 
-          {/* Unit Visualization (Konten Berubah) */}
+          {/* Unit Visualization (Map) */}
           <div className="space-y-8 mt-4">
             <div className="flex items-center justify-between border-b pb-4">
                <div>
@@ -156,7 +164,7 @@ export default function LearnPage() {
                           </div>
                         )}
                     </div>
-                    {/* Connector Line (Kecuali item terakhir) */}
+                    {/* Connector Line */}
                     {index < currentContent.nodes.length - 1 && (
                       <div className="w-2 h-12 bg-zinc-200 rounded-full my-2" />
                     )}
@@ -178,7 +186,7 @@ export default function LearnPage() {
             <StatWidget icon={Trophy} color="text-yellow-500" label="Rank" value="#42" />
           </div>
 
-          {/* 2. Daily Goals Widget (DINAMIS DARI STORE) */}
+          {/* 2. Daily Goals Widget */}
           <Card className="p-4 rounded-2xl border-2">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Daily Goals</h3>
@@ -188,7 +196,6 @@ export default function LearnPage() {
             <div className="space-y-4">
                {dailyGoals.map((goal) => (
                  <div key={goal.id} className="flex items-center gap-3">
-                    {/* Icon berubah sesuai tipe goal & status */}
                     <div className={`p-2 rounded-lg transition-colors ${
                       goal.isCompleted ? 'bg-green-100 text-green-600' : 
                       goal.type === 'xp' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
@@ -205,7 +212,6 @@ export default function LearnPage() {
                           <span className="text-zinc-400">{goal.current}/{goal.target}</span>
                        </div>
                        
-                       {/* Progress Bar Dinamis */}
                        <div className="h-2.5 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
                           <div 
                             className={`h-full transition-all duration-700 ease-out ${goal.isCompleted ? 'bg-green-500' : 'bg-blue-500'}`} 
@@ -230,12 +236,12 @@ export default function LearnPage() {
                   +50 XP
                 </Button>
               </div>
-              <Button size="sm" variant="secondary" onClick={() => completeLesson()} className="w-full border border-zinc-200 h-8 text-xs hover:bg-white">
-                Simulasi Selesai Lesson (+1)
+              <Button size="sm" variant="secondary" onClick={handleSimulateLesson} className="w-full border border-zinc-200 h-8 text-xs hover:bg-white">
+                Simulasi Selesai Lesson (+1 & 🎉)
               </Button>
             </div>
             <p className="text-[10px] text-zinc-400 mt-2 text-center">
-              *Klik untuk melihat progress Daily Goals berubah
+              *Klik tombol untuk melihat animasi angka & confetti
             </p>
           </Card>
 
@@ -251,7 +257,10 @@ export default function LearnPage() {
                       <div className="font-bold text-zinc-400 w-6">{user.rank}</div>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${user.avatar}`}>{user.name.charAt(0)}</div>
                       <div className="flex-1 font-bold text-sm truncate">{user.name}</div>
-                      <div className="text-xs font-bold text-zinc-400">{user.xp} XP</div>
+                      <div className="text-xs font-bold text-zinc-400">
+                        {/* Jika ini user sendiri, pakai animasi, jika orang lain text biasa */}
+                        {user.name.includes("You") ? <AnimatedNumber value={user.xp} /> : user.xp} XP
+                      </div>
                    </div>
                 ))}
              </div>

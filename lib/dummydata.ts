@@ -6,7 +6,7 @@ export const COURSES = [
     xpReward: 500,
     lessonsCount: 12,
     difficulty: "Beginner",
-    image: "🎨", //URL gambar 
+    image: "🎨", 
     color: "bg-pink-100 text-pink-600",
   },
   {

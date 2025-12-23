@@ -29,15 +29,13 @@ const sidebarItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  // Ambil nama user untuk ditampilkan di Avatar Profil
   const { name } = useUserStore(); 
 
   return (
     <div className="flex flex-col h-full border-r bg-card text-card-foreground">
-      {/* --- LOGO APLIKASI (Kiri Atas) --- */}
+      {/* --- LOGO APLIKASI --- */}
       <div className="h-20 flex items-center px-6 lg:px-8">
         <Link href="/learn" className="flex items-center gap-2 font-bold text-2xl text-blue-600 transition-opacity hover:opacity-80">
-          {/* Logo diganti menjadi icon Toga/Topi Wisuda yang lebih umum */}
           <GraduationCap className="w-8 h-8" />
           <span className="hidden lg:block tracking-tight">ITSDojo</span>
         </Link>
@@ -68,15 +66,15 @@ export function Sidebar() {
         })}
       </div>
 
-      {/* --- PROFILE SECTION (Kiri Bawah) --- */}
+      {/* --- PROFILE SECTION --- */}
       <div className="p-4 border-t">
          <Link href="/profile" className="flex items-center gap-3 px-3 py-3 w-full rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
-            {/* Avatar User (Inisial Nama) */}
+            {/* Avatar User */}
             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0 border-2 border-white dark:border-zinc-900 shadow-sm">
               {name.charAt(0).toUpperCase()}
             </div>
             
-            {/* Info User (Hanya tampil di Desktop) */}
+            {/* Info User */}
             <div className="hidden lg:block text-left overflow-hidden">
                 <p className="font-bold text-sm truncate text-zinc-700 dark:text-zinc-200">
                   {name}

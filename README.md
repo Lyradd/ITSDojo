@@ -1,4 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+# ITSDojo
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app), designed as a Gamified Learning Management System.
+
+## Project Setup & Installation (Important)
+
+Before running the development server, ensure you have installed all necessary dependencies and UI components used in this project.
+
+### 1. Install Core Dependencies
+Run this command to install state management, utility libraries, icons, and visualization tools:
+
+```bash
+npm install zustand clsx tailwind-merge lucide-react class-variance-authority reactflow
+
+```
+
+### 2. Initialize Shadcn UI
+
+If you haven't initialized Shadcn UI yet, run:
+
+```bash
+npx shadcn@latest init
+
+```
+
+### 3. Install Required UI Components
+
+This project relies on specific Shadcn UI components. Install them using the following command:
+
+```bash
+npx shadcn@latest add button card input label progress separator
+
+```
+
+---
 
 ## Getting Started
 
@@ -12,9 +47,10 @@ yarn dev
 pnpm dev
 # or
 bun dev
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
@@ -24,8 +60,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+* [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 

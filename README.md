@@ -58,7 +58,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ---
 
-## 🆕 Version Comparison: Before vs After Live Leaderboard
+## 🆕 Version Comparison
 
 ### Version 1.0 (Original) - Basic Gamified LMS
 
@@ -86,7 +86,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ---
 
-### Version 2.0 (Current) - Live Leaderboard Integration
+### Version 1.1 - Live Leaderboard Integration
 
 **New Features:**
 
@@ -112,12 +112,6 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - ✅ **User Progress**: Personal stats dan progress tracking
 - ✅ **Quick Actions**: Shortcut ke evaluasi & learning
 
-#### 🎨 Enhanced UI/UX
-- ✅ **Custom Animations**: Rank changes, glow effects, slide-in
-- ✅ **Color Coding**: Green (correct), Red (wrong), Blue (user)
-- ✅ **Responsive Design**: Desktop, tablet, mobile optimized
-- ✅ **Dark Mode Support**: Full dark mode compatibility
-
 **New Pages:**
 - `/evaluation` - Evaluation list dengan course filter
 - `/evaluation/[id]` - Active evaluation dengan live leaderboard sidebar
@@ -130,15 +124,110 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - `components/evaluation/question-card.tsx` - Question display
 - `components/evaluation/evaluation-header.tsx` - Stats header
 
-**New State Management:**
-- `lib/evaluation-store.ts` - Zustand store untuk evaluasi
-- `lib/evaluation-data.ts` - Sample questions & mock data
+---
+
+### Version 1.2 (Current) - Admin Dashboard & Role-Based System
+
+**New Features:**
+
+#### 🔐 Role-Based Authentication
+- ✅ **Role Selection**: Login sebagai Mahasiswa atau Dosen
+- ✅ **Auto-redirect**: Redirect otomatis berdasarkan role
+- ✅ **Route Protection**: Admin routes hanya untuk Dosen
+- ✅ **Role Persistence**: Role tersimpan di localStorage
+- ✅ **Logout Functionality**: Logout button dengan redirect
+
+#### 👨‍🏫 Admin Dashboard (Dosen)
+- ✅ **Dashboard Home**: Stats overview dengan gradient UI
+  - Total Mahasiswa, Aktif Hari Ini, Rata-rata Akurasi, Evaluasi Aktif
+  - Recent Activity Feed dengan real-time updates
+  - Active Evaluations list dengan submission count
+  - Quick Action cards untuk navigasi cepat
+  
+- ✅ **Course Management**: Kelola kursus dan materi
+  - List semua kursus dengan search functionality
+  - Create Course form (title, description, difficulty, XP, icon)
+  - Edit & Delete course actions
+  - Course stats (lessons count, XP reward, difficulty badge)
+  
+- ✅ **Lesson Management**: Manage materi per course
+  - Add Lesson form (title, type, duration)
+  - 3 Tipe Lesson: Video 📹, Reading 📖, Coding 💻
+  - Delete lesson functionality
+  - Drag handle untuk reorder (UI ready)
+  - Lesson list dengan numbering dan icons
+  
+- ✅ **Student Monitoring**: Pantau progress mahasiswa
+  - 20 Mock students dengan data realistic
+  - Search by name/email
+  - Sort by XP, Accuracy, Name (ascending/descending)
+  - Student table dengan rank, level, XP, accuracy progress bar, streak
+  - Last active timestamp
+  
+- ✅ **Evaluations Management**: Kelola evaluasi
+  - List semua evaluasi (active & completed)
+  - Stats cards (Total, Active, Submissions)
+  - Evaluation cards dengan status badge
+  - Submission count & average score
+  - Action buttons (Edit, View, Close)
+  
+- ✅ **Analytics & Reports**: Data visualization
+  - Stats overview (Total Students, Avg Score, Completion Rate, Active Today)
+  - Activity Trend chart (7 days) - Recharts
+  - Score Distribution chart - Bar chart
+  - Course Popularity chart - Horizontal bar
+  - Top 5 Performers list
+  - Export actions (CSV/PDF placeholders)
+
+#### 🎨 Enhanced Navigation
+- ✅ **Unified Color Scheme**: Blue/Cyan theme untuk semua role
+- ✅ **Role-Based Menu**: Menu berbeda untuk Dosen vs Mahasiswa
+  - **Dosen Menu**: Dashboard, Courses, Students, Evaluations, Analytics, Settings
+  - **Mahasiswa Menu**: Learn, Courses, Evaluasi, Calendar, Goals, Leaderboard, Duel, Profile, More
+- ✅ **Gradient Active States**: Active menu dengan gradient background
+- ✅ **Icon Backgrounds**: Rounded icon containers dengan hover effects
+- ✅ **Animated Indicators**: Pulse dot untuk active menu item
+- ✅ **Profile Section**: Gradient avatar dengan role badge (👨‍🏫/👨‍🎓)
+
+#### 📊 Mock Data System
+- ✅ **20 Mock Students**: Data realistic dengan XP, level, accuracy, streak
+- ✅ **Evaluation Results**: Linked results dengan scores
+- ✅ **Activity Logs**: Recent student activities
+- ✅ **Analytics Data**: Charts data untuk visualization
+
+**New Pages:**
+- `/login` - Enhanced role-based login
+- `/admin` - Admin dashboard home
+- `/admin/courses` - Course management
+- `/admin/courses/[id]` - Lesson management
+- `/admin/students` - Student monitoring
+- `/admin/evaluations` - Evaluations management
+- `/admin/analytics` - Analytics & reports
+- `/admin/settings` - Settings (placeholder)
+- `/calendar` - Calendar (placeholder)
+- `/duel` - Brain Duel (placeholder)
+- `/more` - More features (placeholder)
+
+**New Components:**
+- `app/(admin)/layout.tsx` - Admin layout dengan route protection
+- `components/ui/textarea.tsx` - Textarea component
+
+**New Dependencies:**
+- `recharts` - Charts library untuk analytics
 
 **Enhanced Features:**
-- ✅ XP rewards setelah evaluasi
-- ✅ Confetti animation untuk achievements
-- ✅ Animated numbers untuk score updates
-- ✅ Smooth page transitions
+- ✅ Sidebar dengan role-based navigation
+- ✅ Mobile navigation support
+- ✅ Gradient backgrounds di semua admin pages
+- ✅ Hover effects & animations
+- ✅ Responsive design
+- ✅ Dark mode support
+
+**Bug Fixes:**
+- ✅ Fixed React Hooks error di CourseDetailPage
+- ✅ Added missing sidebar to admin layout
+- ✅ Fixed TypeScript errors
+- ✅ Unified color scheme (Blue/Cyan)
 
 ---
 

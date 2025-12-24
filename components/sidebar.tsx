@@ -12,13 +12,15 @@ import {
   Swords, 
   User, 
   MoreHorizontal,
-  GraduationCap
+  GraduationCap,
+  ClipboardCheck
 } from "lucide-react";
 import { useUserStore } from "@/lib/store";
 
 const sidebarItems = [
   { icon: Home, label: "Learn", href: "/learn" },
   { icon: BookOpen, label: "Course List", href: "/courses" },
+  { icon: ClipboardCheck, label: "Evaluasi", href: "/evaluation" },
   { icon: CalendarDays, label: "Calendar", href: "/calendar" },
   { icon: Target, label: "Daily Goals", href: "/goals" },
   { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },

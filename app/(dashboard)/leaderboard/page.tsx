@@ -70,7 +70,7 @@ export default function LeaderboardPage() {
   const totalParticipants = leaderboard.length;
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-4 py-8 pb-24 md:pb-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -318,24 +318,6 @@ export default function LeaderboardPage() {
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Tingkatkan Skill
               </Button>
-            </div>
-          </Card>
-
-          {/* Info Box */}
-          <Card className="p-4 rounded-2xl border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30">
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-purple-900 dark:text-purple-100 mb-1">
-                  💡 Tips Naik Peringkat
-                </p>
-                <ul className="text-xs text-purple-800 dark:text-purple-200 space-y-1">
-                  <li>• Ikuti evaluasi secara rutin</li>
-                  <li>• Tingkatkan akurasi jawaban</li>
-                  <li>• Selesaikan daily goals</li>
-                  <li>• Belajar dari kesalahan</li>
-                </ul>
-              </div>
             </div>
           </Card>
         </div>

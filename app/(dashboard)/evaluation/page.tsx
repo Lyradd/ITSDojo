@@ -50,7 +50,7 @@ export default function EvaluationPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -182,26 +182,6 @@ export default function EvaluationPage() {
           ))
         )}
       </div>
-
-      {/* Info Box */}
-      <Card className="mt-8 p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
-            <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-1">
-              💡 Tips Mengerjakan Evaluasi
-            </h4>
-            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-              <li>• Pastikan koneksi internet stabil untuk live leaderboard</li>
-              <li>• Jawaban akan langsung mendapat feedback setelah submit</li>
-              <li>• Lihat posisimu di leaderboard secara real-time</li>
-              <li>• Kerjakan dengan tenang, tidak ada batasan waktu keras</li>
-            </ul>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

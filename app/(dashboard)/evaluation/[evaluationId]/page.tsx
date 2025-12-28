@@ -137,7 +137,7 @@ export default function EvaluationActivePage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-4 py-8 pb-24 md:pb-8">
       {/* Evaluation Header */}
       <EvaluationHeader className="mb-6" />
 

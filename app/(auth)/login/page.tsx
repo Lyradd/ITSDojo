@@ -23,6 +23,7 @@ export default function LoginPage() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'dosen' | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleRoleSelect = (role: 'mahasiswa' | 'dosen') => {
     setSelectedRole(role);
@@ -166,6 +167,23 @@ export default function LoginPage() {
                   type="password"
                   className="h-11"
                 />
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <Label 
+                  htmlFor="remember-me" 
+                  className="text-sm font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                >
+                  Remember Me
+                </Label>
               </div>
             
               <Button 

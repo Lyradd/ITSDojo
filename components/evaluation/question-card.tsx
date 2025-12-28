@@ -26,19 +26,23 @@ export function QuestionCard({
   isSubmitted = false,
   userAnswer,
 }: QuestionCardProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | number | boolean | null>(
-    userAnswer ?? null
-  );
+  const [selectedAnswer, setSelectedAnswer] = useState<string | number | boolean | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
+  // Reset state when question changes
   useEffect(() => {
     if (userAnswer !== undefined) {
       setSelectedAnswer(userAnswer);
       setShowFeedback(true);
       checkAnswer(userAnswer);
+    } else {
+      // Reset to initial state when moving to a new question
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+      setIsCorrect(false);
     }
-  }, [userAnswer]);
+  }, [question.id, userAnswer]); // Reset when question ID changes
 
   const checkAnswer = (answer: string | number | boolean) => {
     if (question.type === 'multiple-choice' || question.type === 'true-false') {
@@ -63,6 +67,7 @@ export function QuestionCard({
       {question.options?.map((option, index) => {
         const isSelected = selectedAnswer === index;
         const isCorrectOption = index === question.correctAnswer;
+        // Only show correct/wrong indicators AFTER feedback is shown
         const showCorrect = showFeedback && isCorrectOption;
         const showWrong = showFeedback && isSelected && !isCorrectOption;
 
@@ -73,7 +78,7 @@ export function QuestionCard({
             disabled={showFeedback}
             className={cn(
               "w-full p-4 rounded-xl border-2 text-left transition-all duration-300",
-              "hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/20",
+              !showFeedback && "hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/20",
               isSelected && !showFeedback && "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
               showCorrect && "border-green-500 bg-green-50 dark:bg-green-950/30",
               showWrong && "border-red-500 bg-red-50 dark:bg-red-950/30",
@@ -108,6 +113,7 @@ export function QuestionCard({
       {question.options?.map((option, index) => {
         const isSelected = selectedAnswer === index;
         const isCorrectOption = index === question.correctAnswer;
+        // Only show correct/wrong indicators AFTER feedback is shown
         const showCorrect = showFeedback && isCorrectOption;
         const showWrong = showFeedback && isSelected && !isCorrectOption;
 
@@ -118,7 +124,7 @@ export function QuestionCard({
             disabled={showFeedback}
             className={cn(
               "p-6 rounded-xl border-2 font-bold text-lg transition-all duration-300",
-              "hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/20",
+              !showFeedback && "hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/20",
               isSelected && !showFeedback && "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
               showCorrect && "border-green-500 bg-green-50 dark:bg-green-950/30",
               showWrong && "border-red-500 bg-red-50 dark:bg-red-950/30",

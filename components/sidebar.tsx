@@ -17,9 +17,12 @@ import {
   LayoutDashboard,
   Users,
   BarChart3,
-  Settings
+  Settings,
+  LogOut
 } from "lucide-react";
 import { useUserStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 // Menu untuk Mahasiswa
 const studentMenuItems = [
@@ -44,10 +47,16 @@ const dosenMenuItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { name, role, logout } = useUserStore(); 
+  const router = useRouter();
+  const { name, role, level, xp, logout } = useUserStore(); 
   
   // Pilih menu berdasarkan role
   const sidebarItems = role === 'dosen' ? dosenMenuItems : studentMenuItems; 
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  }; 
 
   return (
     <div className="flex flex-col h-full border-r bg-card text-card-foreground">
@@ -105,6 +114,39 @@ export function Sidebar() {
             </Link>
           );
         })}
+      </div>
+
+      {/* --- PROFILE SECTION (Fixed at bottom) --- */}
+      <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg">
+              {name.charAt(0).toUpperCase()}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
+              <span className="text-xs">
+                {role === "dosen" ? "👨‍🏫" : "👨‍🎓"}
+              </span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate text-zinc-900 dark:text-white">
+              {name}
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Level {level} • {xp} XP
+            </p>
+          </div>
+        </div>
+
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="w-full justify-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-400 dark:hover:border-red-800 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
       </div>
     </div>
   );

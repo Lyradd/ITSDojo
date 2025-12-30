@@ -1,0 +1,32 @@
+{
+  // Suppress CSS warnings for Tailwind directives
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  
+  // Tailwind CSS IntelliSense Configuration
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  
+  // Enable Tailwind suggestions in more places
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  
+  // Show color decorators
+  "tailwindCSS.colorDecorators": true,
+  
+  // Enable autocomplete
+  "tailwindCSS.emmetCompletions": true,
+  
+  // Validate Tailwind classes
+  "tailwindCSS.validate": true,
+  
+  // Editor suggestions
+  "editor.quickSuggestions": {
+    "strings": true
+  }
+}

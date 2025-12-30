@@ -21,6 +21,7 @@ interface UserState {
   xpToNextLevel: number;
   streak: number;
   activeCourseId: string;
+  role: 'mahasiswa' | 'dosen'; // NEW: Role field
   
   dailyGoals: DailyGoal[];
   
@@ -33,6 +34,7 @@ interface UserState {
   setActiveCourse: (courseId: string) => void;
   completeLesson: () => void;
   claimGoalReward: (goalId: string) => void;
+  setRole: (role: 'mahasiswa' | 'dosen') => void; // NEW: Set role method
 }
 
 const INITIAL_GOALS: DailyGoal[] = [
@@ -56,6 +58,7 @@ export const useUserStore = create<UserState>()(
       xpToNextLevel: 100,
       streak: 3,
       activeCourseId: "fe-basic",
+      role: 'mahasiswa', // NEW: Default role
       
       dailyGoals: INITIAL_GOALS,
       
@@ -64,6 +67,7 @@ export const useUserStore = create<UserState>()(
 
       login: () => set({ isLoggedIn: true }),
       logout: () => set({ isLoggedIn: false }),
+      setRole: (role) => set({ role }), // NEW: Set role implementation
       
       addXp: (amount) => set((state) => {
         // 1. Cek Multiplier
@@ -153,6 +157,7 @@ export const useUserStore = create<UserState>()(
         xp: state.xp,
         xpToNextLevel: state.xpToNextLevel,
         streak: state.streak,
+        role: state.role, // NEW: Persist role
         // dailyGoals: state.dailyGoals,
         // xpMultiplier: state.xpMultiplier,
         // multiplierEndTime: state.multiplierEndTime

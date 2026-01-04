@@ -35,6 +35,46 @@ npx shadcn@latest add button card input label progress separator
 
 ---
 
+## Database Setup (Neon & Drizzle)
+This project uses Neon (Serverless PostgreSQL) as the database and Drizzle ORM for type-safe database interactions.
+
+### 1. Install Database Dependencies
+Install the ORM, Neon driver, and development tools for migrations:
+
+```Bash
+npm install drizzle-orm @neondatabase/serverless dotenv
+npm install -D drizzle-kit
+```
+### 2. Configure Environment Variables
+Create a .env file in the root directory. You need to add your Neon connection string here.
+
+Important: Use the "Pooled" connection string from your Neon Dashboard. Ensure there are no psql prefixes or single quotes '.
+
+Cuplikan kode
+
+#### .env
+```bash
+DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-your-endpoint.aws.neon.tech/neondb?sslmode=require"
+```
+
+## 3. Sync Database Schema
+Whenever you make changes to db/schema.ts, you must push the changes to the Neon database:
+
+```bash
+npx drizzle-kit push
+```
+
+## 4. Manage Data (Drizzle Studio)
+To view, edit, or add dummy data to your database using a GUI (similar to phpMyAdmin):
+
+```bash
+npx drizzle-kit studio
+```
+
+This will open a local web interface to interact with your live Neon database.
+
+---
+
 ## Getting Started
 
 First, run the development server:

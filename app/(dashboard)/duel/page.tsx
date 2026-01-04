@@ -3,8 +3,7 @@
 import { Card } from '@/components/ui/card';
 import { useRouter, useParams } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
-import { Button } from '@/components/ui/button';
-import { Swords, ArrowLeft, Crown, Globe } from 'lucide-react';
+import { Swords, Crown, Globe } from 'lucide-react';
 
 export default function DuelPage() {
   const router = useRouter();
@@ -15,7 +14,6 @@ export default function DuelPage() {
   //   router.push('/login');
   //   return;
   // }
-
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
@@ -37,7 +35,7 @@ export default function DuelPage() {
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
           <Card className="p-6 rounded-2xl border-2 text-center text-zinc-600 bg-gradient-to-br from-blue-50 to-blue-100
             hover:from-blue-400 hover:to-blue-600 hover:text-zinc-100 transition-colors duration-300 shadow-lg cursor-pointer
-            " onClick={() => router.push('/duel/solo')}>
+            " onClick={() => router.push('/duel/1v1')}>
             <div className="flex justify-center mb-2">
               <span className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/30">
                 <Crown className="w-16 h-16" />

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { INITIAL_LEADERBOARD } from '@/lib/evaluation-data';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
+import { wsClient } from '@/lib/websocket-client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntryComponent } from '@/components/leaderboard/leaderboard-entry';
@@ -16,7 +17,9 @@ import {
   Medal,
   Crown,
   Filter,
-  Calendar
+  Calendar,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +29,7 @@ export default function LeaderboardPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all');
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -35,11 +39,48 @@ export default function LeaderboardPage() {
     }
   }, [isLoggedIn, router, isMounted]);
 
-  // Initialize leaderboard with current user
+  // Initialize WebSocket connection
   useEffect(() => {
     if (!isMounted || !isLoggedIn) return;
 
-    // Add current user to leaderboard
+    // Connect to WebSocket
+    wsClient.connect();
+
+    // Subscribe to connection status
+    const unsubscribeStatus = wsClient.onConnectionStatus((connected) => {
+      setIsConnected(connected);
+    });
+
+    // Subscribe to leaderboard updates
+    const unsubscribeLeaderboard = wsClient.onLeaderboardUpdate((data) => {
+      // Filter out current user from received data to prevent duplicates
+      const otherUsers = data.filter(entry => entry.userId !== 'current-user');
+      
+      // Add current user with fresh data
+      const currentUserEntry: LeaderboardEntry = {
+        userId: 'current-user',
+        name: `${name} (You)`,
+        avatar: 'bg-blue-200 text-blue-700',
+        score: xp,
+        totalQuestions: 50,
+        answeredQuestions: 35,
+        accuracy: 85,
+        rank: 0,
+        lastUpdate: Date.now(),
+        isCurrentUser: true,
+      };
+
+      const allEntries = [...otherUsers, currentUserEntry];
+      const sorted = allEntries.sort((a, b) => b.score - a.score);
+      const ranked = sorted.map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+      }));
+
+      setLeaderboard(ranked);
+    });
+
+    // Add current user to server leaderboard
     const currentUserEntry: LeaderboardEntry = {
       userId: 'current-user',
       name: `${name} (You)`,
@@ -52,15 +93,18 @@ export default function LeaderboardPage() {
       lastUpdate: Date.now(),
       isCurrentUser: true,
     };
+    
+    // Wait a bit for connection then add user
+    const timeout = setTimeout(() => {
+      wsClient.addUser(currentUserEntry);
+    }, 500);
 
-    const allEntries = [...INITIAL_LEADERBOARD, currentUserEntry];
-    const sorted = allEntries.sort((a, b) => b.score - a.score);
-    const ranked = sorted.map((entry, index) => ({
-      ...entry,
-      rank: index + 1,
-    }));
-
-    setLeaderboard(ranked);
+    // Cleanup
+    return () => {
+      clearTimeout(timeout);
+      unsubscribeStatus();
+      unsubscribeLeaderboard();
+    };
   }, [isMounted, isLoggedIn, name, xp]);
 
   if (!isMounted || !isLoggedIn) return null;
@@ -73,14 +117,36 @@ export default function LeaderboardPage() {
     <div className="container mx-auto max-w-7xl px-4 py-8 pb-24 md:pb-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Trophy className="w-8 h-8 text-yellow-600" fill="currentColor" />
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
-            Leaderboard
-          </h1>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <Trophy className="w-8 h-8 text-yellow-600" fill="currentColor" />
+            <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
+              Leaderboard
+            </h1>
+          </div>
+          
+          {/* Live Connection Status */}
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+            isConnected 
+              ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400" 
+              : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400"
+          )}>
+            {isConnected ? (
+              <>
+                <Wifi className="w-3.5 h-3.5" />
+                <span>Live</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3.5 h-3.5" />
+                <span>Offline</span>
+              </>
+            )}
+          </div>
         </div>
         <p className="text-zinc-600 dark:text-zinc-400">
-          Lihat ranking dan kompetisi dengan sesama mahasiswa
+          Lihat ranking dan kompetisi dengan sesama mahasiswa {isConnected && '• Real-time updates'}
         </p>
       </div>
 

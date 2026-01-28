@@ -18,11 +18,6 @@ const TOPICS = [
   { id: "trivia", label: "Trivia" },
 ];
 
-type Friend = {
-  name: string;
-  username: string;
-};
-
 export default function DuelPage() {
   const router = useRouter();
   const { isLoggedIn, name, xp } = useUserStore();
@@ -31,7 +26,6 @@ export default function DuelPage() {
   const [step, setStep] = useState<"invite" | "topics" | "duel">("invite");
   const [friend, setFriend] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -69,25 +63,16 @@ export default function DuelPage() {
       setLeaderboard(ranked);
     });
 
-    // Wait a bit for connection then add user
-    const timeout = setTimeout(() => {
-      // wsClient.addUser(currentUserEntry);
-    }, 500);
+    wsClient.requestLeaderboard();
 
     // Cleanup
     return () => {
-      clearTimeout(timeout);
       unsubscribeStatus();
       unsubscribeLeaderboard();
     };
   }, [isMounted, isLoggedIn, name, xp]);
 
   if (!isMounted || !isLoggedIn) return null;
-
-  if (!isLoggedIn) {
-    router.push('/login');
-    return;
-  }
 
   const handleInvite = () => {
     if (friend.trim()) {
@@ -127,7 +112,7 @@ export default function DuelPage() {
             onChange={e => setFriend(e.target.value)}
             className="mb-4"
           />
-          <Button variant={'default'} onClick={handleInvite} disabled={!friend.trim()} className="mb-6 cursor-pointer w-full">
+          <Button onClick={handleInvite} disabled={!friend.trim()} className="mb-6 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer w-full">
             Kirim Undangan
           </Button>
           <div>
@@ -137,7 +122,7 @@ export default function DuelPage() {
                 <Button
                   key={entry.name}
                   variant="outline"
-                  className="justify-start"
+                  className="justify-start cursor-pointer"
                   onClick={() => setFriend(entry.name)}
                 >
                   <span className="font-bold mr-2">{entry.name}</span>
@@ -159,6 +144,7 @@ export default function DuelPage() {
                 key={topic.id}
                 variant={selectedTopic === topic.id ? "default" : "outline"}
                 onClick={() => handleTopicSelect(topic.id)}
+                className="w-full cursor-pointer"
               >
                 {topic.label}
               </Button>

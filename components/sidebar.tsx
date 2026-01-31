@@ -18,7 +18,8 @@ import {
   Users,
   BarChart3,
   Settings,
-  LogOut
+  LogOut,
+  PanelLeftClose
 } from "lucide-react";
 import { useUserStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ const dosenMenuItems = [
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onToggle }: { onToggle?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { name, role, level, xp, logout } = useUserStore(); 
@@ -61,11 +62,22 @@ export function Sidebar() {
   return (
     <div className="flex flex-col h-full border-r bg-card text-card-foreground">
       {/* --- LOGO APLIKASI --- */}
-      <div className="h-20 flex items-center px-6 lg:px-8">
+      <div className="h-20 flex items-center justify-between px-6 lg:px-8">
         <Link href="/learn" className="flex items-center gap-2 font-bold text-2xl text-blue-600 transition-opacity hover:opacity-80">
           <GraduationCap className="w-8 h-8" />
           <span className="hidden lg:block tracking-tight">ITSDojo</span>
         </Link>
+        
+        {/* Toggle Button - Only shown when onToggle is provided */}
+        {onToggle && (
+          <button
+            onClick={onToggle}
+            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            title="Tutup Menu"
+          >
+            <PanelLeftClose className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* --- NAVIGATION MENU --- */}

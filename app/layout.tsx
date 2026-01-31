@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css"; 
+import { ToastProvider } from "@/components/providers/toast-provider";
 
 
 const geistSans = Geist({
@@ -29,6 +30,7 @@ export default function RootLayout({
         <main className="flex-1">
           {children}
         </main>
+        <ToastProvider />
       </body>
     </html>
   );

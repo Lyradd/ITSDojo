@@ -22,10 +22,10 @@ export default function LoginPage() {
   const { login, setRole } = useUserStore();
   
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'dosen' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'asdos' | 'dosen' | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleRoleSelect = (role: 'mahasiswa' | 'dosen') => {
+  const handleRoleSelect = (role: 'mahasiswa' | 'asdos' | 'dosen') => {
     setSelectedRole(role);
   };
 
@@ -43,6 +43,8 @@ export default function LoginPage() {
       // Redirect based on role
       if (selectedRole === 'dosen') {
         router.push('/admin');
+      } else if (selectedRole === 'asdos') {
+        router.push('/admin'); // Asdos goes to admin but with read-only access
       } else {
         router.push('/learn');
       }
@@ -100,6 +102,28 @@ export default function LoginPage() {
               </button>
 
               <button
+                onClick={() => handleRoleSelect('asdos')}
+                className="w-full p-6 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-300 group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-xl group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
+                    <Users className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <div className="font-bold text-lg text-zinc-800 dark:text-zinc-100">
+                      Asisten Dosen
+                    </div>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      Monitoring & read-only access
+                    </div>
+                  </div>
+                  <div className="text-green-600 dark:text-green-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    →
+                  </div>
+                </div>
+              </button>
+
+              <button
                 onClick={() => handleRoleSelect('dosen')}
                 className="w-full p-6 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all duration-300 group"
               >
@@ -130,7 +154,7 @@ export default function LoginPage() {
                     Login sebagai:
                   </span>
                   <span className="font-bold text-blue-600 dark:text-blue-400">
-                    {selectedRole === 'mahasiswa' ? '👨‍🎓 Mahasiswa' : '👨‍🏫 Dosen'}
+                    {selectedRole === 'mahasiswa' ? '👨‍🎓 Mahasiswa' : selectedRole === 'asdos' ? '👨‍🏫 Asisten Dosen' : '👨‍🏫 Dosen'}
                   </span>
                   <button
                     type="button"

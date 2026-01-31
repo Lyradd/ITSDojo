@@ -21,7 +21,7 @@ interface UserState {
   xpToNextLevel: number;
   streak: number;
   activeCourseId: string;
-  role: 'mahasiswa' | 'dosen'; // NEW: Role field
+  role: 'mahasiswa' | 'asdos' | 'dosen'; // NEW: Role field
   
   dailyGoals: DailyGoal[];
   
@@ -34,7 +34,7 @@ interface UserState {
   setActiveCourse: (courseId: string) => void;
   completeLesson: () => void;
   claimGoalReward: (goalId: string) => void;
-  setRole: (role: 'mahasiswa' | 'dosen') => void; // NEW: Set role method
+  setRole: (role: 'mahasiswa' | 'asdos' | 'dosen') => void; // NEW: Set role method
 }
 
 const INITIAL_GOALS: DailyGoal[] = [

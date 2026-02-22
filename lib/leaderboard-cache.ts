@@ -107,6 +107,45 @@ class LeaderboardCache {
   size(): number {
     return this.cache.size;
   }
+
+  /**
+   * Get entries filtered by group ID
+   */
+  getByGroup(groupId: string): LeaderboardEntry[] {
+    const entries = Array.from(this.cache.values())
+      .filter(entry => entry.groupId === groupId);
+    return entries.sort((a, b) => b.score - a.score).map((entry, index) => ({
+      ...entry,
+      previousRank: entry.rank,
+      rank: index + 1,
+    }));
+  }
+
+  /**
+   * Get accumulated scores per group
+   */
+  getGroupScores(): { groupId: string; groupName: string; totalScore: number; avgScore: number; memberCount: number }[] {
+    const groupMap = new Map<string, { name: string; scores: number[] }>();
+    
+    this.cache.forEach(entry => {
+      if (entry.groupId && entry.groupName) {
+        if (!groupMap.has(entry.groupId)) {
+          groupMap.set(entry.groupId, { name: entry.groupName, scores: [] });
+        }
+        groupMap.get(entry.groupId)!.scores.push(entry.score);
+      }
+    });
+
+    const groupScores = Array.from(groupMap.entries()).map(([groupId, data]) => ({
+      groupId,
+      groupName: data.name,
+      totalScore: data.scores.reduce((a, b) => a + b, 0),
+      avgScore: Math.round(data.scores.reduce((a, b) => a + b, 0) / data.scores.length),
+      memberCount: data.scores.length,
+    }));
+
+    return groupScores.sort((a, b) => b.totalScore - a.totalScore);
+  }
 }
 
 export const leaderboardCache = LeaderboardCache.getInstance();

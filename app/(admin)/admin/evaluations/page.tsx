@@ -33,6 +33,7 @@ export default function EvaluationsPage() {
   const router = useRouter();
   const { role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
+  const isAsdos = role === 'asdos';
   
   // State for search & filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,18 +101,20 @@ export default function EvaluationsPage() {
           <div className="flex items-center gap-3">
             <ClipboardCheck className="w-8 h-8 text-purple-600" />
             <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
-              Manajemen Evaluasi
+              {isAsdos ? 'Monitoring Evaluasi' : 'Manajemen Evaluasi'}
             </h1>
           </div>
-          <Link href="/admin/evaluations/create">
-            <Button className="bg-purple-600 hover:bg-purple-700 font-bold">
-              <Plus className="w-4 h-4 mr-2" />
-              Buat Evaluasi Baru
-            </Button>
-          </Link>
+          {!isAsdos && (
+            <Link href="/admin/evaluations/create">
+              <Button className="bg-purple-600 hover:bg-purple-700 font-bold">
+                <Plus className="w-4 h-4 mr-2" />
+                Buat Evaluasi Baru
+              </Button>
+            </Link>
+          )}
         </div>
         <p className="text-zinc-600 dark:text-zinc-400">
-          Kelola dan pantau semua evaluasi
+          {isAsdos ? 'Pantau semua evaluasi' : 'Kelola dan pantau semua evaluasi'}
         </p>
       </div>
 
@@ -206,33 +209,37 @@ export default function EvaluationsPage() {
                   {evaluation.isActive ? '🟢 AKTIF' : '⚫ SELESAI'}
                 </span>
                 <div className="flex gap-1">
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => router.push(`/admin/evaluations/${evaluation.id}/edit`)}
-                    title="Edit"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleDuplicate(evaluation)}
-                    title="Duplicate"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                    onClick={() => handleDelete(evaluation.id, evaluation.title)}
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {!isAsdos && (
+                    <>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => router.push(`/admin/evaluations/${evaluation.id}/edit`)}
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleDuplicate(evaluation)}
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        onClick={() => handleDelete(evaluation.id, evaluation.title)}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -301,25 +308,27 @@ export default function EvaluationsPage() {
                   )}
                 </Button>
                 
-                {/* Activate/Deactivate Toggle */}
-                <Button 
-                  variant="outline" 
-                  className={cn(
-                    "font-bold",
-                    evaluation.isActive 
-                      ? "text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                      : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                  )}
-                  size="sm"
-                  onClick={() => handleToggleActive(evaluation.id)}
-                  title={evaluation.isActive ? 'Deactivate' : 'Activate'}
-                >
-                  {evaluation.isActive ? (
-                    <><PowerOff className="w-4 h-4 mr-2" /> Tutup</>
-                  ) : (
-                    <><Power className="w-4 h-4 mr-2" /> Aktifkan</>
-                  )}
-                </Button>
+                {/* Activate/Deactivate Toggle - Dosen only */}
+                {!isAsdos && (
+                  <Button 
+                    variant="outline" 
+                    className={cn(
+                      "font-bold",
+                      evaluation.isActive 
+                        ? "text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                    )}
+                    size="sm"
+                    onClick={() => handleToggleActive(evaluation.id)}
+                    title={evaluation.isActive ? 'Deactivate' : 'Activate'}
+                  >
+                    {evaluation.isActive ? (
+                      <><PowerOff className="w-4 h-4 mr-2" /> Tutup</>
+                    ) : (
+                      <><Power className="w-4 h-4 mr-2" /> Aktifkan</>
+                    )}
+                  </Button>
+                )}
               </div>
             </Card>
           );
@@ -345,12 +354,14 @@ export default function EvaluationsPage() {
           <p className="text-zinc-500 dark:text-zinc-400 mb-4">
             Belum ada evaluasi
           </p>
-          <Link href="/admin/evaluations/create">
-            <Button className="bg-purple-600 hover:bg-purple-700 font-bold">
-              <Plus className="w-4 h-4 mr-2" />
-              Buat Evaluasi Pertama
-            </Button>
-          </Link>
+          {!isAsdos && (
+            <Link href="/admin/evaluations/create">
+              <Button className="bg-purple-600 hover:bg-purple-700 font-bold">
+                <Plus className="w-4 h-4 mr-2" />
+                Buat Evaluasi Pertama
+              </Button>
+            </Link>
+          )}
         </div>
       )}
     </div>

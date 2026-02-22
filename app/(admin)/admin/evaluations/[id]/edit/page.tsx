@@ -3,20 +3,12 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { SAMPLE_EVALUATIONS } from "@/lib/evaluation-data";
-import { Evaluation, Question } from "@/lib/evaluation-types";
+import { EvaluationMetadata, Question, DifficultyLevel } from "@/lib/evaluation-types";
 import { EvaluationForm } from "@/components/admin/evaluation-form";
 import { QuestionBuilder } from "@/components/admin/question-builder";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Eye } from "lucide-react";
 import toast from "react-hot-toast";
-
-interface EvaluationMetadata {
-  title: string;
-  description: string;
-  duration: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
-}
 
 export default function EditEvaluationPage() {
   const params = useParams();
@@ -31,12 +23,13 @@ export default function EditEvaluationPage() {
     title: existingEvaluation?.title || "",
     description: existingEvaluation?.description || "",
     duration: existingEvaluation?.duration || 60,
-    difficulty: existingEvaluation?.difficulty || 'medium',
-    tags: existingEvaluation?.tags || [],
+    totalPoints: existingEvaluation?.totalPoints || 0,
+    difficulty: 'medium' as DifficultyLevel,
+    tags: [],
   });
 
   const [questions, setQuestions] = useState<Question[]>(
-    existingEvaluation?.questions || []
+    (existingEvaluation?.questions as any as Question[]) || []
   );
 
   // Auto-save to localStorage
@@ -171,7 +164,7 @@ export default function EditEvaluationPage() {
               <EvaluationForm
                 metadata={metadata}
                 onChange={setMetadata}
-                totalPoints={totalPoints}
+                totalPointsFromQuestions={totalPoints}
               />
             </div>
           )}
@@ -305,9 +298,11 @@ function PreviewSection({
                   <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
                     {q.points} pts
                   </span>
-                  <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
-                    {q.bloomLevel}
-                  </span>
+                  {q.bloomLevel && (
+                    <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
+                      {q.bloomLevel}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

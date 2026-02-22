@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 export default function CoursesManagementPage() {
   const { role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
+  const isAsdos = role === 'asdos';
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -73,34 +74,36 @@ export default function CoursesManagementPage() {
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-8 h-8 text-blue-600" />
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Kelola Kursus
+                  {isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}
                 </h1>
               </div>
               <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-                Tambah, edit, dan kelola materi pembelajaran
+                {isAsdos ? 'Lihat materi pembelajaran yang tersedia' : 'Tambah, edit, dan kelola materi pembelajaran'}
               </p>
             </div>
-            <Button 
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-bold shadow-lg"
-            >
-              {showCreateForm ? (
-                <>
-                  <X className="w-4 h-4 mr-2" />
-                  Batal
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Buat Kursus Baru
-                </>
-              )}
-            </Button>
+            {!isAsdos && (
+              <Button 
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-bold shadow-lg"
+              >
+                {showCreateForm ? (
+                  <>
+                    <X className="w-4 h-4 mr-2" />
+                    Batal
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Buat Kursus Baru
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Create Form */}
-        {showCreateForm && (
+        {/* Create Form - Dosen only */}
+        {!isAsdos && showCreateForm && (
           <Card className="p-6 rounded-2xl border-2 mb-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
             <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6">
               Buat Kursus Baru
@@ -225,12 +228,16 @@ export default function CoursesManagementPage() {
                   {course.image || '💻'}
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-950/30">
-                    <Edit className="w-4 h-4 text-blue-600" />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-950/30">
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </Button>
+                  {!isAsdos && (
+                    <>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-950/30">
+                        <Edit className="w-4 h-4 text-blue-600" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-950/30">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -271,7 +278,7 @@ export default function CoursesManagementPage() {
                 <Link href={`/admin/courses/${course.id}`} className="flex-1">
                   <Button variant="outline" className="w-full font-bold hover:bg-blue-50 dark:hover:bg-blue-950/30">
                     <Eye className="w-4 h-4 mr-2" />
-                    Kelola Materi
+                    {isAsdos ? 'Lihat Materi' : 'Kelola Materi'}
                   </Button>
                 </Link>
               </div>

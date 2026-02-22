@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { EvaluationMetadata, Question, calculateTotalPoints, calculateBloomDistribution, BloomDistribution } from "@/lib/evaluation-types";
+import { EvaluationMetadata, Question, calculateTotalPoints, calculateBloomDistribution, BloomDistribution, QuizGroup } from "@/lib/evaluation-types";
 import { EvaluationForm } from "@/components/admin/evaluation-form";
 import { QuestionBuilder } from "@/components/admin/question-builder";
+import { GroupManager } from "@/components/admin/group-manager";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Eye, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,21 +26,27 @@ export default function CreateEvaluationPage() {
   });
   
   const [questions, setQuestions] = useState<Question[]>([]);
+  
+  // Group settings
+  const [enableGroups, setEnableGroups] = useState(false);
+  const [groups, setGroups] = useState<QuizGroup[]>([]);
 
   // Auto-save to localStorage
   useEffect(() => {
-    const draft = { metadata, questions };
+    const draft = { metadata, questions, enableGroups, groups };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-  }, [metadata, questions]);
+  }, [metadata, questions, enableGroups, groups]);
 
   // Load draft on mount
   useEffect(() => {
     const savedDraft = localStorage.getItem(STORAGE_KEY);
     if (savedDraft) {
       try {
-        const { metadata: savedMetadata, questions: savedQuestions } = JSON.parse(savedDraft);
+        const { metadata: savedMetadata, questions: savedQuestions, enableGroups: savedEnableGroups, groups: savedGroups } = JSON.parse(savedDraft);
         if (savedMetadata) setMetadata(savedMetadata);
         if (savedQuestions) setQuestions(savedQuestions);
+        if (savedEnableGroups !== undefined) setEnableGroups(savedEnableGroups);
+        if (savedGroups) setGroups(savedGroups);
       } catch (e) {
         console.error('Failed to load draft', e);
       }
@@ -60,6 +67,11 @@ export default function CreateEvaluationPage() {
       totalPoints,
       questions,
       bloomDistribution,
+      // Group settings
+      groupSettings: {
+        enableGroups,
+        groups,
+      },
       isActive: true,
       createdBy: 'current-user-id',
       createdAt: new Date(),
@@ -161,6 +173,19 @@ export default function CreateEvaluationPage() {
                 onChange={setMetadata}
                 totalPointsFromQuestions={totalPoints}
               />
+              
+              {/* Group Settings */}
+              <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-700">
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">
+                  Pengaturan Kelompok
+                </h3>
+                <GroupManager
+                  groups={groups}
+                  onChange={setGroups}
+                  enabled={enableGroups}
+                  onToggle={setEnableGroups}
+                />
+              </div>
             </>
           )}
 

@@ -83,6 +83,29 @@ export type BloomDistribution = {
   C6: number;
 };
 
+// Group Leaderboard Types
+export interface QuizGroup {
+  id: string;
+  name: string;        // "Kelompok A", "Kelompok B"
+  color: string;       // For UI differentiation (hex or tailwind color)
+  memberIds: string[]; // User IDs assigned to this group
+}
+
+export interface GroupScore {
+  groupId: string;
+  groupName: string;
+  color: string;
+  totalScore: number;      // Sum of all members' scores
+  averageScore: number;    // Average score per member
+  memberCount: number;
+  rank: number;
+}
+
+export interface QuizSessionConfig {
+  enableGroups: boolean;
+  groups: QuizGroup[];
+}
+
 export interface Question {
   id: string;
   type: QuestionType;
@@ -106,15 +129,6 @@ export interface Question {
   
   // For puzzle (matching)
   puzzlePairs?: PuzzlePair[];
-}
-
-export interface BloomDistribution {
-  C1: number;
-  C2: number;
-  C3: number;
-  C4: number;
-  C5: number;
-  C6: number;
 }
 
 export interface EvaluationMetadata {

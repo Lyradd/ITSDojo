@@ -20,6 +20,8 @@ const colorClasses: Record<string, string> = {
 };
 
 export function BloomSelector({ value, onChange, className }: BloomSelectorProps) {
+  // Default to 'C1' if value is not a valid BloomLevel
+  const safeValue = value && BLOOM_TAXONOMIES[value] ? value : 'C1';
   return (
     <div className={cn("space-y-3", className)}>
       <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -69,10 +71,10 @@ export function BloomSelector({ value, onChange, className }: BloomSelectorProps
       {/* Selected info */}
       <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
         <div className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
-          Example Verbs for {BLOOM_TAXONOMIES[value].label}:
+          Example Verbs for {BLOOM_TAXONOMIES[safeValue].label}:
         </div>
         <div className="flex flex-wrap gap-1">
-          {BLOOM_TAXONOMIES[value].examples.map((verb) => (
+          {BLOOM_TAXONOMIES[safeValue].examples.map((verb) => (
             <span
               key={verb}
               className="px-2 py-1 text-xs font-medium bg-white dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-700"

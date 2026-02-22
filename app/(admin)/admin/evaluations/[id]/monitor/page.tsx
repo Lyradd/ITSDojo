@@ -17,11 +17,18 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  Eye
+  Eye,
+  Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Mock live data (in real app, this would come from WebSocket/polling)
+// Mock live data with groups (in real app, this would come from WebSocket/polling)
+const MOCK_GROUPS = [
+  { id: "group_a", name: "Kelompok A", color: "#3B82F6" },
+  { id: "group_b", name: "Kelompok B", color: "#22C55E" },
+  { id: "group_c", name: "Kelompok C", color: "#A855F7" },
+];
+
 const MOCK_LIVE_STUDENTS = [
   {
     id: "s1",
@@ -30,8 +37,10 @@ const MOCK_LIVE_STUDENTS = [
     currentQuestion: 8,
     totalQuestions: 10,
     score: 85,
-    timeElapsed: 420, // seconds
+    timeElapsed: 420,
     status: "active" as const,
+    groupId: "group_a",
+    groupName: "Kelompok A",
   },
   {
     id: "s2",
@@ -42,6 +51,8 @@ const MOCK_LIVE_STUDENTS = [
     score: 95,
     timeElapsed: 380,
     status: "completed" as const,
+    groupId: "group_a",
+    groupName: "Kelompok A",
   },
   {
     id: "s3",
@@ -52,6 +63,8 @@ const MOCK_LIVE_STUDENTS = [
     score: 70,
     timeElapsed: 450,
     status: "active" as const,
+    groupId: "group_b",
+    groupName: "Kelompok B",
   },
   {
     id: "s4",
@@ -62,6 +75,8 @@ const MOCK_LIVE_STUDENTS = [
     score: 60,
     timeElapsed: 500,
     status: "stuck" as const,
+    groupId: "group_b",
+    groupName: "Kelompok B",
   },
   {
     id: "s5",
@@ -72,6 +87,20 @@ const MOCK_LIVE_STUDENTS = [
     score: 90,
     timeElapsed: 400,
     status: "completed" as const,
+    groupId: "group_c",
+    groupName: "Kelompok C",
+  },
+  {
+    id: "s6",
+    name: "Ayu Putri",
+    avatar: "AP",
+    currentQuestion: 7,
+    totalQuestions: 10,
+    score: 75,
+    timeElapsed: 430,
+    status: "active" as const,
+    groupId: "group_c",
+    groupName: "Kelompok C",
   },
 ];
 
@@ -83,6 +112,8 @@ export default function MonitorEvaluationPage() {
   const [liveStudents, setLiveStudents] = useState(MOCK_LIVE_STUDENTS);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // null = all groups
+  const [enableGroups] = useState(true); // In real app, this comes from evaluation settings
 
   // Find evaluation
   const evaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
@@ -112,18 +143,36 @@ export default function MonitorEvaluationPage() {
     );
   }
 
-  const activeStudents = liveStudents.filter((s) => s.status === "active").length;
-  const completedStudents = liveStudents.filter((s) => s.status === "completed").length;
+  // Filter students by group
+  const filteredStudents = selectedGroup 
+    ? liveStudents.filter(s => s.groupId === selectedGroup)
+    : liveStudents;
+
+  const activeStudents = filteredStudents.filter((s) => s.status === "active").length;
+  const completedStudents = filteredStudents.filter((s) => s.status === "completed").length;
   const avgScore = Math.round(
-    liveStudents.reduce((sum, s) => sum + s.score, 0) / liveStudents.length
+    filteredStudents.reduce((sum, s) => sum + s.score, 0) / (filteredStudents.length || 1)
   );
   const avgProgress = Math.round(
-    liveStudents.reduce((sum, s) => sum + (s.currentQuestion / s.totalQuestions) * 100, 0) /
-      liveStudents.length
+    filteredStudents.reduce((sum, s) => sum + (s.currentQuestion / s.totalQuestions) * 100, 0) /
+      (filteredStudents.length || 1)
   );
 
   // Sorted leaderboard
-  const leaderboard = [...liveStudents].sort((a, b) => b.score - a.score);
+  const leaderboard = [...filteredStudents].sort((a, b) => b.score - a.score);
+
+  // Calculate group scores
+  const groupScores = MOCK_GROUPS.map(group => {
+    const members = liveStudents.filter(s => s.groupId === group.id);
+    const totalScore = members.reduce((sum, s) => sum + s.score, 0);
+    const avgScore = members.length > 0 ? Math.round(totalScore / members.length) : 0;
+    return {
+      ...group,
+      totalScore,
+      avgScore,
+      memberCount: members.length,
+    };
+  }).sort((a, b) => b.totalScore - a.totalScore);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">
@@ -184,6 +233,98 @@ export default function MonitorEvaluationPage() {
             </div>
           </div>
         </div>
+
+        {/* Group Filter (if groups enabled) */}
+        {enableGroups && (
+          <div className="mb-6 flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm text-zinc-600 dark:text-zinc-400">Filter Kelompok:</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setSelectedGroup(null)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                  selectedGroup === null
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                )}
+              >
+                Semua ({liveStudents.length})
+              </button>
+              {MOCK_GROUPS.map(group => {
+                const count = liveStudents.filter(s => s.groupId === group.id).length;
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => setSelectedGroup(group.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2",
+                      selectedGroup === group.id
+                        ? "text-white"
+                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                    )}
+                    style={selectedGroup === group.id ? { backgroundColor: group.color } : {}}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
+                    {group.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Group Scores Comparison */}
+        {enableGroups && !selectedGroup && (
+          <Card className="p-4 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 border-2 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-yellow-600" />
+              <h3 className="font-bold text-zinc-900 dark:text-white">Perbandingan Kelompok</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {groupScores.map((group, index) => (
+                <div
+                  key={group.id}
+                  className={cn(
+                    "p-4 rounded-lg border-2 bg-white dark:bg-zinc-800",
+                    index === 0 && "border-yellow-400 ring-2 ring-yellow-200 dark:ring-yellow-800"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
+                      <span className="font-bold text-zinc-900 dark:text-white">{group.name}</span>
+                    </div>
+                    {index === 0 && <span className="text-lg">🏆</span>}
+                    {index === 1 && <span className="text-lg">🥈</span>}
+                    {index === 2 && <span className="text-lg">🥉</span>}
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className="text-2xl font-bold" style={{ color: group.color }}>
+                        {group.totalScore}
+                      </div>
+                      <div className="text-xs text-zinc-500">Total Skor</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-zinc-700 dark:text-zinc-300">
+                        {group.avgScore}
+                      </div>
+                      <div className="text-xs text-zinc-500">Rata-rata</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        {group.memberCount} orang
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

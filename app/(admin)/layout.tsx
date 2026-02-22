@@ -15,14 +15,14 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect if not dosen
-    if (role !== 'dosen') {
+    // Redirect if not dosen or asdos
+    if (role !== 'dosen' && role !== 'asdos') {
       router.push('/learn');
     }
   }, [role, router]);
 
-  // Don't render if not dosen
-  if (role !== 'dosen') {
+  // Don't render if not dosen or asdos
+  if (role !== 'dosen' && role !== 'asdos') {
     return null;
   }
 

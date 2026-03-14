@@ -53,7 +53,7 @@ const COURSE_CONTENT: any = {
 
 // --- 2. KOMPONEN STAT WIDGET ---
 const StatWidget = ({ icon: Icon, color, label, value }: any) => (
-  <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-sm">
+  <div className="shimmer-hover flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-sm">
     <Icon className={`w-6 h-6 ${color}`} fill="currentColor" />
     <div>
       <div className="font-bold text-lg leading-none">

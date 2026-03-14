@@ -57,15 +57,15 @@ export default function StudentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="container mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
       <div className="mb-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
         <div className="relative">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-8 h-8 text-blue-600" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Monitoring Mahasiswa
             </h1>
           </div>
@@ -77,23 +77,23 @@ export default function StudentsPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4 rounded-xl border-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+        <Card className="p-4 rounded-xl border-2 bg-linear-to-br from-blue-500 to-blue-600 text-white">
           <div className="text-sm text-blue-100 mb-1">Total Mahasiswa</div>
           <div className="text-3xl font-bold">{students.length}</div>
         </Card>
-        <Card className="p-4 rounded-xl border-2 bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+        <Card className="p-4 rounded-xl border-2 bg-linear-to-br from-purple-500 to-pink-600 text-white">
           <div className="text-sm text-purple-100 mb-1">Rata-rata XP</div>
           <div className="text-3xl font-bold">
             {Math.round(students.reduce((acc, s) => acc + s.xp, 0) / students.length)}
           </div>
         </Card>
-        <Card className="p-4 rounded-xl border-2 bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+        <Card className="p-4 rounded-xl border-2 bg-linear-to-br from-green-500 to-emerald-600 text-white">
           <div className="text-sm text-green-100 mb-1">Rata-rata Akurasi</div>
           <div className="text-3xl font-bold">
             {Math.round(students.reduce((acc, s) => acc + s.accuracy, 0) / students.length)}%
           </div>
         </Card>
-        <Card className="p-4 rounded-xl border-2 bg-gradient-to-br from-orange-500 to-red-600 text-white">
+        <Card className="p-4 rounded-xl border-2 bg-linear-to-br from-orange-500 to-red-600 text-white">
           <div className="text-sm text-orange-100 mb-1">Aktif Hari Ini</div>
           <div className="text-3xl font-bold">
             {students.filter(s => s.lastActive.includes('hour') || s.lastActive.includes('minute')).length}

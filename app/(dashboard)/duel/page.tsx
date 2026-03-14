@@ -33,7 +33,7 @@ export default function DuelPage() {
       {/*content*/}
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-          <Card className="p-6 rounded-2xl border-2 text-center text-zinc-600 bg-gradient-to-br from-blue-50 to-blue-100
+          <Card className="p-6 rounded-2xl border-2 text-center text-zinc-600 bg-linear-to-br from-blue-50 to-blue-100
             hover:from-blue-400 hover:to-blue-600 hover:text-zinc-100 transition-colors duration-300 shadow-lg cursor-pointer
             " onClick={() => router.push('/duel/1v1')}>
             <div className="flex justify-center mb-2">
@@ -49,7 +49,7 @@ export default function DuelPage() {
             </h2>
           </Card>
 
-          <Card className="p-6 rounded-2xl border-2 text-center text-zinc-600 bg-gradient-to-br from-green-50 to-green-100
+          <Card className="p-6 rounded-2xl border-2 text-center text-zinc-600 bg-linear-to-br from-green-50 to-green-100
             hover:from-green-400 hover:to-green-600 hover:text-zinc-100 transition-colors duration-300 shadow-lg cursor-pointer
             " onClick={() => router.push('/duel/arena')}>
             <div className="flex justify-center mb-2">

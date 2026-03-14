@@ -57,7 +57,7 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
       <div className="flex items-center gap-2 w-12">
         <div className={cn(
           "font-bold text-lg",
-          entry.rank <= 3 ? "text-transparent bg-clip-text bg-gradient-to-r" : "text-zinc-500 dark:text-zinc-400",
+          entry.rank <= 3 ? "text-transparent bg-clip-text bg-linear-to-r" : "text-zinc-500 dark:text-zinc-400",
           entry.rank === 1 && "from-yellow-400 to-yellow-600",
           entry.rank === 2 && "from-gray-300 to-gray-500",
           entry.rank === 3 && "from-amber-500 to-amber-700"

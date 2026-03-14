@@ -152,7 +152,7 @@ export default function LeaderboardPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 border-yellow-200 dark:border-yellow-800">
+        <Card className="p-6 rounded-2xl border-2 bg-linear-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 border-yellow-200 dark:border-yellow-800">
           <div className="flex items-center gap-3 mb-2">
             <Crown className="w-6 h-6 text-yellow-600" />
             <span className="text-sm font-bold text-yellow-700 dark:text-yellow-400">Peringkat Kamu</span>
@@ -210,7 +210,7 @@ export default function LeaderboardPage() {
         {/* Left: Full Leaderboard */}
         <div className="space-y-6">
           {/* Top 3 Podium */}
-          <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-yellow-50 via-white to-purple-50 dark:from-yellow-950/20 dark:via-zinc-900 dark:to-purple-950/20">
+          <Card className="p-6 rounded-2xl border-2 bg-linear-to-br from-yellow-50 via-white to-purple-50 dark:from-yellow-950/20 dark:via-zinc-900 dark:to-purple-950/20">
             <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6 flex items-center gap-2">
               <Medal className="w-6 h-6 text-yellow-600" />
               Top 3 Performers
@@ -220,7 +220,7 @@ export default function LeaderboardPage() {
               {/* 2nd Place */}
               {topThree[1] && (
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold text-2xl mb-2 border-4 border-white shadow-lg">
+                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold text-2xl mb-2 border-4 border-white shadow-lg">
                     {topThree[1].name.charAt(0)}
                   </div>
                   <div className="text-4xl font-bold mb-1">🥈</div>
@@ -228,7 +228,7 @@ export default function LeaderboardPage() {
                     {topThree[1].name}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-400">{topThree[1].score} XP</div>
-                  <div className="h-24 w-full bg-gradient-to-t from-gray-400 to-gray-300 rounded-t-xl mt-2 flex items-center justify-center">
+                  <div className="h-24 w-full bg-linear-to-t from-gray-400 to-gray-300 rounded-t-xl mt-2 flex items-center justify-center">
                     <span className="text-white font-bold text-2xl">#2</span>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export default function LeaderboardPage() {
               {/* 1st Place */}
               {topThree[0] && (
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white font-bold text-3xl mb-2 border-4 border-white shadow-xl ring-4 ring-yellow-200">
+                  <div className="w-20 h-20 rounded-full bg-linear-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white font-bold text-3xl mb-2 border-4 border-white shadow-xl ring-4 ring-yellow-200">
                     {topThree[0].name.charAt(0)}
                   </div>
                   <div className="text-5xl font-bold mb-1">🥇</div>
@@ -245,7 +245,7 @@ export default function LeaderboardPage() {
                     {topThree[0].name}
                   </div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400">{topThree[0].score} XP</div>
-                  <div className="h-32 w-full bg-gradient-to-t from-yellow-500 to-yellow-400 rounded-t-xl mt-2 flex items-center justify-center shadow-lg">
+                  <div className="h-32 w-full bg-linear-to-t from-yellow-500 to-yellow-400 rounded-t-xl mt-2 flex items-center justify-center shadow-lg">
                     <span className="text-white font-bold text-3xl">#1</span>
                   </div>
                 </div>
@@ -254,7 +254,7 @@ export default function LeaderboardPage() {
               {/* 3rd Place */}
               {topThree[2] && (
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-2xl mb-2 border-4 border-white shadow-lg">
+                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-2xl mb-2 border-4 border-white shadow-lg">
                     {topThree[2].name.charAt(0)}
                   </div>
                   <div className="text-4xl font-bold mb-1">🥉</div>
@@ -262,7 +262,7 @@ export default function LeaderboardPage() {
                     {topThree[2].name}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-400">{topThree[2].score} XP</div>
-                  <div className="h-20 w-full bg-gradient-to-t from-amber-700 to-amber-600 rounded-t-xl mt-2 flex items-center justify-center">
+                  <div className="h-20 w-full bg-linear-to-t from-amber-700 to-amber-600 rounded-t-xl mt-2 flex items-center justify-center">
                     <span className="text-white font-bold text-2xl">#3</span>
                   </div>
                 </div>

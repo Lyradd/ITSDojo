@@ -28,6 +28,7 @@ import {
   Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GlowCard } from '@/components/ui/glow-card';
 
 export default function EvaluationsPage() {
   const router = useRouter();
@@ -194,10 +195,10 @@ export default function EvaluationsPage() {
           const averageScore = getAverageScore(evaluation.id);
 
           return (
-            <Card 
-              key={evaluation.id}
-              className="p-6 rounded-2xl border-2 hover:border-purple-300 hover:shadow-lg transition-all duration-300"
-            >
+            <GlowCard key={evaluation.id} active={evaluation.isActive} color="green">
+              <Card
+                className="p-6 rounded-2xl border-2 hover:border-purple-300 hover:shadow-lg transition-all duration-300"
+              >
               {/* Status Badge */}
               <div className="flex items-center justify-between mb-4">
                 <span className={cn(
@@ -331,6 +332,7 @@ export default function EvaluationsPage() {
                 )}
               </div>
             </Card>
+            </GlowCard>
           );
         })}
       </div>

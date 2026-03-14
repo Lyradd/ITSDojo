@@ -93,7 +93,7 @@ export default function GoalsPage() {
 
           {/* BANNER 1: Active Boost */}
           {timeLeft && (
-            <div className="animate-in slide-in-from-top-4 duration-500 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-4 text-white shadow-lg flex items-center justify-between">
+            <div className="animate-in slide-in-from-top-4 duration-500 bg-linear-to-r from-purple-600 to-pink-600 rounded-2xl p-4 text-white shadow-lg flex items-center justify-between">
                <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm animate-pulse">
                      <Zap className="w-6 h-6 text-yellow-300 fill-current" />
@@ -111,7 +111,7 @@ export default function GoalsPage() {
           )}
 
           {/* BANNER 2: Hadiah Harian Hero */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex-1 space-y-2 text-center md:text-left">
                    <h2 className="text-xl font-bold flex items-center justify-center md:justify-start gap-2">

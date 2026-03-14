@@ -3,11 +3,10 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation"; 
 import { Button } from "@/components/ui/button";
-import { 
-  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List
-} from "lucide-react";
+import { BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List } from "lucide-react";
 import { COURSES as RAW_COURSES } from "@/lib/dummydata"; 
-import { useUserStore } from "@/lib/store"; 
+import { useUserStore } from "@/lib/store";
+import { FlipCard } from "@/components/ui/flip-card";
 
 type SortOption = "name-asc" | "last-accessed";
 type ViewMode = "grid" | "list"; 
@@ -112,75 +111,80 @@ export default function CoursesPage() {
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {sortedCourses.map((course) => (
-            <div key={course.id} className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden">
-              {/* Header Gambar */}
-              <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative transition-all duration-300 group-hover:h-24`}>
-                {course.image}
-                {course.status === 'locked' && (
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                    <Lock className="w-8 h-8 text-zinc-600/50" />
+            <FlipCard
+              key={course.id}
+              height={300}
+              flipOnHover={false}
+              front={
+                <div className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm h-full overflow-hidden">
+                  {/* Header */}
+                  <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative`}>
+                    {course.image}
+                    {course.status === 'locked' && (
+                      <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
+                        <Lock className="w-8 h-8 text-zinc-600/50" />
+                      </div>
+                    )}
+                    {/* «Tap to flip» hint */}
+                    <div className="absolute bottom-2 right-2 text-[10px] text-white/70 font-bold bg-black/20 px-2 py-0.5 rounded-full">
+                      tap untuk detail
+                    </div>
                   </div>
-                )}
-              </div>
-              
-              <div className="p-6 flex flex-col flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    {course.difficulty}
-                  </span>
-                  <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
-                    <Star className="w-3 h-3 fill-current" />
-                    <span>+{course.xpReward} XP</span>
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors">
-                  {course.title}
-                </h3>
-                
-                <p className="text-xs text-zinc-400 mb-2">
-                  Last activity: {formatDate(course.lastAccessed)}
-                </p>
-
-                {/* Progress Bar (GRID) */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-zinc-500">Progress</span>
-                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">{course.progress}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'
-                      }`}
-                      style={{ width: `${course.progress}%` }}
-                    />
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">{course.difficulty}</span>
+                      <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                        <Star className="w-3 h-3 fill-current" />
+                        <span>+{course.xpReward} XP</span>
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-3">{course.title}</h3>
+                    <div className="mt-auto">
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-zinc-500">Progress</span>
+                        <span className="font-semibold">{course.progress}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'}`}
+                          style={{ width: `${course.progress}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Deskripsi: Hidden Default, Block on Hover */}
-                <div className="max-h-0 opacity-0 group-hover:max-h-24 group-hover:opacity-100 transition-all duration-500 ease-in-out overflow-hidden">
-                  <p className="text-sm text-zinc-500 mb-4 pt-1">
-                    {course.description}
-                  </p>
-                </div>
-
-                <div className="mt-auto pt-4 border-t flex items-center justify-between">
-                  <div className="text-xs text-zinc-500 flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" />
-                    {course.lessonsCount} Modules
+              }
+              back={
+                <div className={`flex flex-col rounded-xl border-2 h-full overflow-hidden ${course.color} text-white`}>
+                  <div className="p-6 flex flex-col h-full">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-4xl">{course.image}</span>
+                      <div>
+                        <h3 className="text-xl font-bold">{course.title}</h3>
+                        <span className="text-xs font-bold opacity-80 uppercase">{course.difficulty}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-white/90 flex-1 leading-relaxed">{course.description}</p>
+                    <div className="flex items-center gap-4 text-sm font-bold mt-4 mb-5 opacity-90">
+                      <span className="flex items-center gap-1"><BookOpen className="w-4 h-4" />{course.lessonsCount} Modul</span>
+                      <span className="flex items-center gap-1"><Star className="w-4 h-4 fill-current text-amber-300" />+{course.xpReward} XP</span>
+                    </div>
+                    {course.status === 'unlocked' ? (
+                      <Button
+                        className="w-full bg-white text-zinc-900 hover:bg-white/90 font-bold"
+                        onClick={(e) => { e.stopPropagation(); handleSelectCourse(course.id); }}
+                      >
+                        {course.progress > 0 ? 'Lanjutkan Belajar →' : 'Mulai Belajar →'}
+                      </Button>
+                    ) : (
+                      <Button className="w-full bg-white/20 text-white cursor-not-allowed font-bold" disabled>
+                        <Lock className="w-4 h-4 mr-2" /> Terkunci
+                      </Button>
+                    )}
                   </div>
-                  
-                  {course.status === 'unlocked' ? (
-                    <Button size="sm" onClick={() => handleSelectCourse(course.id)}>
-                      {course.progress > 0 ? "Lanjutkan" : "Mulai Belajar"}
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="secondary" disabled>Terkunci</Button>
-                  )}
                 </div>
-              </div>
-            </div>
+              }
+            />
           ))}
         </div>
       ) : (

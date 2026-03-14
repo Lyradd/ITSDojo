@@ -26,7 +26,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import { triggerConfetti } from '@/lib/utils';
+import { triggerConfetti, triggerBigConfetti } from '@/lib/utils';
 import * as React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -159,9 +159,7 @@ export default function EvaluationFullscreenPage() {
   }, [score]);
 
   const handleExitQuiz = () => {
-    if (confirm('Yakin ingin keluar? Progress Anda akan tersimpan.')) {
-      router.push('/evaluation');
-    }
+    router.push('/evaluation');
   };
 
   if (!isMounted || !isLoggedIn || !isInitialized || !currentEvaluation) {
@@ -183,7 +181,13 @@ export default function EvaluationFullscreenPage() {
 
   const handleFinish = () => {
     finishEvaluation();
-    triggerConfetti();
+    // Score-based confetti: big celebration for 90%+ score
+    const pct = currentEvaluation ? (score / currentEvaluation.totalPoints) * 100 : 0;
+    if (pct >= 90) {
+      triggerBigConfetti();
+    } else {
+      triggerConfetti();
+    }
     router.push(`/evaluation/${evaluationId}/results`);
   };
 

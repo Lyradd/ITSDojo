@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { SAMPLE_EVALUATIONS } from "@/lib/evaluation-data";
-import { MOCK_EVALUATION_RESULTS } from "@/lib/admin-data";
+import { MOCK_EVALUATION_RESULTS, type EvaluationResult } from "@/lib/admin-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -28,7 +28,7 @@ export default function DetailedResultsPage() {
   const [viewMode, setViewMode] = useState<'overview' | 'question' | 'student'>('overview');
 
   const evaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
-  const results = MOCK_EVALUATION_RESULTS[evaluationId] || [];
+  const results = MOCK_EVALUATION_RESULTS.filter((r) => r.evaluationId === evaluationId);
 
   if (!evaluation) {
     return (
@@ -42,10 +42,10 @@ export default function DetailedResultsPage() {
   }
 
   const avgScore = Math.round(
-    results.reduce((sum, r) => sum + r.score, 0) / results.length || 0
+    results.reduce((sum: number, r: EvaluationResult) => sum + r.score, 0) / results.length || 0
   );
 
-  const passRate = results.filter((r) => r.score >= 60).length / results.length * 100 || 0;
+  const passRate = results.filter((r: EvaluationResult) => r.score >= 60).length / results.length * 100 || 0;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">

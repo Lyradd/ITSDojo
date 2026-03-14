@@ -45,7 +45,7 @@ export function EvaluationHeader({ className }: EvaluationHeaderProps) {
   }, [startTime]);
 
   return (
-    <div className={cn("bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-2xl shadow-lg", className)}>
+    <div className={cn("bg-linear-to-r from-blue-600 to-blue-700 text-white p-6 rounded-2xl shadow-lg", className)}>
       {/* Title */}
       <div className="mb-4">
         <h1 className="text-2xl font-bold mb-1">{currentEvaluation.title}</h1>

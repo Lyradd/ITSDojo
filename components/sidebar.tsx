@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { 
   Home, 
   BookOpen, 
@@ -95,25 +96,30 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
 
       {/* --- NAVIGATION MENU --- */}
       <div className="flex-1 flex flex-col gap-2 px-3 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-        {sidebarItems.map((item) => {
+        {sidebarItems.map((item, index) => {
           const isActive = pathname === item.href;
           
           // Unified colors for both roles (Blue/Cyan theme)
-          const activeColors = "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-300 border-2 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-400 dark:border-blue-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30";
+          const activeColors = "bg-linear-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-300 border-2 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-400 dark:border-blue-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30";
           
-          const hoverColors = "hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 hover:border-blue-200 dark:hover:border-blue-800";
+          const hoverColors = "hover:bg-linear-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 hover:border-blue-200 dark:hover:border-blue-800";
           
           return (
-            <Link
+            <motion.div
               key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group border border-transparent",
-                isActive 
-                  ? activeColors
-                  : cn("text-zinc-600 dark:text-zinc-400", hoverColors)
-              )}
+              initial={{ opacity: 0, x: -18 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.06, duration: 0.28, ease: 'easeOut' }}
             >
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group border border-transparent",
+                  isActive 
+                    ? activeColors
+                    : cn("text-zinc-600 dark:text-zinc-400", hoverColors)
+                )}
+              >
               <div className={cn(
                 "p-2 rounded-lg transition-all duration-300",
                 isActive 
@@ -137,6 +143,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
                 <div className="ml-auto w-2 h-2 rounded-full animate-pulse bg-blue-600" />
               )}
             </Link>
+            </motion.div>
           );
         })}
       </div>

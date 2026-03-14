@@ -24,6 +24,8 @@ import {
   Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -46,13 +48,13 @@ export default function AdminDashboardPage() {
   const activeEvaluations = SAMPLE_EVALUATIONS.filter(e => e.isActive);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Header with Gradient */}
         <div className="mb-8 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
           <div className="relative">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
               {isAsdos ? 'Dashboard Asisten Dosen' : 'Dashboard Admin'}
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">
@@ -63,65 +65,31 @@ export default function AdminDashboardPage() {
 
         {/* Stats Grid with Gradients */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Users className="w-6 h-6" />
-              </div>
-              <TrendingUp className="w-5 h-5 opacity-70" />
-            </div>
-            <div className="text-4xl font-bold mb-1">
-              {stats.totalStudents}
-            </div>
-            <div className="text-sm text-blue-100">
-              Total Mahasiswa
-            </div>
-          </Card>
-
-          <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Activity className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-bold bg-white/30 px-3 py-1 rounded-full">
-                LIVE
-              </span>
-            </div>
-            <div className="text-4xl font-bold mb-1">
-              {stats.activeToday}
-            </div>
-            <div className="text-sm text-green-100">
-              Aktif Hari Ini
-            </div>
-          </Card>
-
-          <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-purple-500 to-pink-600 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Target className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="text-4xl font-bold mb-1">
-              {stats.averageScore}%
-            </div>
-            <div className="text-sm text-purple-100">
-              Rata-rata Akurasi
-            </div>
-          </Card>
-
-          <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-orange-500 to-red-600 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <ClipboardCheck className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="text-4xl font-bold mb-1">
-              {stats.activeEvaluations}
-            </div>
-            <div className="text-sm text-orange-100">
-              Evaluasi Aktif
-            </div>
-          </Card>
+          {[
+            { gradient: 'from-blue-500 to-blue-600', icon: <Users className="w-6 h-6" />, extra: <TrendingUp className="w-5 h-5 opacity-70" />, value: stats.totalStudents, label: 'Total Mahasiswa', textColor: 'text-blue-100' },
+            { gradient: 'from-green-500 to-emerald-600', icon: <Activity className="w-6 h-6" />, extra: <span className="text-xs font-bold bg-white/30 px-3 py-1 rounded-full">LIVE</span>, value: stats.activeToday, label: 'Aktif Hari Ini', textColor: 'text-green-100' },
+            { gradient: 'from-purple-500 to-pink-600', icon: <Target className="w-6 h-6" />, extra: null, value: `${stats.averageScore}%`, label: 'Rata-rata Akurasi', textColor: 'text-purple-100' },
+            { gradient: 'from-orange-500 to-red-600', icon: <ClipboardCheck className="w-6 h-6" />, extra: null, value: stats.activeEvaluations, label: 'Evaluasi Aktif', textColor: 'text-orange-100' },
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 24, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: i * 0.1, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+              whileHover={{ scale: 1.04, y: -4 }}
+            >
+              <Card className={`p-6 rounded-2xl border-2 bg-linear-to-br ${stat.gradient} text-white shadow-lg`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    {stat.icon}
+                  </div>
+                  {stat.extra}
+                </div>
+                <div className="text-4xl font-bold mb-1">{stat.value}</div>
+                <div className={`text-sm ${stat.textColor}`}>{stat.label}</div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
 
         {/* Quick Actions */}
@@ -129,7 +97,7 @@ export default function AdminDashboardPage() {
           <Link href="/admin/courses">
             <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                <div className="p-4 bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
                   <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1">
@@ -144,7 +112,7 @@ export default function AdminDashboardPage() {
           <Link href="/admin/evaluations">
             <Card className="p-6 rounded-2xl border-2 hover:border-purple-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                <div className="p-4 bg-linear-to-br from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-800/50 rounded-xl group-hover:scale-110 transition-transform">
                   <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="flex-1">
@@ -159,7 +127,7 @@ export default function AdminDashboardPage() {
           <Link href="/admin/analytics">
             <Card className="p-6 rounded-2xl border-2 hover:border-green-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                <div className="p-4 bg-linear-to-br from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50 rounded-xl group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1">
@@ -207,7 +175,7 @@ export default function AdminDashboardPage() {
                   return (
                     <div 
                       key={activity.id}
-                      className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-zinc-50 to-white dark:from-zinc-800 dark:to-zinc-900 hover:shadow-md transition-all duration-300 border border-zinc-100 dark:border-zinc-800"
+                      className="flex items-start gap-4 p-4 rounded-xl bg-linear-to-r from-zinc-50 to-white dark:from-zinc-800 dark:to-zinc-900 hover:shadow-md transition-all duration-300 border border-zinc-100 dark:border-zinc-800"
                     >
                       <div className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
                         {getIcon()}
@@ -244,7 +212,7 @@ export default function AdminDashboardPage() {
                 {activeEvaluations.map((evaluation) => (
                   <div 
                     key={evaluation.id}
-                    className="p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 bg-gradient-to-br from-white to-orange-50 dark:from-zinc-900 dark:to-orange-950/20"
+                    className="p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 bg-linear-to-br from-white to-orange-50 dark:from-zinc-900 dark:to-orange-950/20"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100">
@@ -267,7 +235,7 @@ export default function AdminDashboardPage() {
 
                 {!isAsdos && (
                   <Link href="/admin/evaluations">
-                    <Button className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold shadow-lg">
+                    <Button className="w-full bg-linear-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold shadow-lg">
                       <Plus className="w-4 h-4 mr-2" />
                       Buat Evaluasi Baru
                     </Button>
@@ -277,7 +245,7 @@ export default function AdminDashboardPage() {
             </Card>
 
             {/* Quick Stats */}
-            <Card className="p-6 rounded-2xl border-2 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
+            <Card className="p-6 rounded-2xl border-2 bg-linear-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
               <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-4">
                 Quick Stats
               </h3>

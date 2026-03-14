@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { Menu, PanelLeftClose } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageTransition } from "@/components/providers/page-transition";
 
 export default function DashboardLayout({
   children,
@@ -31,10 +32,10 @@ export default function DashboardLayout({
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-4 left-4 z-60 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-xl hidden md:flex items-center justify-center"
+          className="fixed top-4 left-4 z-60 p-3 bg-transparent text-blue-600 rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all hidden md:flex items-center justify-center"
           title="Buka Menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-6 h-6" />
         </button>
       )}
       
@@ -42,10 +43,12 @@ export default function DashboardLayout({
         'flex-1 pb-20 md:pb-0 transition-all duration-300',
         isSidebarOpen ? 'md:ml-[260px]' : 'md:ml-0'
       )}>
-        {children}
+        <PageTransition>
+          {children}
+        </PageTransition>
       </main>
       
       <MobileNav />
     </div>
   );
-}
+}

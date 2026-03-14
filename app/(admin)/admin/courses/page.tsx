@@ -64,16 +64,16 @@ export default function CoursesManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
           <div className="relative flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-8 h-8 text-blue-600" />
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}
                 </h1>
               </div>
@@ -84,7 +84,7 @@ export default function CoursesManagementPage() {
             {!isAsdos && (
               <Button 
                 onClick={() => setShowCreateForm(!showCreateForm)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-bold shadow-lg"
+                className="bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-bold shadow-lg"
               >
                 {showCreateForm ? (
                   <>
@@ -187,7 +187,7 @@ export default function CoursesManagementPage() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold">
+                <Button type="submit" className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold">
                   <Save className="w-4 h-4 mr-2" />
                   Simpan Kursus
                 </Button>

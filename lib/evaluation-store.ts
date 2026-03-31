@@ -86,6 +86,7 @@ interface EvaluationState {
   previousQuestion: () => void;
   finishEvaluation: () => void;
   resetEvaluation: () => void;
+  setStartTime: (time: number) => void;
   
   // Actions - Leaderboard
   updateLeaderboard: (entries: LeaderboardEntry[]) => void;
@@ -127,10 +128,12 @@ export const useEvaluationStore = create<EvaluationState>()(
         userAnswers: new Map(),
         currentQuestionIndex: 0,
         score: 0,
-        startTime: Date.now(),
+        startTime: null, // Deferred — set after countdown
         isEvaluationActive: true,
         isLiveUpdateActive: true,
       }),
+
+      setStartTime: (time) => set({ startTime: time }),
       
       submitAnswer: (questionId, answer) => {
         const state = get();

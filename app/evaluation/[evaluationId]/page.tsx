@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { useEvaluationStore } from '@/lib/evaluation-store';
@@ -22,15 +22,126 @@ import {
   Zap,
   TrendingUp,
   X,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react';
-import { triggerConfetti, triggerBigConfetti } from '@/lib/utils';
+import { triggerConfetti, triggerBigConfetti, cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as React from 'react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
+// ─── Countdown Overlay Component ───────────────────────────────────
+function CountdownOverlay({
+  evaluationTitle,
+  onComplete,
+}: {
+  evaluationTitle: string;
+  onComplete: () => void;
+}) {
+  const [count, setCount] = useState<number | 'go'>(3);
+
+  useEffect(() => {
+    if (count === 'go') {
+      const t = setTimeout(onComplete, 800);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => {
+      setCount((prev) => {
+        if (typeof prev === 'number' && prev > 1) return prev - 1;
+        return 'go';
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [count, onComplete]);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-linear-to-br from-blue-600 via-blue-700 to-indigo-800"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Decorative background rings */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            className="absolute left-1/2 top-1/2 rounded-full border border-white/10"
+            style={{
+              width: `${i * 250}px`,
+              height: `${i * 250}px`,
+              marginLeft: `${-i * 125}px`,
+              marginTop: `${-i * 125}px`,
+            }}
+            animate={{
+              scale: [1, 1.15, 1],
+              opacity: [0.2, 0.05, 0.2],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: i * 0.4,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Title */}
+      <motion.p
+        className="text-blue-200 text-lg font-medium mb-8 tracking-wide"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        {evaluationTitle}
+      </motion.p>
+
+      {/* Countdown Number */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={String(count)}
+          initial={{ opacity: 0, scale: 0.3, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 1.8, y: -30 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="relative"
+        >
+          {count === 'go' ? (
+            <span className="text-8xl md:text-9xl font-black text-white drop-shadow-2xl tracking-tight">
+              Mulai!
+            </span>
+          ) : (
+            <span className="text-[12rem] md:text-[16rem] font-black text-white drop-shadow-2xl leading-none">
+              {count}
+            </span>
+          )}
+
+          {/* Pulse ring behind number */}
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
+              transform: 'scale(2.5)',
+            }}
+            animate={{ opacity: [0.6, 0, 0.6] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Subtitle */}
+      <motion.p
+        className="text-white/60 text-sm mt-10 font-medium"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        Bersiaplah...
+      </motion.p>
+    </motion.div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────
 export default function EvaluationFullscreenPage() {
   const router = useRouter();
   const params = useParams();
@@ -40,6 +151,7 @@ export default function EvaluationFullscreenPage() {
   const {
     currentEvaluation,
     startEvaluation,
+    setStartTime,
     submitAnswer,
     nextQuestion,
     previousQuestion,
@@ -57,7 +169,7 @@ export default function EvaluationFullscreenPage() {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default CLOSED
+  const [isCountdownActive, setIsCountdownActive] = useState(true);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
 
   // Calculate elapsed time
@@ -118,12 +230,10 @@ export default function EvaluationFullscreenPage() {
     const interval = setInterval(() => {
       const currentLeaderboard = useEvaluationStore.getState().leaderboard;
 
-      // Update mock users
       const updatedMockUsers = generateMockLeaderboardUpdate(
         currentLeaderboard.filter((e) => !e.isCurrentUser)
       );
 
-      // Keep current user with latest score
       const currentUserEntry = currentLeaderboard.find((e) => e.isCurrentUser);
       if (currentUserEntry) {
         const updatedCurrentUser = {
@@ -158,6 +268,12 @@ export default function EvaluationFullscreenPage() {
     updateLeaderboard(updatedLeaderboard);
   }, [score]);
 
+  // Countdown finished → start the real timer
+  const handleCountdownComplete = useCallback(() => {
+    setIsCountdownActive(false);
+    setStartTime(Date.now());
+  }, [setStartTime]);
+
   const handleExitQuiz = () => {
     router.push('/evaluation');
   };
@@ -181,7 +297,6 @@ export default function EvaluationFullscreenPage() {
 
   const handleFinish = () => {
     finishEvaluation();
-    // Score-based confetti: big celebration for 90%+ score
     const pct = currentEvaluation ? (score / currentEvaluation.totalPoints) * 100 : 0;
     if (pct >= 90) {
       triggerBigConfetti();
@@ -193,8 +308,18 @@ export default function EvaluationFullscreenPage() {
 
   return (
     <div className="h-screen flex flex-col bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
+      {/* ── Countdown Overlay ── */}
+      <AnimatePresence>
+        {isCountdownActive && (
+          <CountdownOverlay
+            evaluationTitle={currentEvaluation.title}
+            onComplete={handleCountdownComplete}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Top Stats Bar */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shrink-0">
+      <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white shadow-lg shrink-0">
         <div className="px-6 py-4">
           {/* Title Row */}
           <div className="flex items-center justify-between mb-3">

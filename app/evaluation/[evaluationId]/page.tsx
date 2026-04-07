@@ -22,6 +22,7 @@ import {
   Zap,
   TrendingUp,
   X,
+  Flame,
 } from 'lucide-react';
 import { triggerConfetti, triggerBigConfetti, cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -163,6 +164,7 @@ export default function EvaluationFullscreenPage() {
     updateLeaderboard,
     isLiveUpdateActive,
     startTime,
+    currentStreak,
     getProgress,
     getAccuracy,
   } = useEvaluationStore();
@@ -384,6 +386,30 @@ export default function EvaluationFullscreenPage() {
                 <span className="font-bold text-lg font-mono">{elapsedTime}</span>
                 <span className="text-blue-100 ml-2 text-xs">
                   {currentEvaluation.duration} menit tersedia
+                </span>
+              </div>
+            </div>
+
+            {/* Streak */}
+            <div className="h-6 w-px bg-white/20" />
+            <div 
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-300",
+                currentStreak > 0 
+                  ? "bg-white border-2 border-orange-400 text-orange-500 shadow-[0_0_15px_rgba(255,255,255,0.4)]" 
+                  : "bg-white/5 text-white/50 border border-white/10"
+              )}
+            >
+              <motion.div
+                animate={currentStreak >= 3 ? { rotate: [-10, 10, -10], scale: [1, 1.2, 1] } : {}}
+                transition={{ repeat: Infinity, duration: 0.5 }}
+              >
+                <Flame className="w-4 h-4" fill={currentStreak > 0 ? "currentColor" : "none"} />
+              </motion.div>
+              <div>
+                <span className="font-bold text-lg">{currentStreak}</span>
+                <span className={cn("ml-2 text-xs", currentStreak > 0 ? "text-orange-300/80" : "text-white/40")}>
+                  streak
                 </span>
               </div>
             </div>

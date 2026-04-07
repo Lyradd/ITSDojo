@@ -67,6 +67,7 @@ interface EvaluationState {
   userAnswers: Map<string, Answer>;
   currentQuestionIndex: number;
   score: number;
+  currentStreak: number;
   startTime: number | null;
   isEvaluationActive: boolean;
   
@@ -109,6 +110,7 @@ export const useEvaluationStore = create<EvaluationState>()(
       userAnswers: new Map(),
       currentQuestionIndex: 0,
       score: 0,
+      currentStreak: 0,
       startTime: null,
       isEvaluationActive: false,
       
@@ -128,6 +130,7 @@ export const useEvaluationStore = create<EvaluationState>()(
         userAnswers: new Map(),
         currentQuestionIndex: 0,
         score: 0,
+        currentStreak: 0,
         startTime: null, // Deferred — set after countdown
         isEvaluationActive: true,
         isLiveUpdateActive: true,
@@ -167,9 +170,13 @@ export const useEvaluationStore = create<EvaluationState>()(
         const newAnswers = new Map(state.userAnswers);
         newAnswers.set(questionId, answerObj);
         
+        // Update streak
+        const newStreak = isCorrect ? state.currentStreak + 1 : 0;
+        
         set({
           userAnswers: newAnswers,
           score: state.score + pointsEarned,
+          currentStreak: newStreak,
         });
       },
       
@@ -198,6 +205,7 @@ export const useEvaluationStore = create<EvaluationState>()(
         userAnswers: new Map(),
         currentQuestionIndex: 0,
         score: 0,
+        currentStreak: 0,
         startTime: null,
         isEvaluationActive: false,
         isLiveUpdateActive: false,

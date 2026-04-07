@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface QuestionCardProps {
   question: Question;
@@ -170,7 +171,26 @@ export function QuestionCard({
   );
 
   return (
-    <Card className="p-6 rounded-2xl border-2">
+    <motion.div
+      initial={false}
+      animate={showFeedback && !isCorrect ? { x: [-10, 10, -10, 10, -5, 5, 0] } : {}}
+      transition={{ duration: 0.4 }}
+    >
+      <Card className="p-6 rounded-2xl border-2 relative">
+        {/* Floating Points Animation */}
+        <AnimatePresence>
+          {showFeedback && isCorrect && (
+            <motion.div
+              initial={{ opacity: 0, y: 0, scale: 0.5 }}
+              animate={{ opacity: 1, y: -40, scale: 1.2 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute top-0 right-6 text-2xl font-black text-green-500 drop-shadow-md z-10 pointer-events-none"
+            >
+              +{question.points} Poin!
+            </motion.div>
+          )}
+        </AnimatePresence>
       {/* Question Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -247,6 +267,7 @@ export function QuestionCard({
           Submit Jawaban
         </Button>
       )}
-    </Card>
+      </Card>
+    </motion.div>
   );
 }

@@ -389,14 +389,29 @@ export default function EvaluationFullscreenPage() {
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mt-3">
-            <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+          {/* Segmented Progress Bar */}
+          <div className="mt-4 flex gap-1">
+            {currentEvaluation.questions.map((q, idx) => {
+              const answer = userAnswers.get(q.id);
+              const isCurrent = currentQuestionIndex === idx;
+              
+              let segmentClass = "bg-white/20"; // Unanswered
+              if (answer) {
+                segmentClass = answer.isCorrect ? "bg-green-400" : "bg-red-400";
+              } else if (isCurrent) {
+                segmentClass = "bg-white/60 animate-pulse";
+              }
+
+              return (
+                <div 
+                  key={q.id}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full transition-colors duration-300",
+                    segmentClass
+                  )}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

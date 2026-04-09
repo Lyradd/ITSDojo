@@ -159,116 +159,16 @@ export const SAMPLE_EVALUATIONS: Evaluation[] = [
 // ============================================
 
 export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    userId: 'user-1',
-    name: 'Sarah Kusuma',
-    avatar: 'bg-pink-200 text-pink-700',
-    score: 280,
-    totalQuestions: 50,
-    answeredQuestions: 35,
-    accuracy: 95,
-    rank: 1,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-2',
-    name: 'Ahmad Rizki',
-    avatar: 'bg-blue-200 text-blue-700',
-    score: 265,
-    totalQuestions: 50,
-    answeredQuestions: 35,
-    accuracy: 88,
-    rank: 2,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-3',
-    name: 'Dinda Pratiwi',
-    avatar: 'bg-purple-200 text-purple-700',
-    score: 245,
-    totalQuestions: 50,
-    answeredQuestions: 30,
-    accuracy: 94,
-    rank: 3,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-4',
-    name: 'Budi Santoso',
-    avatar: 'bg-green-200 text-green-700',
-    score: 230,
-    totalQuestions: 50,
-    answeredQuestions: 32,
-    accuracy: 82,
-    rank: 4,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-5',
-    name: 'Citra Dewi',
-    avatar: 'bg-yellow-200 text-yellow-700',
-    score: 215,
-    totalQuestions: 50,
-    answeredQuestions: 28,
-    accuracy: 87,
-    rank: 5,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-6',
-    name: 'Eko Prasetyo',
-    avatar: 'bg-indigo-200 text-indigo-700',
-    score: 195,
-    totalQuestions: 50,
-    answeredQuestions: 25,
-    accuracy: 94,
-    rank: 6,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-7',
-    name: 'Fitri Handayani',
-    avatar: 'bg-red-200 text-red-700',
-    score: 180,
-    totalQuestions: 50,
-    answeredQuestions: 27,
-    accuracy: 80,
-    rank: 7,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-8',
-    name: 'Gilang Ramadhan',
-    avatar: 'bg-teal-200 text-teal-700',
-    score: 160,
-    totalQuestions: 50,
-    answeredQuestions: 22,
-    accuracy: 85,
-    rank: 8,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-9',
-    name: 'Hana Safitri',
-    avatar: 'bg-orange-200 text-orange-700',
-    score: 145,
-    totalQuestions: 50,
-    answeredQuestions: 20,
-    accuracy: 93,
-    rank: 9,
-    lastUpdate: Date.now(),
-  },
-  {
-    userId: 'user-10',
-    name: 'Irfan Maulana',
-    avatar: 'bg-cyan-200 text-cyan-700',
-    score: 120,
-    totalQuestions: 50,
-    answeredQuestions: 18,
-    accuracy: 78,
-    rank: 10,
-    lastUpdate: Date.now(),
-  },
+  { userId: 'user-1', name: 'Sarah Kusuma', avatar: 'bg-pink-200 text-pink-700', score: 40, totalQuestions: 5, answeredQuestions: 4, accuracy: 100, rank: 1, lastUpdate: Date.now() },
+  { userId: 'user-2', name: 'Ahmad Rizki', avatar: 'bg-blue-200 text-blue-700', score: 30, totalQuestions: 5, answeredQuestions: 4, accuracy: 75, rank: 2, lastUpdate: Date.now() },
+  { userId: 'user-3', name: 'Dinda Pratiwi', avatar: 'bg-purple-200 text-purple-700', score: 30, totalQuestions: 5, answeredQuestions: 3, accuracy: 100, rank: 3, lastUpdate: Date.now() },
+  { userId: 'user-4', name: 'Budi Santoso', avatar: 'bg-green-200 text-green-700', score: 20, totalQuestions: 5, answeredQuestions: 3, accuracy: 67, rank: 4, lastUpdate: Date.now() },
+  { userId: 'user-5', name: 'Citra Dewi', avatar: 'bg-yellow-200 text-yellow-700', score: 20, totalQuestions: 5, answeredQuestions: 4, accuracy: 50, rank: 5, lastUpdate: Date.now() },
+  { userId: 'user-6', name: 'Eko Prasetyo', avatar: 'bg-indigo-200 text-indigo-700', score: 10, totalQuestions: 5, answeredQuestions: 2, accuracy: 50, rank: 6, lastUpdate: Date.now() },
+  { userId: 'user-7', name: 'Fitri Handayani', avatar: 'bg-red-200 text-red-700', score: 10, totalQuestions: 5, answeredQuestions: 3, accuracy: 33, rank: 7, lastUpdate: Date.now() },
+  { userId: 'user-8', name: 'Gilang Ramadhan', avatar: 'bg-teal-200 text-teal-700', score: 10, totalQuestions: 5, answeredQuestions: 4, accuracy: 25, rank: 8, lastUpdate: Date.now() },
+  { userId: 'user-9', name: 'Hana Safitri', avatar: 'bg-orange-200 text-orange-700', score: 0, totalQuestions: 5, answeredQuestions: 1, accuracy: 0, rank: 9, lastUpdate: Date.now() },
+  { userId: 'user-10', name: 'Irfan Maulana', avatar: 'bg-cyan-200 text-cyan-700', score: 0, totalQuestions: 5, answeredQuestions: 2, accuracy: 0, rank: 10, lastUpdate: Date.now() },
 ];
 
 // ============================================
@@ -284,20 +184,24 @@ export function generateMockLeaderboardUpdate(
   return currentLeaderboard.map(entry => {
     // Random chance to update (30%)
     if (Math.random() > 0.7) {
-      // Random score change (-5 to +10)
-      const scoreChange = Math.floor(Math.random() * 16) - 5;
-      const newScore = Math.max(0, Math.min(100, entry.score + scoreChange));
+      if (entry.answeredQuestions >= entry.totalQuestions) return entry; // Already completed
+
+      // Simulasikan menjawab 1 soal: 60% chance benar
+      const isCorrect = Math.random() > 0.4;
+      const scoreChange = isCorrect ? 10 : 0;
       
-      // Update answered questions if score increased
-      const newAnswered = scoreChange > 0 
-        ? Math.min(entry.totalQuestions, entry.answeredQuestions + 1)
-        : entry.answeredQuestions;
+      const newScore = entry.score + scoreChange;
+      const newAnswered = entry.answeredQuestions + 1;
+      
+      // Asumsi 1 pertanyaan = 10 poin untuk kalkulasi akurasi sederhana
+      const correctAnswersCount = newScore / 10;
+      const newAccuracy = Math.round((correctAnswersCount / newAnswered) * 100);
       
       return {
         ...entry,
         score: newScore,
         answeredQuestions: newAnswered,
-        accuracy: newAnswered > 0 ? Math.round((newScore / newAnswered) * 100 / 10) : 0,
+        accuracy: newAccuracy > 100 ? 100 : newAccuracy,
         lastUpdate: Date.now(),
       };
     }
@@ -315,6 +219,9 @@ export function addCurrentUserToLeaderboard(
   totalQuestions: number,
   answeredQuestions: number
 ): LeaderboardEntry[] {
+  const correctAnswersCount = userScore / 10;
+  const accuracyText = answeredQuestions > 0 ? Math.round((correctAnswersCount / answeredQuestions) * 100) : 0;
+
   const currentUserEntry: LeaderboardEntry = {
     userId: 'current-user',
     name: `${userName} (You)`,
@@ -322,7 +229,7 @@ export function addCurrentUserToLeaderboard(
     score: userScore,
     totalQuestions,
     answeredQuestions,
-    accuracy: answeredQuestions > 0 ? Math.round((userScore / (totalQuestions * 10)) * 100) : 0,
+    accuracy: accuracyText > 100 ? 100 : accuracyText,
     rank: 0, // Will be calculated
     lastUpdate: Date.now(),
     isCurrentUser: true,

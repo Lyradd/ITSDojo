@@ -4,19 +4,21 @@ import { useEffect, useState } from 'react';
 import { useEvaluationStore } from '@/lib/evaluation-store';
 import { LeaderboardEntryComponent } from './leaderboard-entry';
 import { Card } from '@/components/ui/card';
-import { Users, Activity, Clock } from 'lucide-react';
+import { Users, Activity, Clock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LiveLeaderboardProps {
   className?: string;
   showHeader?: boolean;
   maxEntries?: number;
+  onClose?: () => void;
 }
 
 export function LiveLeaderboard({ 
   className, 
   showHeader = true,
-  maxEntries = 10 
+  maxEntries = 10,
+  onClose
 }: LiveLeaderboardProps) {
   const { leaderboard, isLiveUpdateActive, userRank } = useEvaluationStore();
   const [isLive, setIsLive] = useState(false);
@@ -71,17 +73,29 @@ export function LiveLeaderboard({
               <Users className="w-5 h-5" />
               Live Leaderboard
             </h3>
-            
-            {/* Live Indicator */}
-            {isLiveUpdateActive && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-950/30 rounded-full border border-green-200 dark:border-green-800">
-                <div className={cn(
-                  "w-2 h-2 rounded-full bg-green-500 transition-opacity duration-300",
-                  isLive ? "opacity-100" : "opacity-30"
-                )} />
-                <span className="text-xs font-bold text-green-600 dark:text-green-400">LIVE</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Live Indicator */}
+              {isLiveUpdateActive && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-950/30 rounded-full border border-green-200 dark:border-green-800">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full bg-green-500 transition-opacity duration-300",
+                    isLive ? "opacity-100" : "opacity-30"
+                  )} />
+                  <span className="text-xs font-bold text-green-600 dark:text-green-400">LIVE</span>
+                </div>
+              )}
+              
+              {/* Close Button */}
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors text-zinc-500"
+                  title="Tutup Leaderboard"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Stats */}

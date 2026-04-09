@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
 import { Trophy, TrendingUp, TrendingDown, Minus, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface LeaderboardEntryProps {
   entry: LeaderboardEntry;
@@ -43,14 +44,26 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
   };
 
   return (
-    <div
+    <motion.div
+      layout
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        boxShadow: isAnimating && rankChange === 'up' 
+          ? "0 0 25px rgba(234, 179, 8, 0.6)" 
+          : "0 0 0px rgba(0,0,0,0)",
+        borderColor: isAnimating && rankChange === 'up' ? "rgba(234, 179, 8, 1)" : undefined
+      }}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-xl transition-all duration-500",
+        "flex items-center gap-3 p-3 rounded-xl transition-all duration-300",
         entry.isCurrentUser 
           ? "bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-100 dark:shadow-blue-900/20" 
           : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800",
-        isAnimating && "scale-105 shadow-xl",
-        entry.isCurrentUser && "animate-pulse-glow"
+        isAnimating && rankChange === 'down' && "scale-95 opacity-50",
+        isAnimating && rankChange === 'up' && "scale-[1.02] bg-yellow-50 dark:bg-yellow-900/20 z-10 relative",
+        entry.isCurrentUser && !isAnimating && "animate-pulse-glow"
       )}
     >
       {/* Rank Number */}
@@ -99,7 +112,7 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
       </div>
 
       {/* Score */}
-      <div className="flex flex-col items-end gap-1">
+      <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
         <div className="flex items-center gap-1">
           <Zap className="w-4 h-4 text-yellow-500" fill="currentColor" />
           <span className="font-bold text-lg">{entry.score}</span>
@@ -119,6 +132,6 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

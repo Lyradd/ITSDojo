@@ -23,6 +23,8 @@ import {
   TrendingUp,
   X,
   Flame,
+  Trophy,
+  LogOut,
 } from 'lucide-react';
 import { triggerConfetti, triggerBigConfetti, cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -173,6 +175,7 @@ export default function EvaluationFullscreenPage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCountdownActive, setIsCountdownActive] = useState(true);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
+  const [showExitPrompt, setShowExitPrompt] = useState(false);
 
   // Calculate elapsed time
   const getElapsedTime = () => {
@@ -332,11 +335,12 @@ export default function EvaluationFullscreenPage() {
 
             {/* Exit Button */}
             <button
-              onClick={handleExitQuiz}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              onClick={() => setShowExitPrompt(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/40 border border-red-400/30 text-white rounded-xl transition-all font-bold text-sm shadow-sm"
               title="Keluar"
             >
-              <X className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
+              Keluar Kuis
             </button>
           </div>
 
@@ -443,7 +447,7 @@ export default function EvaluationFullscreenPage() {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 overflow-hidden flex relative">
         {/* Question Area */}
         <div className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-6">
@@ -491,31 +495,95 @@ export default function EvaluationFullscreenPage() {
         </div>
 
         {/* Leaderboard Sidebar - Collapsible */}
-        {isLeaderboardOpen && (
-          <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">Live Leaderboard</h3>
-              <button
-                onClick={() => setIsLeaderboardOpen(false)}
-                className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <LiveLeaderboard maxEntries={15} />
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {isLeaderboardOpen && (
+            <motion.div 
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 380, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="shrink-0 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 overflow-hidden"
+            >
+              <div className="w-[348px]">
+                <LiveLeaderboard 
+                  maxEntries={15} 
+                  onClose={() => setIsLeaderboardOpen(false)}
+                  className="shadow-sm border-zinc-200/80 dark:border-zinc-800/80" 
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Toggle Leaderboard Button */}
-        {!isLeaderboardOpen && (
-          <button
-            onClick={() => setIsLeaderboardOpen(true)}
-            className="fixed right-4 top-32 bg-blue-600 text-white px-3 py-2 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors"
-          >
-            <span className="text-xs font-bold">Show Leaderboard</span>
-          </button>
-        )}
+        <AnimatePresence>
+          {!isLeaderboardOpen && (
+            <motion.button
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
+              onClick={() => setIsLeaderboardOpen(true)}
+              className="absolute right-0 top-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 border-r-0 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.1)] pl-4 pr-3 py-3 rounded-l-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:pr-5 transition-all group z-20 flex items-center gap-3 text-zinc-600 dark:text-zinc-400"
+              title="Tampilkan Leaderboard"
+            >
+              <ChevronLeft className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200" />
+              <div className="flex items-center gap-1.5 font-bold text-sm">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                Leaderboard
+              </div>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Exit Confirmation Modal */}
+      <AnimatePresence>
+        {showExitPrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              onClick={() => setShowExitPrompt(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="relative bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4 text-red-600 dark:text-red-500">
+                  <LogOut className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-zinc-900 dark:text-white">Keluar Kuis?</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
+                  Progres kuis kamu tidak akan tersimpan. Apakah kamu yakin ingin keluar sekarang?
+                </p>
+                <div className="flex gap-3 w-full">
+                  <Button
+                    variant="outline"
+                    className="flex-1 font-bold rounded-xl"
+                    onClick={() => setShowExitPrompt(false)}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 font-bold rounded-xl"
+                    onClick={handleExitQuiz}
+                  >
+                    Ya, Keluar
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

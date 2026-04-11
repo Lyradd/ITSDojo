@@ -111,80 +111,57 @@ export default function CoursesPage() {
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {sortedCourses.map((course) => (
-            <FlipCard
+            <div 
               key={course.id}
-              height={300}
-              flipOnHover={false}
-              front={
-                <div className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm h-full overflow-hidden">
-                  {/* Header */}
-                  <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative`}>
-                    {course.image}
-                    {course.status === 'locked' && (
-                      <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                        <Lock className="w-8 h-8 text-zinc-600/50" />
-                      </div>
-                    )}
-                    {/* «Tap to flip» hint */}
-                    <div className="absolute bottom-2 right-2 text-[10px] text-white/70 font-bold bg-black/20 px-2 py-0.5 rounded-full">
-                      tap untuk detail
-                    </div>
+              onClick={() => { if (course.status === 'unlocked') handleSelectCourse(course.id); }}
+              className={`group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${course.status === 'unlocked' ? 'cursor-pointer hover:border-blue-500/50' : ''}`}
+            >
+              {/* Header */}
+              <div className={`h-32 w-full shrink-0 ${course.color} flex items-center justify-center text-6xl relative`}>
+                {course.image}
+                {course.status === 'locked' && (
+                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
+                    <Lock className="w-8 h-8 text-zinc-600/50" />
                   </div>
-                  <div className="p-5 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">{course.difficulty}</span>
-                      <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
-                        <Star className="w-3 h-3 fill-current" />
-                        <span>+{course.xpReward} XP</span>
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-bold mb-3">{course.title}</h3>
-                    <div className="mt-auto">
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-zinc-500">Progress</span>
-                        <span className="font-semibold">{course.progress}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'}`}
-                          style={{ width: `${course.progress}%` }}
-                        />
-                      </div>
-                    </div>
+                )}
+              </div>
+              <div className="p-5 flex flex-col flex-1">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 uppercase tracking-wider">{course.difficulty}</span>
+                  <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                    <Star className="w-3 h-3 fill-current" />
+                    <span>+{course.xpReward} XP</span>
                   </div>
                 </div>
-              }
-              back={
-                <div className={`flex flex-col rounded-xl border-2 h-full overflow-hidden ${course.color} text-white`}>
-                  <div className="p-6 flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-4xl">{course.image}</span>
-                      <div>
-                        <h3 className="text-xl font-bold">{course.title}</h3>
-                        <span className="text-xs font-bold opacity-80 uppercase">{course.difficulty}</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-white/90 flex-1 leading-relaxed">{course.description}</p>
-                    <div className="flex items-center gap-4 text-sm font-bold mt-4 mb-5 opacity-90">
-                      <span className="flex items-center gap-1"><BookOpen className="w-4 h-4" />{course.lessonsCount} Modul</span>
-                      <span className="flex items-center gap-1"><Star className="w-4 h-4 fill-current text-amber-300" />+{course.xpReward} XP</span>
-                    </div>
-                    {course.status === 'unlocked' ? (
-                      <Button
-                        className="w-full bg-white text-zinc-900 hover:bg-white/90 font-bold"
-                        onClick={(e) => { e.stopPropagation(); handleSelectCourse(course.id); }}
-                      >
-                        {course.progress > 0 ? 'Lanjutkan Belajar →' : 'Mulai Belajar →'}
-                      </Button>
-                    ) : (
-                      <Button className="w-full bg-white/20 text-white cursor-not-allowed font-bold" disabled>
-                        <Lock className="w-4 h-4 mr-2" /> Terkunci
-                      </Button>
-                    )}
+                <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">{course.title}</h3>
+                <p className="text-sm text-zinc-500 line-clamp-2 mb-5">{course.description}</p>
+                
+                <div className="mt-auto">
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-zinc-500 font-medium">Progress</span>
+                    <span className="font-semibold">{course.progress}%</span>
                   </div>
+                  <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-5">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'}`}
+                      style={{ width: `${course.progress}%` }}
+                    />
+                  </div>
+                  {course.status === 'unlocked' ? (
+                    <Button
+                      className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold transition-all shadow-md group-hover:shadow-lg"
+                      onClick={(e) => { e.stopPropagation(); handleSelectCourse(course.id); }}
+                    >
+                      {course.progress > 0 ? 'Lanjutkan Belajar →' : 'Mulai Belajar →'}
+                    </Button>
+                  ) : (
+                    <Button className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed font-bold" disabled>
+                      <Lock className="w-4 h-4 mr-2" /> Terkunci
+                    </Button>
+                  )}
                 </div>
-              }
-            />
+              </div>
+            </div>
           ))}
         </div>
       ) : (

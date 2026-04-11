@@ -78,8 +78,8 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
       {/* --- LOGO APLIKASI --- */}
       <div className="h-20 flex items-center justify-between px-6 lg:px-8">
         <Link href="/learn" className="flex items-center gap-2 font-bold text-2xl text-blue-600 transition-opacity hover:opacity-80">
-          <GraduationCap className="w-8 h-8" />
-          <span className="hidden lg:block tracking-tight">ITSDojo</span>
+          <GraduationCap className="w-8 h-8 shrink-0" />
+          <span className="tracking-tight">ITSDojo</span>
         </Link>
         
         {/* Toggle Button - Only shown when onToggle is provided */}
@@ -133,7 +133,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               </div>
               
               <span className={cn(
-                "hidden lg:block font-bold text-sm tracking-wide transition-all duration-300",
+                "block font-bold text-sm tracking-wide transition-all duration-300",
                 isActive && "scale-105"
               )}>
                 {item.label}

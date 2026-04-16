@@ -8,7 +8,7 @@ import {
   ClipboardCheck,
   CalendarDays,
   Target,
-  Swords,
+  ShoppingBag,
   Settings,
   LogOut,
   User,
@@ -16,7 +16,7 @@ import {
 import Link from "next/link";
 
 interface FeatureCardProps {
-  icon: React.ElementType;
+  icon: any;
   title: string;
   description: string;
   href: string;
@@ -75,10 +75,10 @@ export default function MorePage() {
       color: "bg-linear-to-br from-green-500 to-green-600",
     },
     {
-      icon: Swords,
-      title: "Brain Duel",
-      description: "Tantang temanmu",
-      href: "/duel",
+      icon: ShoppingBag,
+      title: "Dojo Store",
+      description: "Beli power-ups",
+      href: "/shop",
       color: "bg-linear-to-br from-red-500 to-red-600",
     },
     {

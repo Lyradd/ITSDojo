@@ -16,12 +16,16 @@ export type DailyGoal = {
 interface UserState {
   isLoggedIn: boolean;
   name: string;
+  email: string;
   level: number;
   xp: number; 
   xpToNextLevel: number;
   streak: number;
+  gems: number; // NEW: Gems currency
+  hasStreakFreeze: boolean; // NEW: Power-up status
   activeCourseId: string;
-  role: 'mahasiswa' | 'asdos' | 'dosen'; // NEW: Role field
+  role: 'mahasiswa' | 'asdos' | 'dosen'; 
+  completedLessonIds: string[]; 
   
   dailyGoals: DailyGoal[];
   
@@ -32,8 +36,9 @@ interface UserState {
   logout: () => void;
   addXp: (amount: number) => void;
   setActiveCourse: (courseId: string) => void;
-  completeLesson: () => void;
+  completeLesson: (lessonId?: string) => void;
   claimGoalReward: (goalId: string) => void;
+  buyItem: (type: 'freeze' | 'multiplier', cost: number) => boolean; // NEW: Shop purchase
   setRole: (role: 'mahasiswa' | 'asdos' | 'dosen') => void; // NEW: Set role method
 }
 
@@ -53,12 +58,16 @@ export const useUserStore = create<UserState>()(
     (set, get) => ({
       isLoggedIn: false,
       name: "Daryl",
+      email: "daryl@student.its.ac.id",
       level: 1,
       xp: 0,
       xpToNextLevel: 100,
       streak: 3,
+      gems: 150, // Starting Gems
+      hasStreakFreeze: false,
       activeCourseId: "fe-basic",
-      role: 'mahasiswa', // NEW: Default role
+      role: 'mahasiswa', 
+      completedLessonIds: ['fe-basic-1'], // Default tes biar node 1 selesai, node 2 aktif
       
       dailyGoals: INITIAL_GOALS,
       
@@ -110,7 +119,7 @@ export const useUserStore = create<UserState>()(
 
       setActiveCourse: (courseId) => set({ activeCourseId: courseId }),
 
-      completeLesson: () => set((state) => {
+      completeLesson: (lessonId) => set((state) => {
         const updatedGoals = state.dailyGoals.map(goal => {
           if (goal.type === 'lesson') {
             const newCurrent = Math.min(goal.current + 1, goal.target);
@@ -118,7 +127,21 @@ export const useUserStore = create<UserState>()(
           }
           return goal;
         });
-        return { dailyGoals: updatedGoals };
+
+        const updatedLessonIds = lessonId && !state.completedLessonIds.includes(lessonId)
+          ? [...state.completedLessonIds, lessonId]
+          : state.completedLessonIds;
+
+        // Beri tambahan +50 XP ekstra dan +10 Gems untuk setiap node yang berhasil dibuka
+        const bonusXp = (lessonId && !state.completedLessonIds.includes(lessonId)) ? 50 : 0;
+        const bonusGems = (lessonId && !state.completedLessonIds.includes(lessonId)) ? 10 : 0;
+
+        return { 
+          dailyGoals: updatedGoals, 
+          completedLessonIds: updatedLessonIds, 
+          xp: state.xp + bonusXp,
+          gems: state.gems + bonusGems
+        };
       }),
 
       claimGoalReward: (goalId) => set((state) => {
@@ -134,7 +157,8 @@ export const useUserStore = create<UserState>()(
         let newState: Partial<UserState> = { dailyGoals: updatedGoals };
 
         if (goal.rewardType === 'gem') {
-           console.log(`Dapat ${goal.rewardValue} Gems!`);
+           // Tambahkan akumulasi Gems
+           newState.gems = state.gems + goal.rewardValue;
         } 
         else if (goal.rewardType === 'multiplier') {
            const durationMs = goal.rewardValue * 60 * 1000; 
@@ -146,7 +170,28 @@ export const useUserStore = create<UserState>()(
         }
 
         return newState as UserState;
-      })
+      }),
+
+      buyItem: (type, cost) => {
+        const state = get();
+        if (state.gems < cost) return false;
+
+        if (type === 'freeze') {
+           if (state.hasStreakFreeze) return false; // Sudah punya
+           set({ gems: state.gems - cost, hasStreakFreeze: true });
+        } else if (type === 'multiplier') {
+           const durationMs = 60 * 60 * 1000; // 1 Jam
+           const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() 
+              ? state.multiplierEndTime 
+              : Date.now();
+           set({ 
+             gems: state.gems - cost, 
+             xpMultiplier: 2, 
+             multiplierEndTime: currentEndTime + durationMs 
+           });
+        }
+        return true;
+      }
     }),
     {
       name: 'itsdojo-storage-tests', 
@@ -157,6 +202,8 @@ export const useUserStore = create<UserState>()(
         xp: state.xp,
         xpToNextLevel: state.xpToNextLevel,
         streak: state.streak,
+        gems: state.gems,
+        hasStreakFreeze: state.hasStreakFreeze,
         role: state.role, // NEW: Persist role
         // dailyGoals: state.dailyGoals,
         // xpMultiplier: state.xpMultiplier,

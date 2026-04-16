@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List } from "lucide-react";
-import { COURSES as RAW_COURSES } from "@/lib/dummydata"; 
+import {
+  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List
+} from "lucide-react";
+import { COURSES as RAW_COURSES } from "@/lib/dummydata";
 import { useUserStore } from "@/lib/store";
-import { FlipCard } from "@/components/ui/flip-card";
 
 type SortOption = "name-asc" | "last-accessed";
-type ViewMode = "grid" | "list"; 
+type ViewMode = "grid" | "list";
 
 export default function CoursesPage() {
   const router = useRouter();
   const { setActiveCourse } = useUserStore(); // Ambil fungsi dari store
-  
+
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -56,7 +57,7 @@ export default function CoursesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
-      
+
       {/* --- HEADER SECTION --- */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -106,18 +107,14 @@ export default function CoursesPage() {
       </div>
 
       {/* --- CONTENT AREA --- */}
-      
+
       {/* MODE 1: GRID VIEW (CARD) */}
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {sortedCourses.map((course) => (
-            <div 
-              key={course.id}
-              onClick={() => { if (course.status === 'unlocked') handleSelectCourse(course.id); }}
-              className={`group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${course.status === 'unlocked' ? 'cursor-pointer hover:border-blue-500/50' : ''}`}
-            >
-              {/* Header */}
-              <div className={`h-32 w-full shrink-0 ${course.color} flex items-center justify-center text-6xl relative`}>
+            <div key={course.id} className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden">
+              {/* Header Gambar */}
+              <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative transition-all duration-300 group-hover:h-24`}>
                 {course.image}
                 {course.status === 'locked' && (
                   <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
@@ -125,39 +122,60 @@ export default function CoursesPage() {
                   </div>
                 )}
               </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 uppercase tracking-wider">{course.difficulty}</span>
+
+              <div className="p-6 flex flex-col flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    {course.difficulty}
+                  </span>
                   <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
                     <Star className="w-3 h-3 fill-current" />
                     <span>+{course.xpReward} XP</span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">{course.title}</h3>
-                <p className="text-sm text-zinc-500 line-clamp-2 mb-5">{course.description}</p>
-                
-                <div className="mt-auto">
+
+                <h3 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors">
+                  {course.title}
+                </h3>
+
+                <p className="text-xs text-zinc-400 mb-2">
+                  Last activity: {formatDate(course.lastAccessed)}
+                </p>
+
+                {/* Progress Bar (GRID) */}
+                <div className="mb-3">
                   <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-zinc-500 font-medium">Progress</span>
-                    <span className="font-semibold">{course.progress}%</span>
+                    <span className="text-zinc-500">Progress</span>
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">{course.progress}%</span>
                   </div>
-                  <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-5">
+                  <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'}`}
+                      className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'
+                        }`}
                       style={{ width: `${course.progress}%` }}
                     />
                   </div>
+                </div>
+
+                {/* Deskripsi: Hidden Default, Block on Hover */}
+                <div className="max-h-0 opacity-0 group-hover:max-h-24 group-hover:opacity-100 transition-all duration-500 ease-in-out overflow-hidden">
+                  <p className="text-sm text-zinc-500 mb-4 pt-1">
+                    {course.description}
+                  </p>
+                </div>
+
+                <div className="mt-auto pt-4 border-t flex items-center justify-between">
+                  <div className="text-xs text-zinc-500 flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" />
+                    {course.lessonsCount} Modules
+                  </div>
+
                   {course.status === 'unlocked' ? (
-                    <Button
-                      className="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold transition-all shadow-md group-hover:shadow-lg"
-                      onClick={(e) => { e.stopPropagation(); handleSelectCourse(course.id); }}
-                    >
-                      {course.progress > 0 ? 'Lanjutkan Belajar →' : 'Mulai Belajar →'}
+                    <Button size="sm" onClick={() => handleSelectCourse(course.id)}>
+                      {course.progress > 0 ? "Lanjutkan" : "Mulai Belajar"}
                     </Button>
                   ) : (
-                    <Button className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed font-bold" disabled>
-                      <Lock className="w-4 h-4 mr-2" /> Terkunci
-                    </Button>
+                    <Button size="sm" variant="secondary" disabled>Terkunci</Button>
                   )}
                 </div>
               </div>
@@ -182,33 +200,32 @@ export default function CoursesPage() {
               {/* Content Center */}
               <div className="flex-1 min-w-0 w-full">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-2">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold truncate group-hover:text-blue-600 transition-colors">
-                            {course.title}
-                        </h3>
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
-                            {course.difficulty}
-                        </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold truncate group-hover:text-blue-600 transition-colors">
+                      {course.title}
+                    </h3>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
+                      {course.difficulty}
+                    </span>
+                  </div>
                 </div>
-                
+
                 <p className="text-sm text-zinc-500 line-clamp-1 mb-3">
                   {course.description}
                 </p>
 
                 {/* Progress Bar (LIST) */}
                 <div className="flex items-center gap-4 mb-2 max-w-md">
-                   <div className="h-2 flex-1 bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
-                        <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                            course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'
+                  <div className="h-2 flex-1 bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'
                         }`}
-                        style={{ width: `${course.progress}%` }}
-                        />
-                    </div>
-                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 min-w-[3ch]">
-                        {course.progress}%
-                    </span>
+                      style={{ width: `${course.progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 min-w-[3ch]">
+                    {course.progress}%
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-zinc-400">
@@ -219,22 +236,22 @@ export default function CoursesPage() {
                     <Star className="w-3 h-3 fill-current" /> +{course.xpReward} XP
                   </span>
                   <span>
-                     • {formatDate(course.lastAccessed)}
+                    • {formatDate(course.lastAccessed)}
                   </span>
                 </div>
               </div>
 
               {/* Action Right */}
               <div className="shrink-0 self-end sm:self-center mt-2 sm:mt-0 w-full sm:w-auto">
-                 {course.status === 'unlocked' ? (
-                    <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSelectCourse(course.id)}>
-                      {course.progress > 0 ? "Lanjutkan" : "Mulai"}
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="ghost" disabled className="text-zinc-400 w-full sm:w-auto">
-                      <Lock className="w-4 h-4 mr-1" /> Terkunci
-                    </Button>
-                  )}
+                {course.status === 'unlocked' ? (
+                  <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSelectCourse(course.id)}>
+                    {course.progress > 0 ? "Lanjutkan" : "Mulai"}
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="ghost" disabled className="text-zinc-400 w-full sm:w-auto">
+                    <Lock className="w-4 h-4 mr-1" /> Terkunci
+                  </Button>
+                )}
               </div>
             </div>
           ))}

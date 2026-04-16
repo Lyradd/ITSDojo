@@ -23,7 +23,7 @@ const initialNodes: Node[] = [
     id: '1', 
     position: { x: 250, y: 0 }, 
     data: { label: 'Intro to React', status: 'completed' }, 
-    type: 'input', // Node awal
+    type: 'input',
     ...nodeDefaults 
   },
   { 

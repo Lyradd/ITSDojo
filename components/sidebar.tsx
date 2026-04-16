@@ -20,21 +20,22 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  PanelLeftClose
+  PanelLeftClose,
+  ShoppingBag,
+  MoreVertical
 } from "lucide-react";
 import { useUserStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
-// Menu untuk Mahasiswa
 const studentMenuItems = [
   { icon: Home, label: "Learn", href: "/learn" },
   { icon: BookOpen, label: "Course List", href: "/courses" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/evaluation" },
-  { icon: CalendarDays, label: "Calendar", href: "/calendar" },
   { icon: Target, label: "Daily Goals", href: "/goals" },
   { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },
   { icon: Swords, label: "Brain Duel", href: "/duel" },
+  { icon: ShoppingBag, label: "Shop", href: "/shop" },
 ];
 
 // Menu untuk Dosen
@@ -150,25 +151,30 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
 
       {/* --- PROFILE SECTION (Fixed at bottom) --- */}
       <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg">
-              {name.charAt(0).toUpperCase()}
+        <div className="flex items-center justify-between mb-3">
+          <Link href="/profile" className="flex items-center gap-3 flex-1 min-w-0 group cursor-pointer">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition-transform">
+                {name.charAt(0).toUpperCase()}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
+                <span className="text-xs">
+                  {role === "dosen" ? "👨‍🏫" : role === "asdos" ? "🧑‍💻" : "👨‍🎓"}
+                </span>
+              </div>
             </div>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
-              <span className="text-xs">
-                {role === "dosen" ? "👨‍🏫" : role === "asdos" ? "🧑‍💻" : "👨‍🎓"}
-              </span>
+            <div className="flex-1 min-w-0 pr-1">
+              <p className="font-semibold text-sm truncate text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {name}
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Level {level} • {xp} XP
+              </p>
             </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate text-zinc-900 dark:text-white">
-              {name}
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Level {level} • {xp} XP
-            </p>
-          </div>
+          </Link>
+          <Link href="/settings" className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer">
+            <MoreVertical className="w-4 h-4" />
+          </Link>
         </div>
 
         <Button

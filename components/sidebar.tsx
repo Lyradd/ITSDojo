@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useUserStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { 
@@ -24,9 +27,7 @@ import {
   ShoppingBag,
   MoreVertical
 } from "lucide-react";
-import { useUserStore } from "@/lib/store";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+
 
 const studentMenuItems = [
   { icon: Home, label: "Learn", href: "/learn" },
@@ -172,9 +173,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               </p>
             </div>
           </Link>
-          <Link href="/settings" className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer">
-            <MoreVertical className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Link href="/settings" className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer">
+              <MoreVertical className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         <Button

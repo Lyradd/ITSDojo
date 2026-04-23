@@ -8,34 +8,90 @@ import {
 } from "lucide-react";
 import { COURSES as RAW_COURSES } from "@/lib/dummydata";
 import { useUserStore } from "@/lib/store";
+import { motion } from "framer-motion";
 
-type SortOption = "name-asc" | "last-accessed";
+type SortOption = "name-asc" | "last-accessed" | "progress-desc";
 type ViewMode = "grid" | "list";
+
+const CircularProgress = ({ progress, size = 44, strokeWidth = 4, color = "text-blue-500" }: { progress: number, size?: number, strokeWidth?: number, color?: string }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90 w-full h-full">
+        <circle
+          className="text-zinc-100 dark:text-zinc-800"
+          strokeWidth={strokeWidth}
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        <motion.circle
+          className={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: circumference - (progress / 100) * circumference }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        />
+      </svg>
+      <span className="absolute text-[10px] font-bold text-zinc-700 dark:text-zinc-300">{progress}%</span>
+    </div>
+  )
+}
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { setActiveCourse } = useUserStore(); // Ambil fungsi dari store
+  const { setActiveCourse, level, completedLessonIds } = useUserStore();
 
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  // 1. Menyiapkan Data
+  // 1. Menyiapkan Data dengan Prerequisite Lock berbasis Tingkat Kesulitan
   const processedCourses = useMemo(() => {
-    return RAW_COURSES.map((course, index) => {
+    // Hitung progress nyata berdasarkan lesson yang diselesaikan di store
+    const coursesWithProgress = RAW_COURSES.map((course) => {
+      const completedCount = completedLessonIds.filter(id => id.startsWith(course.id)).length;
+      // Untuk demo, kita anggap 4 lesson = 100% tamat
+      const targetLessons = 4;
+      const progress = Math.min(Math.floor((completedCount / targetLessons) * 100), 100);
+      return { ...course, progress };
+    });
+
+    // Cek kelulusan tiap tingkat kesulitan
+    const isBeginnerDone = coursesWithProgress.filter(c => c.difficulty === "Beginner").every(c => c.progress === 100);
+    const isIntermediateDone = coursesWithProgress.filter(c => c.difficulty === "Intermediate").every(c => c.progress === 100);
+
+    return coursesWithProgress.map((course, index) => {
       const mockDate = new Date();
       mockDate.setDate(mockDate.getDate() - (index * 2));
-      let mockProgress = 0;
-      if (index === 0) mockProgress = 75;
-      if (index === 1) mockProgress = 30;
+      
+      let isUnlocked = false;
+      if (course.difficulty === "Beginner") {
+        isUnlocked = true;
+      } else if (course.difficulty === "Intermediate") {
+        isUnlocked = isBeginnerDone;
+      } else if (course.difficulty === "Advanced") {
+        isUnlocked = isIntermediateDone;
+      }
+
       return {
         ...course,
-        status: index === 0 ? "unlocked" : "locked",
+        status: isUnlocked ? "unlocked" : "locked",
         lastAccessed: mockDate,
-        progress: mockProgress,
       };
     });
-  }, []);
+  }, [completedLessonIds]);
 
   // 2. Logika Sorting
   const sortedCourses = useMemo(() => {
@@ -43,6 +99,7 @@ export default function CoursesPage() {
     return data.sort((a, b) => {
       if (sortOption === "name-asc") return a.title.localeCompare(b.title);
       else if (sortOption === "last-accessed") return b.lastAccessed.getTime() - a.lastAccessed.getTime();
+      else if (sortOption === "progress-desc") return b.progress - a.progress;
       return 0;
     });
   }, [processedCourses, sortOption]);
@@ -81,7 +138,7 @@ export default function CoursesPage() {
             <Button variant="outline" className="gap-2 min-w-[180px] justify-between" onClick={() => setIsFilterOpen(!isFilterOpen)}>
               <div className="flex items-center gap-2">
                 <ListFilter className="w-4 h-4 text-zinc-500" />
-                <span>{sortOption === "name-asc" ? "Name (A-Z)" : "Last Accessed"}</span>
+                <span>{sortOption === "name-asc" ? "Name (A-Z)" : sortOption === "progress-desc" ? "Highest Progress" : "Last Accessed"}</span>
               </div>
               <ChevronDown className={`w-4 h-4 transition-transform ${isFilterOpen ? "rotate-180" : ""}`} />
             </Button>
@@ -98,6 +155,10 @@ export default function CoursesPage() {
                   <button onClick={() => { setSortOption("last-accessed"); setIsFilterOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-zinc-100 dark:hover:bg-zinc-800">
                     {sortOption === "last-accessed" && <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><Check className="h-4 w-4" /></span>}
                     Last Accessed
+                  </button>
+                  <button onClick={() => { setSortOption("progress-desc"); setIsFilterOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                    {sortOption === "progress-desc" && <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><Check className="h-4 w-4" /></span>}
+                    Highest Progress
                   </button>
                 </div>
               </>
@@ -142,19 +203,19 @@ export default function CoursesPage() {
                   Last activity: {formatDate(course.lastAccessed)}
                 </p>
 
-                {/* Progress Bar (GRID) */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-zinc-500">Progress</span>
-                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">{course.progress}%</span>
+                {/* Circular Progress (GRID) */}
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Progress Belajar</span>
+                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{course.status === 'locked' ? 'Terkunci' : 'Lanjutkan Materi'}</span>
                   </div>
-                  <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'
-                        }`}
-                      style={{ width: `${course.progress}%` }}
-                    />
-                  </div>
+                  {course.status !== 'locked' ? (
+                    <CircularProgress progress={course.progress} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-zinc-400" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Deskripsi: Hidden Default, Block on Hover */}
@@ -214,19 +275,16 @@ export default function CoursesPage() {
                   {course.description}
                 </p>
 
-                {/* Progress Bar (LIST) */}
-                <div className="flex items-center gap-4 mb-2 max-w-md">
-                  <div className="h-2 flex-1 bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${course.status === 'locked' ? 'bg-zinc-300' : 'bg-blue-600'
-                        }`}
-                      style={{ width: `${course.progress}%` }}
-                    />
+                {/* Circular Progress (LIST) */}
+                {course.status !== 'locked' && (
+                  <div className="flex items-center gap-3 mb-3 max-w-md">
+                    <CircularProgress progress={course.progress} size={36} strokeWidth={3} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Target Belajar</span>
+                      <span className="text-[10px] text-zinc-500">{course.progress}% Tuntas</span>
+                    </div>
                   </div>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 min-w-[3ch]">
-                    {course.progress}%
-                  </span>
-                </div>
+                )}
 
                 <div className="flex items-center gap-4 text-xs text-zinc-400">
                   <span className="flex items-center gap-1">

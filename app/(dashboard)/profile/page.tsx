@@ -136,7 +136,18 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 3. Pencapaian (Achievements) */}
+          {/* 3. Jejak Aktivitas (Heatmap) */}
+          <div>
+             <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200">Aktivitas Belajar</h2>
+                <span className="text-xs font-bold text-zinc-500">105 hari terakhir</span>
+             </div>
+             <Card className="p-6 pt-10 border-2 overflow-x-auto">
+               <ActivityHeatmap />
+             </Card>
+          </div>
+
+          {/* 4. Pencapaian (Achievements) */}
           <div>
              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200">Pencapaian</h2>
@@ -243,6 +254,82 @@ function StatCard({ icon: Icon, value, label, color }: any) {
       <div>
         <div className="font-bold text-xl">{value}</div>
         <div className="text-xs text-zinc-400 font-bold uppercase tracking-wide">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+// Komponen GitHub-Style Heatmap Dinamis
+function ActivityHeatmap() {
+  const { activityHistory } = useUserStore();
+
+  const today = new Date();
+  const days = Array.from({ length: 105 }).map((_, i) => {
+    // Hitung tanggal dari hari ini mundur ke 104 hari yang lalu
+    const offset = 104 - i;
+    const dateObj = new Date(today.getTime() - offset * 24 * 60 * 60 * 1000);
+    const dateStr = dateObj.toISOString().split('T')[0];
+    
+    // Cari rekam jejak pada tanggal ini
+    const record = activityHistory.find(h => h.date === dateStr);
+    const count = record ? record.count : 0;
+    
+    // Konversi jumlah count menjadi level warna (0 - 4)
+    let level = 0;
+    if (count === 1) level = 1;
+    else if (count === 2) level = 2;
+    else if (count === 3) level = 3;
+    else if (count >= 4) level = 4;
+    
+    return { level, count, dateStr };
+  });
+
+  return (
+    <div className="flex flex-col gap-4 w-fit mx-auto md:mx-0">
+      <div className="flex gap-1.5">
+        {Array.from({ length: 15 }).map((_, weekIdx) => (
+          <div key={weekIdx} className="flex flex-col gap-1.5">
+            {Array.from({ length: 7 }).map((_, dayIdx) => {
+              const dayObj = days[weekIdx * 7 + dayIdx];
+              if (!dayObj) return null;
+              
+              let colorClass = "bg-zinc-100 dark:bg-zinc-800/50";
+              if (dayObj.level === 1) colorClass = "bg-blue-200 dark:bg-blue-900/60";
+              if (dayObj.level === 2) colorClass = "bg-blue-300 dark:bg-blue-700/80";
+              if (dayObj.level === 3) colorClass = "bg-blue-400 dark:bg-blue-500/90";
+              if (dayObj.level === 4) colorClass = "bg-blue-500 dark:bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]";
+              
+              return (
+                <div 
+                  key={dayIdx} 
+                  className={`relative group w-3.5 h-3.5 md:w-4 md:h-4 rounded-[4px] ${colorClass} hover:ring-2 hover:ring-zinc-400 dark:hover:ring-zinc-200 transition-all cursor-pointer`} 
+                >
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none flex flex-col items-center border border-zinc-700 dark:border-zinc-300">
+                    <span>{dayObj.count === 0 ? "Tidak ada aktivitas" : `${dayObj.count} kontribusi`}</span>
+                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 mt-0.5">
+                       {new Date(dayObj.dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-zinc-800 dark:border-t-zinc-200"></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-2 text-xs font-bold text-zinc-500 mt-1">
+         <span>Sedikit</span>
+         <div className="flex gap-1.5">
+            <div className="w-3.5 h-3.5 rounded-[3px] bg-zinc-100 dark:bg-zinc-800/50"></div>
+            <div className="w-3.5 h-3.5 rounded-[3px] bg-blue-200 dark:bg-blue-900/60"></div>
+            <div className="w-3.5 h-3.5 rounded-[3px] bg-blue-300 dark:bg-blue-700/80"></div>
+            <div className="w-3.5 h-3.5 rounded-[3px] bg-blue-400 dark:bg-blue-500/90"></div>
+            <div className="w-3.5 h-3.5 rounded-[3px] bg-blue-500 dark:bg-blue-400"></div>
+         </div>
+         <span>Banyak</span>
       </div>
     </div>
   );

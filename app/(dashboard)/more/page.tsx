@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface FeatureCardProps {
   icon: any;
@@ -100,11 +101,14 @@ export default function MorePage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 pb-24 md:pb-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">More Features</h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Akses semua fitur ITSDojo
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">More Features</h1>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Akses semua fitur ITSDojo
+          </p>
+        </div>
+        <ThemeToggle />
       </div>
 
       {/* User Info Card */}

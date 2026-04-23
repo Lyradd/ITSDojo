@@ -100,7 +100,29 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## 🆕 Version History & Changelog
 
-### Version 1.4 - WebSocket Live Leaderboard (Current)
+### Version 1.5 - Advanced Gamification, Dynamic Roadmap & Dark Mode (Current)
+**Release Date:** April 2026
+
+#### 🎨 Native Dark Mode Implementation
+- ✅ Integrasi `next-themes` untuk Native Dark Mode.
+- ✅ *Minimalist Theme Toggle* dengan animasi pergantian ikon Sun/Moon.
+- ✅ *Hydration mismatch fix* pada `layout.tsx`.
+- ✅ Optimasi palet warna untuk memastikan teks tetap terbaca dengan jelas (*high contrast*) di latar gelap (termasuk *unit desc* dan *leaderboard active state*).
+
+#### 🗺️ Dynamic Roadmap & Prerequisite Lock
+- ✅ Mengubah sistem kunci level menjadi **Prerequisite-based Lock** (Beginner ➡️ Intermediate ➡️ Advanced).
+- ✅ Mengeliminasi *hardcode* statis, kini *Router* dan status visual node (Completed/Active/Locked) 100% dinamis terhubung dengan `useUserStore`.
+- ✅ Efek visual *Fog of War* untuk menyembunyikan rute yang masih terkunci rapat.
+- ✅ Menambahkan filter pengurutan cerdas "Highest Progress" di halaman *Course List*.
+
+#### 📅 GitHub-Style Activity Heatmap
+- ✅ Implementasi grid *Heatmap* interaktif pada profil pengguna untuk memvisualisasikan 105 hari terakhir aktivitas.
+- ✅ Integrasi langsung dengan `useUserStore` (Zustand): menyimpan *timestamp* tanggal selesai secara permanen.
+- ✅ Dinamika intensitas warna: makin sering mengerjakan soal di hari tersebut, lampu kotak akan menyala makin biru/neon.
+
+---
+
+### Version 1.4 - WebSocket Live Leaderboard
 **Release Date:** 4 Januari 2026
 
 #### 🌐 Real-Time WebSocket Integration

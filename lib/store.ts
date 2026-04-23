@@ -26,6 +26,7 @@ interface UserState {
   activeCourseId: string;
   role: 'mahasiswa' | 'asdos' | 'dosen'; 
   completedLessonIds: string[]; 
+  activityHistory: { date: string, count: number }[];
   
   dailyGoals: DailyGoal[];
   
@@ -68,6 +69,7 @@ export const useUserStore = create<UserState>()(
       activeCourseId: "fe-basic",
       role: 'mahasiswa', 
       completedLessonIds: ['fe-basic-1'], // Default tes biar node 1 selesai, node 2 aktif
+      activityHistory: [], // Dinamis untuk Heatmap
       
       dailyGoals: INITIAL_GOALS,
       
@@ -136,11 +138,24 @@ export const useUserStore = create<UserState>()(
         const bonusXp = (lessonId && !state.completedLessonIds.includes(lessonId)) ? 50 : 0;
         const bonusGems = (lessonId && !state.completedLessonIds.includes(lessonId)) ? 10 : 0;
 
+        // Catat aktivitas untuk Heatmap
+        let newHistory = [...state.activityHistory];
+        if (lessonId && !state.completedLessonIds.includes(lessonId)) {
+           const today = new Date().toISOString().split('T')[0];
+           const todayIndex = newHistory.findIndex(h => h.date === today);
+           if (todayIndex !== -1) {
+              newHistory[todayIndex] = { ...newHistory[todayIndex], count: newHistory[todayIndex].count + 1 };
+           } else {
+              newHistory.push({ date: today, count: 1 });
+           }
+        }
+
         return { 
           dailyGoals: updatedGoals, 
           completedLessonIds: updatedLessonIds, 
           xp: state.xp + bonusXp,
-          gems: state.gems + bonusGems
+          gems: state.gems + bonusGems,
+          activityHistory: newHistory
         };
       }),
 
@@ -205,6 +220,8 @@ export const useUserStore = create<UserState>()(
         gems: state.gems,
         hasStreakFreeze: state.hasStreakFreeze,
         role: state.role, // NEW: Persist role
+        completedLessonIds: state.completedLessonIds,
+        activityHistory: state.activityHistory
         // dailyGoals: state.dailyGoals,
         // xpMultiplier: state.xpMultiplier,
         // multiplierEndTime: state.multiplierEndTime

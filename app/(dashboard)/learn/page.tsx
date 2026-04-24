@@ -19,9 +19,11 @@ import {
   CheckCircle,
   BookOpen,
   Gem,
-  Star
+  Star,
+  RotateCcw
 } from "lucide-react";
-import { triggerConfetti } from "@/lib/utils";
+import { triggerConfetti } from "@/lib/confetti";
+import { playSuccessSound } from "@/lib/sounds";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 
 // --- 1. DATA KONTEN DUMMY ---
@@ -85,7 +87,8 @@ export default function LearnPage() {
     streak,
     dailyGoals,
     completeLesson,
-    completedLessonIds
+    completedLessonIds,
+    resetProgress
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -107,6 +110,7 @@ export default function LearnPage() {
   const handleSimulateLesson = () => {
     completeLesson();
     triggerConfetti();
+    playSuccessSound();
   };
 
   return (
@@ -137,14 +141,28 @@ export default function LearnPage() {
               </h2>
               <p className="text-white/80 text-sm max-w-md">{activeCourse.description}</p>
             </div>
-            <Link href="/courses">
-              <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${activeCourseId === 'fe-basic' ? 'text-pink-600' :
-                  activeCourseId === 'react-mastery' ? 'text-blue-600' :
-                    'text-emerald-600'
-                }`}>
-                Ganti Kursus
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                   if(confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
+                      resetProgress();
+                   }
+                }}
+                className="bg-black/20 hover:bg-black/40 border-none text-white transition-colors"
+                title="Reset Pembelajaran (Testing)"
+              >
+                <RotateCcw className="w-4 h-4" />
               </Button>
-            </Link>
+              <Link href="/courses">
+                <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${activeCourseId === 'fe-basic' ? 'text-pink-600' :
+                    activeCourseId === 'react-mastery' ? 'text-blue-600' :
+                      'text-emerald-600'
+                  }`}>
+                  Ganti Kursus
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* 2. ROADMAP AREA (Seamless / Tanpa Kotak Border) */}

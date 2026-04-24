@@ -124,11 +124,11 @@ export default function CoursesPage() {
 
         <div className="flex items-center gap-3">
           {/* View Toggle */}
-          <div className="flex items-center p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg border">
-            <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-md ${viewMode === "grid" ? "bg-white shadow-sm dark:bg-zinc-700" : "text-zinc-500 hover:text-zinc-900"}`} onClick={() => setViewMode("grid")}>
+          <div className="flex items-center p-1 bg-background rounded-md border border-input">
+            <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-md ${viewMode === "list" ? "bg-white shadow-sm dark:bg-zinc-700" : "text-zinc-500 hover:text-zinc-900"}`} onClick={() => setViewMode("list")}>
+            <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
               <List className="h-4 w-4" />
             </Button>
           </div>

@@ -14,8 +14,8 @@ import {
   Gem,
   Clock
 } from "lucide-react";
-import { triggerSimpleConfetti } from "@/lib/utils";
-
+import { triggerConfetti } from "@/lib/confetti";
+import { playCoinSound } from "@/lib/sounds";
 export default function GoalsPage() {
   const { 
     dailyGoals, 
@@ -68,7 +68,8 @@ export default function GoalsPage() {
   // 4. Wrapper Fungsi Klaim Hadiah
   const handleClaim = (goalId: string) => {
     claimGoalReward(goalId);
-    triggerSimpleConfetti();
+    triggerConfetti();
+    playCoinSound();
   };
 
   return (

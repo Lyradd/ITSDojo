@@ -5,7 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUserStore } from "@/lib/store";
-import { triggerConfetti } from "@/lib/utils";
+import { triggerConfetti } from "@/lib/confetti";
+import { playSuccessSound } from "@/lib/sounds";
 import {
   ArrowLeft,
   Settings,
@@ -53,6 +54,7 @@ export default function LessonIDEPage() {
   const handleComplete = () => {
     completeLesson(params?.id as string);
     triggerConfetti();
+    playSuccessSound();
     setTimeout(() => {
       router.push("/learn");
     }, 1500);

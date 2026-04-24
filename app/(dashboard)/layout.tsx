@@ -19,29 +19,31 @@ export default function DashboardLayout({
       {/* Sidebar - Collapsible */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 hidden md:block transition-all duration-300 border-r',
-          isSidebarOpen ? 'w-[260px]' : 'w-0'
+          'fixed inset-y-0 left-0 z-50 hidden md:flex flex-col transition-all duration-300 border-r bg-white dark:bg-zinc-950',
+          isSidebarOpen ? 'w-[260px]' : 'w-[72px]'
         )}
       >
-        <div className={cn('h-full', !isSidebarOpen && 'hidden')}>
+        <div className={cn('h-full w-[260px]', !isSidebarOpen && 'hidden')}>
           <Sidebar onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
         </div>
+
+        {/* Mini Sidebar State (Collapsed) */}
+        {!isSidebarOpen && (
+          <div className="w-full h-20 flex items-center justify-center">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2.5 bg-white dark:bg-zinc-900 border shadow-sm text-blue-600 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center"
+              title="Buka Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </aside>
 
-      {/* Floating Toggle Button - Only shown when sidebar is CLOSED */}
-      {!isSidebarOpen && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-4 left-4 z-60 p-3 bg-transparent text-blue-600 rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all hidden md:flex items-center justify-center"
-          title="Buka Menu"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-      )}
-      
       <main className={cn(
         'flex-1 pb-20 md:pb-0 transition-all duration-300',
-        isSidebarOpen ? 'md:ml-[260px]' : 'md:ml-0'
+        isSidebarOpen ? 'md:ml-[260px]' : 'md:ml-[72px]'
       )}>
         <PageTransition>
           {children}

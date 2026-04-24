@@ -22,11 +22,18 @@ interface UserState {
   xpToNextLevel: number;
   streak: number;
   gems: number; // NEW: Gems currency
-  hasStreakFreeze: boolean; // NEW: Power-up status
+  streakFreezeCount: number; // Max 3
   activeCourseId: string;
   role: 'mahasiswa' | 'asdos' | 'dosen'; 
   completedLessonIds: string[]; 
   activityHistory: { date: string, count: number }[];
+  unlockedAchievements: string[];
+  nocturnalCount: number;
+  earlyBirdCount: number;
+  longestStreak: number;
+  mostXpInDay: number;
+  totalPerfectLessons: number;
+  unlockAchievement: (id: string) => void;
   
   dailyGoals: DailyGoal[];
   
@@ -36,6 +43,8 @@ interface UserState {
   login: () => void;
   logout: () => void;
   addXp: (amount: number) => void;
+  setGems: (amount: number) => void; // NEW: Debug/Temporary method
+  resetProgress: () => void; // NEW: Debug/Testing method
   setActiveCourse: (courseId: string) => void;
   completeLesson: (lessonId?: string) => void;
   claimGoalReward: (goalId: string) => void;
@@ -64,12 +73,18 @@ export const useUserStore = create<UserState>()(
       xp: 0,
       xpToNextLevel: 100,
       streak: 3,
-      gems: 150, // Starting Gems
-      hasStreakFreeze: false,
+      gems: 300, // Starting Gems
+      streakFreezeCount: 0,
       activeCourseId: "fe-basic",
       role: 'mahasiswa', 
       completedLessonIds: ['fe-basic-1'], // Default tes biar node 1 selesai, node 2 aktif
       activityHistory: [], // Dinamis untuk Heatmap
+      unlockedAchievements: [], // Menyimpan ID achievement yang terbuka
+      nocturnalCount: 0,
+      earlyBirdCount: 0,
+      longestStreak: 3,
+      mostXpInDay: 0,
+      totalPerfectLessons: 0,
       
       dailyGoals: INITIAL_GOALS,
       
@@ -78,7 +93,13 @@ export const useUserStore = create<UserState>()(
 
       login: () => set({ isLoggedIn: true }),
       logout: () => set({ isLoggedIn: false }),
+      setGems: (amount) => set({ gems: amount }),
       setRole: (role) => set({ role }), // NEW: Set role implementation
+      unlockAchievement: (id) => set((state) => {
+        const current = state.unlockedAchievements || [];
+        if (current.includes(id)) return state;
+        return { unlockedAchievements: [...current, id] };
+      }),
       
       addXp: (amount) => set((state) => {
         // 1. Cek Multiplier
@@ -120,6 +141,8 @@ export const useUserStore = create<UserState>()(
       }),
 
       setActiveCourse: (courseId) => set({ activeCourseId: courseId }),
+      
+      resetProgress: () => set({ completedLessonIds: ['fe-basic-1'] }),
 
       completeLesson: (lessonId) => set((state) => {
         const updatedGoals = state.dailyGoals.map(goal => {
@@ -150,12 +173,56 @@ export const useUserStore = create<UserState>()(
            }
         }
 
+        // Cek Secret Achievements berdasarkan waktu pengerjaan
+        let newAchievements = [...(state.unlockedAchievements || [])];
+        let newNocturnalCount = state.nocturnalCount || 0;
+        let newEarlyBirdCount = state.earlyBirdCount || 0;
+
+        if (lessonId && !(state.completedLessonIds || []).includes(lessonId)) {
+           const hour = new Date().getHours();
+           
+           // Nocturnal (00:00 - 04:59)
+           if (hour >= 0 && hour < 5) {
+              newNocturnalCount++;
+              if (!newAchievements.includes('nocturnal')) newAchievements.push('nocturnal');
+           }
+           
+           // Early Bird (06:00 - 09:00)
+           if (hour >= 6 && hour <= 9) {
+              newEarlyBirdCount++;
+              if (!newAchievements.includes('early-bird')) newAchievements.push('early-bird');
+           }
+        }
+
+        // --- Personal Records Update ---
+        const newLongestStreak = Math.max(state.longestStreak || 0, state.streak);
+        
+        // Cek XP terbanyak dalam sehari (sederhana: cek apakah XP dari lesson hari ini melebihi record)
+        // Idealnya kita simpan map { date: xp } tapi untuk demo ini, kita gunakan pendekatan activityHistory
+        let newMostXpInDay = state.mostXpInDay || 0;
+        if (lessonId && !(state.completedLessonIds || []).includes(lessonId)) {
+            // Ambil data hari ini dari activityHistory (asumsi 1 lesson = bonusXp)
+            // Namun untuk simplicity, kita hitung jika history hari ini punya count * rata2 XP > record
+            const today = new Date().toISOString().split('T')[0];
+            const todayHistory = newHistory.find(h => h.date === today);
+            if (todayHistory) {
+                // Perkiraan XP hari ini (asumsi kasar 100 XP per lesson + bonus)
+                const estimatedTodayXp = todayHistory.count * 100;
+                newMostXpInDay = Math.max(newMostXpInDay, estimatedTodayXp);
+            }
+        }
+
         return { 
           dailyGoals: updatedGoals, 
           completedLessonIds: updatedLessonIds, 
           xp: state.xp + bonusXp,
           gems: state.gems + bonusGems,
-          activityHistory: newHistory
+          activityHistory: newHistory,
+          unlockedAchievements: newAchievements,
+          nocturnalCount: newNocturnalCount,
+          earlyBirdCount: newEarlyBirdCount,
+          longestStreak: newLongestStreak,
+          mostXpInDay: newMostXpInDay
         };
       }),
 
@@ -192,8 +259,9 @@ export const useUserStore = create<UserState>()(
         if (state.gems < cost) return false;
 
         if (type === 'freeze') {
-           if (state.hasStreakFreeze) return false; // Sudah punya
-           set({ gems: state.gems - cost, hasStreakFreeze: true });
+           const currentCount = state.streakFreezeCount || 0;
+           if (currentCount >= 3) return false; // Maksimal 3
+           set({ gems: state.gems - cost, streakFreezeCount: currentCount + 1 });
         } else if (type === 'multiplier') {
            const durationMs = 60 * 60 * 1000; // 1 Jam
            const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() 
@@ -218,10 +286,16 @@ export const useUserStore = create<UserState>()(
         xpToNextLevel: state.xpToNextLevel,
         streak: state.streak,
         gems: state.gems,
-        hasStreakFreeze: state.hasStreakFreeze,
+        streakFreezeCount: state.streakFreezeCount,
         role: state.role, // NEW: Persist role
         completedLessonIds: state.completedLessonIds,
-        activityHistory: state.activityHistory
+        activityHistory: state.activityHistory,
+        unlockedAchievements: state.unlockedAchievements,
+        nocturnalCount: state.nocturnalCount,
+        earlyBirdCount: state.earlyBirdCount,
+        longestStreak: state.longestStreak,
+        mostXpInDay: state.mostXpInDay,
+        totalPerfectLessons: state.totalPerfectLessons
         // dailyGoals: state.dailyGoals,
         // xpMultiplier: state.xpMultiplier,
         // multiplierEndTime: state.multiplierEndTime

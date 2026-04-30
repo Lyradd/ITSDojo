@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 export default function EvaluationPage() {
   const router = useRouter();
-  const { isLoggedIn } = useUserStore();
+  const { isLoggedIn, enrolledCourseIds } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
 
@@ -35,10 +35,12 @@ export default function EvaluationPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  // Filter evaluations by course
+  // Filter evaluations by course and enrollment status
+  const enrolledEvaluations = SAMPLE_EVALUATIONS.filter(e => enrolledCourseIds.includes(e.courseId));
+  
   const filteredEvaluations = selectedCourse === 'all' 
-    ? SAMPLE_EVALUATIONS 
-    : SAMPLE_EVALUATIONS.filter(e => e.courseId === selectedCourse);
+    ? enrolledEvaluations 
+    : enrolledEvaluations.filter(e => e.courseId === selectedCourse);
 
   const getCourseName = (courseId: string) => {
     return COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
@@ -79,7 +81,7 @@ export default function EvaluationPage() {
           >
             Semua Kursus
           </Button>
-          {COURSES.map(course => (
+          {COURSES.filter(c => enrolledCourseIds.includes(c.id)).map(course => (
             <Button
               key={course.id}
               size="sm"
@@ -102,7 +104,9 @@ export default function EvaluationPage() {
           <div className="col-span-full text-center py-12">
             <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
             <p className="text-zinc-500 dark:text-zinc-400">
-              Tidak ada evaluasi untuk kursus ini
+              {enrolledCourseIds.length === 0 
+                ? "Kamu belum terdaftar di kelas manapun. Silakan minta akses kelas terlebih dahulu di menu Course." 
+                : "Tidak ada evaluasi untuk kursus ini"}
             </p>
           </div>
         ) : (

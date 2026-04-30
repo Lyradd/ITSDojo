@@ -153,6 +153,9 @@ export default function StudentsPage() {
                   Mahasiswa
                 </th>
                 <th className="text-left p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">
+                  Semester
+                </th>
+                <th className="text-left p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">
                   Level
                 </th>
                 <th className="text-left p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">
@@ -200,6 +203,11 @@ export default function StudentsPage() {
                         </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs font-bold">
+                      Sem {student.semester}
+                    </span>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">

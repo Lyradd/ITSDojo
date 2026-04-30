@@ -20,6 +20,7 @@ import {
   ClipboardCheck,
   LayoutDashboard,
   Users,
+  UserCheck,
   BarChart3,
   Settings,
   LogOut,
@@ -45,6 +46,7 @@ const dosenMenuItems = [
   { icon: BookOpen, label: "Courses", href: "/admin/courses" },
   { icon: Users, label: "Students", href: "/admin/students" },
   { icon: ClipboardCheck, label: "Evaluations", href: "/admin/evaluations" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
   { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
@@ -55,6 +57,7 @@ const asdosMenuItems = [
   { icon: BookOpen, label: "Courses", href: "/admin/courses" },
   { icon: Users, label: "Students", href: "/admin/students" },
   { icon: ClipboardCheck, label: "Evaluations", href: "/admin/evaluations" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
   { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
 ];
 

@@ -240,3 +240,46 @@ export function addCurrentUserToLeaderboard(
   
   return [...filteredLeaderboard, currentUserEntry];
 }
+
+/**
+ * Add simulated bots if participant threshold is not met
+ */
+export function addBotsIfNeeded(
+  currentLeaderboard: LeaderboardEntry[],
+  threshold: number = 20,
+  totalQuestions: number = 5
+): LeaderboardEntry[] {
+  // If threshold is met, return as is
+  if (currentLeaderboard.length >= threshold) return currentLeaderboard;
+
+  const botsToAdd = threshold - currentLeaderboard.length;
+  const newBots: LeaderboardEntry[] = [];
+  
+  const botNames = ['Bot Alpha', 'Bot Beta', 'Bot Gamma', 'Bot Delta', 'Bot Epsilon', 'Bot Zeta', 'Bot Eta', 'Bot Theta', 'Bot Iota', 'Bot Kappa'];
+  const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'pink', 'indigo', 'teal', 'orange', 'cyan'];
+
+  for (let i = 0; i < botsToAdd; i++) {
+    const botIndex = currentLeaderboard.length + i;
+    const name = botNames[botIndex % botNames.length];
+    const color = colors[botIndex % colors.length];
+    
+    // Simulate bots with partial progress
+    const simulatedAnswers = Math.floor(Math.random() * totalQuestions);
+    const simulatedScore = simulatedAnswers > 0 ? (Math.floor(Math.random() * simulatedAnswers) + 1) * 10 : 0;
+    const simulatedAccuracy = simulatedAnswers > 0 ? Math.round(((simulatedScore / 10) / simulatedAnswers) * 100) : 0;
+
+    newBots.push({
+      userId: `bot-${Date.now()}-${i}`,
+      name: `${name} 🤖`,
+      avatar: `bg-${color}-200 text-${color}-700`,
+      score: simulatedScore,
+      totalQuestions,
+      answeredQuestions: simulatedAnswers,
+      accuracy: simulatedAccuracy,
+      rank: 0,
+      lastUpdate: Date.now() - Math.floor(Math.random() * 10000), // Randomize slightly older last updates
+    });
+  }
+
+  return [...currentLeaderboard, ...newBots];
+}

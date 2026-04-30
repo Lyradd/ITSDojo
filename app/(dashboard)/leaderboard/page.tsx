@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { INITIAL_LEADERBOARD } from '@/lib/evaluation-data';
@@ -28,7 +28,8 @@ export default function LeaderboardPage() {
   const { isLoggedIn, name, xp, level } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all');
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'angkatan' | 'course' | 'evaluation'>('all');
+  const [subScope, setSubScope] = useState<string>('2023');
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -107,11 +108,27 @@ export default function LeaderboardPage() {
     };
   }, [isMounted, isLoggedIn, name, xp]);
 
+  // Simulate filtering the leaderboard based on the chosen scope
+  const filteredLeaderboard = useMemo(() => {
+    if (scopeFilter === 'all') return leaderboard;
+    
+    // Create a deterministic pseudo-random filter based on the subScope string length
+    // This is just to mock the UI behavior
+    const seed = subScope.length;
+    const filtered = leaderboard.filter((_, i) => (i + seed) % 2 === 0 || i === 0); // Always keep current user if they are index 0, or just randomize
+    
+    // Re-rank
+    return filtered.map((entry, idx) => ({
+      ...entry,
+      rank: idx + 1
+    }));
+  }, [leaderboard, scopeFilter, subScope]);
+
   if (!isMounted || !isLoggedIn) return null;
 
-  const currentUserEntry = leaderboard.find(e => e.isCurrentUser);
-  const topThree = leaderboard.slice(0, 3);
-  const totalParticipants = leaderboard.length;
+  const currentUserEntry = filteredLeaderboard.find(e => e.isCurrentUser) || leaderboard.find(e => e.isCurrentUser);
+  const topThree = filteredLeaderboard.slice(0, 3);
+  const totalParticipants = filteredLeaderboard.length;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 pb-24 md:pb-8">
@@ -272,37 +289,73 @@ export default function LeaderboardPage() {
 
           {/* Full Rankings */}
           <Card className="p-6 rounded-2xl border-2">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                Semua Peringkat
-              </h3>
-              
-              {/* Time Filter */}
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-zinc-500" />
-                <div className="flex gap-1">
-                  {(['all', 'week', 'month'] as const).map((filter) => (
-                    <Button
-                      key={filter}
-                      size="sm"
-                      variant={timeFilter === filter ? 'default' : 'outline'}
-                      onClick={() => setTimeFilter(filter)}
-                      className={cn(
-                        "text-xs font-bold",
-                        timeFilter === filter && "bg-blue-600 hover:bg-blue-700"
-                      )}
-                    >
-                      {filter === 'all' && 'Semua'}
-                      {filter === 'week' && 'Minggu Ini'}
-                      {filter === 'month' && 'Bulan Ini'}
-                    </Button>
-                  ))}
+              {/* Scope Filter */}
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+                    Semua Peringkat
+                  </h3>
+                  
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+                    <Filter className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <div className="flex gap-1">
+                      {(['all', 'angkatan', 'course', 'evaluation'] as const).map((filter) => (
+                        <Button
+                          key={filter}
+                          size="sm"
+                          variant={scopeFilter === filter ? 'default' : 'outline'}
+                          onClick={() => setScopeFilter(filter)}
+                          className={cn(
+                            "text-xs font-bold whitespace-nowrap",
+                            scopeFilter === filter && "bg-blue-600 hover:bg-blue-700"
+                          )}
+                        >
+                          {filter === 'all' && 'Keseluruhan'}
+                          {filter === 'angkatan' && 'Per Angkatan'}
+                          {filter === 'course' && 'Mata Kuliah'}
+                          {filter === 'evaluation' && 'Per Evaluasi'}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-              {leaderboard.map((entry, index) => (
+                {/* Sub Scope Selection */}
+                {scopeFilter !== 'all' && (
+                  <div className="flex sm:justify-end animate-in fade-in slide-in-from-top-2">
+                    <select 
+                      className="w-full sm:w-auto text-sm border-2 border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 font-medium text-zinc-700 dark:text-zinc-300 outline-none focus:border-blue-500 transition-colors"
+                      value={subScope}
+                      onChange={(e) => setSubScope(e.target.value)}
+                    >
+                      {scopeFilter === 'angkatan' && (
+                        <>
+                          <option value="2023">Angkatan 2023</option>
+                          <option value="2022">Angkatan 2022</option>
+                          <option value="2021">Angkatan 2021</option>
+                        </>
+                      )}
+                      {scopeFilter === 'course' && (
+                        <>
+                          <option value="web">Pemrograman Web</option>
+                          <option value="pbo">Pemrograman Berorientasi Objek</option>
+                          <option value="sbd">Sistem Basis Data</option>
+                        </>
+                      )}
+                      {scopeFilter === 'evaluation' && (
+                        <>
+                          <option value="quiz1">Kuis 1: HTML & CSS</option>
+                          <option value="quiz2">Kuis 2: React Native</option>
+                          <option value="quiz3">Evaluasi Tengah Semester</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+            <div className="space-y-2 mt-4 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+              {filteredLeaderboard.map((entry, index) => (
                 <LeaderboardEntryComponent 
                   key={entry.userId} 
                   entry={entry} 

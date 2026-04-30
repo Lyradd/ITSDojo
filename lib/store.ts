@@ -25,6 +25,9 @@ interface UserState {
   streakFreezeCount: number; // Max 3
   activeCourseId: string;
   role: 'mahasiswa' | 'asdos' | 'dosen'; 
+  semester: number; // NEW: Semester mahasiswa
+  enrolledCourseIds: string[]; // NEW: Courses they are enrolled in
+  pendingCourseIds: string[]; // NEW: Courses waiting for dosen approval
   completedLessonIds: string[]; 
   activityHistory: { date: string, count: number }[];
   unlockedAchievements: string[];
@@ -50,6 +53,9 @@ interface UserState {
   claimGoalReward: (goalId: string) => void;
   buyItem: (type: 'freeze' | 'multiplier', cost: number) => boolean; // NEW: Shop purchase
   setRole: (role: 'mahasiswa' | 'asdos' | 'dosen') => void; // NEW: Set role method
+  setSemester: (semester: number) => void;
+  requestEnrollment: (courseId: string) => void;
+  acceptEnrollment: (courseId: string) => void;
 }
 
 const INITIAL_GOALS: DailyGoal[] = [
@@ -77,6 +83,9 @@ export const useUserStore = create<UserState>()(
       streakFreezeCount: 0,
       activeCourseId: "fe-basic",
       role: 'mahasiswa', 
+      semester: 5, // Default for Daryl
+      enrolledCourseIds: ['fe-basic'], // Default tes biar langsung bisa nyoba
+      pendingCourseIds: [],
       completedLessonIds: ['fe-basic-1'], // Default tes biar node 1 selesai, node 2 aktif
       activityHistory: [], // Dinamis untuk Heatmap
       unlockedAchievements: [], // Menyimpan ID achievement yang terbuka
@@ -95,6 +104,19 @@ export const useUserStore = create<UserState>()(
       logout: () => set({ isLoggedIn: false }),
       setGems: (amount) => set({ gems: amount }),
       setRole: (role) => set({ role }), // NEW: Set role implementation
+      setSemester: (semester) => set({ semester }),
+      requestEnrollment: (courseId) => set((state) => {
+        if (state.enrolledCourseIds.includes(courseId) || state.pendingCourseIds.includes(courseId)) {
+          return state;
+        }
+        return { pendingCourseIds: [...state.pendingCourseIds, courseId] };
+      }),
+      acceptEnrollment: (courseId) => set((state) => {
+        return {
+          pendingCourseIds: state.pendingCourseIds.filter(id => id !== courseId),
+          enrolledCourseIds: [...state.enrolledCourseIds, courseId]
+        };
+      }),
       unlockAchievement: (id) => set((state) => {
         const current = state.unlockedAchievements || [];
         if (current.includes(id)) return state;
@@ -288,6 +310,9 @@ export const useUserStore = create<UserState>()(
         gems: state.gems,
         streakFreezeCount: state.streakFreezeCount,
         role: state.role, // NEW: Persist role
+        semester: state.semester,
+        enrolledCourseIds: state.enrolledCourseIds,
+        pendingCourseIds: state.pendingCourseIds,
         completedLessonIds: state.completedLessonIds,
         activityHistory: state.activityHistory,
         unlockedAchievements: state.unlockedAchievements,

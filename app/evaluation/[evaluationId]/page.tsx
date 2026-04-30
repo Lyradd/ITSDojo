@@ -9,6 +9,7 @@ import {
   INITIAL_LEADERBOARD,
   generateMockLeaderboardUpdate,
   addCurrentUserToLeaderboard,
+  addBotsIfNeeded,
 } from '@/lib/evaluation-data';
 import { QuestionCard } from '@/components/evaluation/question-card';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
@@ -215,13 +216,17 @@ export default function EvaluationFullscreenPage() {
       startEvaluation(evaluation);
 
       // Initialize leaderboard with current user
-      const initialLeaderboard = addCurrentUserToLeaderboard(
+      let initialLeaderboard = addCurrentUserToLeaderboard(
         INITIAL_LEADERBOARD,
         name,
         0,
         evaluation.questions.length,
         0
       );
+      
+      // Inject bots if threshold not met (e.g. need at least 15 participants)
+      initialLeaderboard = addBotsIfNeeded(initialLeaderboard, 15, evaluation.questions.length);
+      
       updateLeaderboard(initialLeaderboard);
     }
 

@@ -8,6 +8,7 @@ export const COURSES = [
     difficulty: "Beginner",
     image: "🎨", 
     color: "bg-pink-100 text-pink-600",
+    requiredSemester: 3,
   },
   {
     id: "react-mastery",
@@ -18,6 +19,7 @@ export const COURSES = [
     difficulty: "Intermediate",
     image: "⚛️",
     color: "bg-blue-100 text-blue-600",
+    requiredSemester: 5,
   },
   {
     id: "backend-ninja",
@@ -28,5 +30,6 @@ export const COURSES = [
     difficulty: "Advanced",
     image: "🛡️",
     color: "bg-emerald-100 text-emerald-600",
+    requiredSemester: 7,
   },
 ];

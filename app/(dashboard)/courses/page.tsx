@@ -51,47 +51,44 @@ const CircularProgress = ({ progress, size = 44, strokeWidth = 4, color = "text-
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { setActiveCourse, level, completedLessonIds } = useUserStore();
+  const { setActiveCourse, level, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, requestEnrollment } = useUserStore();
 
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  // 1. Menyiapkan Data dengan Prerequisite Lock berbasis Tingkat Kesulitan
+  // 1. Menyiapkan Data — semua kursus tampil, status dibedakan berdasar semester & enrolment
   const processedCourses = useMemo(() => {
-    // Hitung progress nyata berdasarkan lesson yang diselesaikan di store
-    const coursesWithProgress = RAW_COURSES.map((course) => {
+    return RAW_COURSES.map((course, index) => {
       const completedCount = completedLessonIds.filter(id => id.startsWith(course.id)).length;
-      // Untuk demo, kita anggap 4 lesson = 100% tamat
       const targetLessons = 4;
       const progress = Math.min(Math.floor((completedCount / targetLessons) * 100), 100);
-      return { ...course, progress };
-    });
 
-    // Cek kelulusan tiap tingkat kesulitan
-    const isBeginnerDone = coursesWithProgress.filter(c => c.difficulty === "Beginner").every(c => c.progress === 100);
-    const isIntermediateDone = coursesWithProgress.filter(c => c.difficulty === "Intermediate").every(c => c.progress === 100);
-
-    return coursesWithProgress.map((course, index) => {
       const mockDate = new Date();
       mockDate.setDate(mockDate.getDate() - (index * 2));
-      
-      let isUnlocked = false;
-      if (course.difficulty === "Beginner") {
-        isUnlocked = true;
-      } else if (course.difficulty === "Intermediate") {
-        isUnlocked = isBeginnerDone;
-      } else if (course.difficulty === "Advanced") {
-        isUnlocked = isIntermediateDone;
+
+      const semesterRequired = course.requiredSemester || 1;
+      const isSemesterMet = semester >= semesterRequired;
+
+      let status = 'locked'; // locked = semester ok, can request; semester-locked = belum nyampe
+      if (!isSemesterMet) {
+        status = 'semester-locked';
+      } else if (enrolledCourseIds.includes(course.id)) {
+        status = 'unlocked';
+      } else if (pendingCourseIds.includes(course.id)) {
+        status = 'pending';
       }
 
       return {
         ...course,
-        status: isUnlocked ? "unlocked" : "locked",
+        progress,
+        status,
+        semesterRequired,
+        isSemesterMet,
         lastAccessed: mockDate,
       };
     });
-  }, [completedLessonIds]);
+  }, [completedLessonIds, semester, enrolledCourseIds, pendingCourseIds]);
 
   // 2. Logika Sorting
   const sortedCourses = useMemo(() => {
@@ -175,9 +172,9 @@ export default function CoursesPage() {
           {sortedCourses.map((course) => (
             <div key={course.id} className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden">
               {/* Header Gambar */}
-              <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative transition-all duration-300 group-hover:h-24`}>
+              <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative transition-all duration-300 group-hover:h-24 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
                 {course.image}
-                {course.status === 'locked' && (
+                {(course.status === 'locked' || course.status === 'semester-locked') && (
                   <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
                     <Lock className="w-8 h-8 text-zinc-600/50" />
                   </div>
@@ -203,17 +200,22 @@ export default function CoursesPage() {
                   Last activity: {formatDate(course.lastAccessed)}
                 </p>
 
-                {/* Circular Progress (GRID) */}
+                {/* Status & Progress */}
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Progress Belajar</span>
-                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{course.status === 'locked' ? 'Terkunci' : 'Lanjutkan Materi'}</span>
+                    <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Status Belajar</span>
+                    <span className={`text-sm font-bold ${course.status === 'semester-locked' ? 'text-red-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                      {course.status === 'unlocked' ? 'Lanjutkan Materi'
+                        : course.status === 'pending' ? 'Menunggu Approval'
+                        : course.status === 'semester-locked' ? `Butuh Semester ${course.semesterRequired}`
+                        : 'Minta Akses'}
+                    </span>
                   </div>
-                  {course.status !== 'locked' ? (
+                  {course.status === 'unlocked' || course.status === 'pending' ? (
                     <CircularProgress progress={course.progress} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
                   ) : (
                     <div className="w-11 h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-zinc-400" />
+                      <Lock className={`w-5 h-5 ${course.status === 'semester-locked' ? 'text-red-400' : 'text-zinc-400'}`} />
                     </div>
                   )}
                 </div>
@@ -235,8 +237,14 @@ export default function CoursesPage() {
                     <Button size="sm" onClick={() => handleSelectCourse(course.id)}>
                       {course.progress > 0 ? "Lanjutkan" : "Mulai Belajar"}
                     </Button>
+                  ) : course.status === 'pending' ? (
+                    <Button size="sm" variant="secondary" disabled>Menunggu Persetujuan</Button>
+                  ) : course.status === 'semester-locked' ? (
+                    <Button size="sm" variant="ghost" disabled className="text-red-400 text-xs">
+                      <Lock className="w-3 h-3 mr-1" /> Belum Nyampe
+                    </Button>
                   ) : (
-                    <Button size="sm" variant="secondary" disabled>Terkunci</Button>
+                    <Button size="sm" variant="outline" onClick={() => requestEnrollment(course.id)}>Minta Akses Kelas</Button>
                   )}
                 </div>
               </div>
@@ -249,9 +257,9 @@ export default function CoursesPage() {
           {sortedCourses.map((course) => (
             <div key={course.id} className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border bg-card hover:bg-zinc-50/50 hover:border-blue-500/30 transition-all dark:hover:bg-zinc-900">
               {/* Icon Box */}
-              <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 ${course.color} flex items-center justify-center text-3xl sm:text-4xl relative overflow-hidden`}>
+              <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 ${course.color} flex items-center justify-center text-3xl sm:text-4xl relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
                 {course.image}
-                {course.status === 'locked' && (
+                {(course.status === 'locked' || course.status === 'semester-locked') && (
                   <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
                     <Lock className="w-5 h-5 text-zinc-600/50" />
                   </div>
@@ -275,14 +283,19 @@ export default function CoursesPage() {
                   {course.description}
                 </p>
 
-                {/* Circular Progress (LIST) */}
-                {course.status !== 'locked' && (
+                {/* Circular Progress (LIST) — show only if enrolled or pending */}
+                {(course.status === 'unlocked' || course.status === 'pending') && (
                   <div className="flex items-center gap-3 mb-3 max-w-md">
                     <CircularProgress progress={course.progress} size={36} strokeWidth={3} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Target Belajar</span>
                       <span className="text-[10px] text-zinc-500">{course.progress}% Tuntas</span>
                     </div>
+                  </div>
+                )}
+                {course.status === 'semester-locked' && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-red-500">🔒 Perlu minimal Semester {course.semesterRequired}</span>
                   </div>
                 )}
 
@@ -305,9 +318,17 @@ export default function CoursesPage() {
                   <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSelectCourse(course.id)}>
                     {course.progress > 0 ? "Lanjutkan" : "Mulai"}
                   </Button>
+                ) : course.status === 'pending' ? (
+                  <Button size="sm" variant="secondary" disabled className="w-full sm:w-auto">
+                    Menunggu Persetujuan
+                  </Button>
+                ) : course.status === 'semester-locked' ? (
+                  <Button size="sm" variant="ghost" disabled className="text-red-400 text-xs w-full sm:w-auto">
+                    <Lock className="w-3 h-3 mr-1" /> Belum Nyampe
+                  </Button>
                 ) : (
-                  <Button size="sm" variant="ghost" disabled className="text-zinc-400 w-full sm:w-auto">
-                    <Lock className="w-4 h-4 mr-1" /> Terkunci
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => requestEnrollment(course.id)}>
+                    <Lock className="w-4 h-4 mr-1" /> Minta Akses
                   </Button>
                 )}
               </div>

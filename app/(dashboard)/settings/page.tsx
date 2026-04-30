@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -19,6 +21,12 @@ import {
 export default function SettingsPage() {
   const router = useRouter();
   const { name, email, role, logout } = useUserStore();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -94,13 +102,38 @@ export default function SettingsPage() {
               <div>
                 <p className="font-semibold">Theme</p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Light or dark mode
+                  Ubah tema untuk testing Dynamic Environment
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
-              System
-            </Button>
+            {mounted && (
+              <div className="flex gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg border">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setTheme("light")}
+                  className={theme === "light" ? "bg-white dark:bg-zinc-800 shadow-sm" : ""}
+                >
+                  Light
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setTheme("dark")}
+                  className={theme === "dark" ? "bg-white dark:bg-zinc-800 shadow-sm" : ""}
+                >
+                  Dark
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setTheme("system")}
+                  className={theme === "system" ? "bg-white dark:bg-zinc-800 shadow-sm" : ""}
+                >
+                  System
+                </Button>
+              </div>
+            )}
           </div>
 
           <Separator />

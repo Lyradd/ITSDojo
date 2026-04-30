@@ -25,14 +25,14 @@ const COLORS = {
 };
 
 const SHAPES_CFG: ShapeProps[] = [
-  { initialPosition: [-5.5, 3, -4],   geometry: 'book',    color: COLORS.indigo, scale: 1.4, speed: 2.0 },
-  { initialPosition: [5.2, -2, -5],   geometry: 'pencil',  color: COLORS.purple, scale: 1.2, speed: 2.2 },
-  { initialPosition: [3, 3.5, -6],    geometry: 'eraser',  color: COLORS.blue,   scale: 1.2, speed: 2.5 },
-  { initialPosition: [-4, -3, -5],    geometry: 'ruler',   color: COLORS.sky,    scale: 1.1, speed: 1.8 },
-  { initialPosition: [0, -4, -7],     geometry: 'book',    color: COLORS.blue,   scale: 1.6, speed: 1.5 },
-  { initialPosition: [-2.5, 5, -8],   geometry: 'pencil',  color: COLORS.purple, scale: 1.2, speed: 2.8 },
-  { initialPosition: [7, 1, -9],      geometry: 'eraser',  color: COLORS.indigo, scale: 1.3, speed: 1.9 },
-  { initialPosition: [1.5, -5, -4],   geometry: 'ruler',   color: COLORS.blue,   scale: 1.0, speed: 2.6 },
+  { initialPosition: [-5.5, 3, -4], geometry: 'book', color: COLORS.indigo, scale: 1.4, speed: 2.0 },
+  { initialPosition: [5.2, -2, -5], geometry: 'pencil', color: COLORS.purple, scale: 1.2, speed: 2.2 },
+  { initialPosition: [3, 3.5, -6], geometry: 'eraser', color: COLORS.blue, scale: 1.2, speed: 2.5 },
+  { initialPosition: [-4, -3, -5], geometry: 'ruler', color: COLORS.sky, scale: 1.1, speed: 1.8 },
+  { initialPosition: [0, -4, -7], geometry: 'book', color: COLORS.blue, scale: 1.6, speed: 1.5 },
+  { initialPosition: [-2.5, 5, -8], geometry: 'pencil', color: COLORS.purple, scale: 1.2, speed: 2.8 },
+  { initialPosition: [7, 1, -9], geometry: 'eraser', color: COLORS.indigo, scale: 1.3, speed: 1.9 },
+  { initialPosition: [1.5, -5, -4], geometry: 'ruler', color: COLORS.blue, scale: 1.0, speed: 2.6 },
 ];
 
 function EducationalShape({ type, color }: { type: string, color: string }) {
@@ -127,8 +127,8 @@ function EducationalShape({ type, color }: { type: string, color: string }) {
           </mesh>
           {/* White sleeve/wrapper */}
           <mesh position={[0, 0, 0]}>
-             <boxGeometry args={[1.25, 0.62, 0.8]} />
-             <meshStandardMaterial color="#ffffff" roughness={0.9} />
+            <boxGeometry args={[1.25, 0.62, 0.8]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.9} />
           </mesh>
         </group>
       );
@@ -157,10 +157,23 @@ function EducationalShape({ type, color }: { type: string, color: string }) {
   }
 }
 
-function PhysicsScene() {
+// --- Exported Component ---
+export function LoginScene({ showShapes = true }: { showShapes?: boolean }) {
+  return (
+    <Canvas
+      camera={{ position: [0, 0, 8], fov: 65 }}
+      dpr={[1, 1.5]}
+      style={{ position: 'absolute', inset: 0 }}
+    >
+      <PhysicsScene showShapes={showShapes} />
+    </Canvas>
+  );
+}
+
+function PhysicsScene({ showShapes }: { showShapes: boolean }) {
   const { size, camera } = useThree();
   const meshesRef = useRef<(THREE.Mesh | null)[]>([]);
-  const mouse = useRef<[number, number]>([0,0]);
+  const mouse = useRef<[number, number]>([0, 0]);
 
   // Calculate boundaries based on screen size + camera depth
   // At z = -6 (average depth), distance from camera = 8 + 6 = 14
@@ -185,9 +198,9 @@ function PhysicsScene() {
         Math.random() - 0.5,
         (Math.random() - 0.5) * 0.5 // less movement in Z
       ).normalize();
-      
+
       const speedMultiplier = (s.speed || 1) * 0.8; // Reduced base speed factor
-      
+
       return {
         vel: dir.multiplyScalar(speedMultiplier),
         radius: (s.scale || 1) * 1.2, // Approximate collision radius
@@ -205,14 +218,14 @@ function PhysicsScene() {
     const dt = Math.min(delta, 0.1);
 
     const count = SHAPES_CFG.length;
-    
+
     // 1. Update Positions and check boundary conditions
     for (let i = 0; i < count; i++) {
       const mesh = meshesRef.current[i];
       if (!mesh) continue;
-      
+
       const pData = physicsRef.current[i];
-      
+
       // Rotate
       mesh.rotation.x += pData.rotVel.x * dt;
       mesh.rotation.y += pData.rotVel.y * dt;
@@ -223,7 +236,7 @@ function PhysicsScene() {
 
       // Boundary Collisions (Bounce)
       const p = mesh.position;
-      
+
       if (p.x > BOUNDS.x - pData.radius) {
         p.x = BOUNDS.x - pData.radius;
         pData.vel.x = -Math.abs(pData.vel.x);
@@ -231,7 +244,7 @@ function PhysicsScene() {
         p.x = -BOUNDS.x + pData.radius;
         pData.vel.x = Math.abs(pData.vel.x);
       }
-      
+
       if (p.y > BOUNDS.y - pData.radius) {
         p.y = BOUNDS.y - pData.radius;
         pData.vel.y = -Math.abs(pData.vel.y);
@@ -266,7 +279,7 @@ function PhysicsScene() {
           const dist = Math.sqrt(distSq);
           // Collision Normal
           const normal = new THREE.Vector3().subVectors(meshA.position, meshB.position).normalize();
-          
+
           // Relative Velocity
           const relVel = new THREE.Vector3().subVectors(pA.vel, pB.vel);
           const speed = relVel.dot(normal);
@@ -275,13 +288,13 @@ function PhysicsScene() {
           if (speed < 0) {
             // Elastic collision impulse (assuming equal mass)
             const impulse = normal.multiplyScalar(speed * 0.7); // 0.7 bounce factor
-            
+
             pA.vel.sub(impulse);
             pB.vel.add(impulse);
-            
+
             // Add a little spin on collision
-            pA.rotVel.add(new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, 0).multiplyScalar(0.2));
-            pB.rotVel.add(new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, 0).multiplyScalar(0.2));
+            pA.rotVel.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).multiplyScalar(0.2));
+            pB.rotVel.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).multiplyScalar(0.2));
           }
 
           // Positional correction to prevent sticking
@@ -306,7 +319,7 @@ function PhysicsScene() {
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 10, 5]} intensity={1.5} color="#fff" />
       <directionalLight position={[-5, -10, -5]} intensity={0.8} color="#c084fc" />
-      
+
       {/* Invisible plane to catch mouse moves */}
       <mesh
         position={[0, 0, -5]}
@@ -317,19 +330,19 @@ function PhysicsScene() {
             (e.point.y / heightAtZ) * 2,
           ];
         }}
-        onPointerLeave={() => { mouse.current = [0,0]; }}
+        onPointerLeave={() => { mouse.current = [0, 0]; }}
       >
         <planeGeometry args={[100, 100]} />
         <meshBasicMaterial />
       </mesh>
 
-      {SHAPES_CFG.map((cfg, idx) => {
+      {showShapes && SHAPES_CFG.map((cfg, idx) => {
         return (
           <group
             key={idx}
             ref={(el) => {
               // Physics expects Object3D which Group implements, allowing rotation and position manipulation
-              meshesRef.current[idx] = el as unknown as THREE.Mesh; 
+              meshesRef.current[idx] = el as unknown as THREE.Mesh;
               // Set initial position once
               if (el && el.position.lengthSq() === 0) {
                 el.position.set(...cfg.initialPosition);
@@ -342,18 +355,5 @@ function PhysicsScene() {
         );
       })}
     </>
-  );
-}
-
-// --- Exported Component ---
-export function LoginScene() {
-  return (
-    <Canvas
-      camera={{ position: [0, 0, 8], fov: 65 }}
-      dpr={[1, 1.5]}
-      style={{ position: 'absolute', inset: 0 }}
-    >
-      <PhysicsScene />
-    </Canvas>
   );
 }

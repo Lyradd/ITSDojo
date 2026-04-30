@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageTransition } from "@/components/providers/page-transition";
+import { DynamicEnvironment } from "@/components/dynamic-environment";
 
 export default function DashboardLayout({
   children,
@@ -15,7 +16,9 @@ export default function DashboardLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative">
+      <DynamicEnvironment />
+
       {/* Sidebar - Collapsible */}
       <aside
         className={cn(
@@ -49,8 +52,8 @@ export default function DashboardLayout({
           {children}
         </PageTransition>
       </main>
-      
+
       <MobileNav />
     </div>
   );
-}
+}

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUserStore } from "@/lib/store";
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
+import { COURSE_CONTENT, getLessonProblem } from "@/lib/lesson-data";
 import {
   ArrowLeft,
   Settings,
@@ -35,48 +36,95 @@ type LessonStep = 'video' | 'summary' | 'practice';
 export default function LessonIDEPage() {
   const router = useRouter();
   const params = useParams();
-  const { completeLesson } = useUserStore();
+  const lessonId = params?.id as string;
+  const problem = useMemo(() => getLessonProblem(lessonId), [lessonId]);
+
+  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [code, setCode] = useState<string>('#include <stdio.h>\n#include <string.h>\n#include <math.h>\n#include <stdlib.h>\n\nint main() \n{\n    /* Enter your code here. Read input from STDIN. Print output to STDOUT */    \n    return 0;\n}');
+  const [code, setCode] = useState<string>(problem?.starterCode || '');
   const [activeTab, setActiveTab] = useState('problem');
   const [step, setStep] = useState<LessonStep>('video');
   const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [executionResult, setExecutionResult] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
-  const [language, setLanguage] = useState("c");
+  const [language, setLanguage] = useState(problem?.defaultLanguage || "c");
+
+
+  // --- Route Protection: cek apakah lesson ini boleh diakses ---
+
+  const isLessonAccessible = useMemo(() => {
+    if (!lessonId) return false;
+
+    // Cari kursus yang memiliki lesson ini
+    const courseEntry = Object.entries(COURSE_CONTENT).find(([, content]) =>
+      content.nodes.some(n => n.id === lessonId)
+    );
+    if (!courseEntry) return false; // Lesson ID tidak dikenal
+
+    const [, courseContent] = courseEntry;
+    const nodes = courseContent.nodes;
+    const nodeIndex = nodes.findIndex(n => n.id === lessonId);
+    if (nodeIndex === -1) return false;
+
+    // Cek apakah lesson sudah completed
+    if (completedLessonIds.includes(lessonId)) return true;
+
+    // Cek apakah lesson ini adalah "active" (semua sebelumnya sudah selesai)
+    const activeNodeIndex = nodes.findIndex((n, idx) => {
+      const prevId = idx === 0 ? null : nodes[idx - 1].id;
+      const isPrevCompleted = prevId ? completedLessonIds.includes(prevId) : true;
+      const isCurrCompleted = completedLessonIds.includes(n.id);
+      return isPrevCompleted && !isCurrCompleted;
+    });
+
+    return nodeIndex === activeNodeIndex;
+  }, [lessonId, completedLessonIds]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) return null;
+  // Redirect jika belum login
+  useEffect(() => {
+    if (isMounted && !isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isMounted, isLoggedIn, router]);
 
-  const handleComplete = () => {
-    completeLesson(params?.id as string);
-    triggerConfetti();
-    playSuccessSound();
-    setTimeout(() => {
+  // Redirect jika lesson terkunci (akses via URL langsung)
+  useEffect(() => {
+    if (isMounted && isLoggedIn && !isLessonAccessible) {
       router.push("/learn");
-    }, 1500);
+    }
+  }, [isMounted, isLoggedIn, isLessonAccessible, router]);
+
+  if (!isMounted || !isLoggedIn || !isLessonAccessible) return null;
+
+  // Helper: eksekusi kode via Piston API
+  const executeCode = async (stdin?: string) => {
+    const apiUrl = process.env.NEXT_PUBLIC_PISTON_API_URL || "https://emkc.org/api/v2/piston/execute";
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        language: language,
+        version: "*",
+        files: [{ content: code }],
+        stdin: stdin || "",
+      })
+    });
+    return response.json();
   };
 
+  // Run Code: jalankan tanpa validasi (untuk testing/debugging)
   const handleRunCode = async () => {
     setIsRunning(true);
     setExecutionResult(null);
     setIsError(false);
 
     try {
-      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          language: language,
-          version: "*",
-          files: [{ content: code }]
-        })
-      });
-
-      const data = await response.json();
+      const data = await executeCode();
       
       if (data.run && data.run.output !== undefined) {
         setExecutionResult(data.run.output || "Program finished with no output.");
@@ -92,6 +140,80 @@ export default function LessonIDEPage() {
       setIsError(true);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  // Submit & Selesai: jalankan terhadap semua test case, validasi output
+  const handleSubmit = async () => {
+    if (!problem) return;
+
+    setIsSubmitting(true);
+    setExecutionResult(null);
+    setIsError(false);
+
+    let resultLog = `⏳ Menjalankan ${problem.testCases.length} test cases...\n\n`;
+    setExecutionResult(resultLog);
+
+    let allPassed = true;
+
+    try {
+      for (const tc of problem.testCases) {
+        const data = await executeCode(tc.stdin);
+
+        const actualOutput = (data.run?.output ?? "").replace(/\r\n/g, "\n").trimEnd();
+        const expectedOutput = tc.expected.replace(/\r\n/g, "\n").trimEnd();
+
+        // Cek error kompilasi / runtime
+        if (!data.run || data.run.code !== 0 || data.run.stderr) {
+          allPassed = false;
+          const errorMsg = data.run?.stderr || data.run?.output || data.message || "Unknown error";
+          resultLog += `❌ Test Case ${tc.id}: ERROR\n`;
+          resultLog += `   Error: ${errorMsg.trim()}\n\n`;
+          setExecutionResult(resultLog);
+          setIsError(true);
+          continue;
+        }
+
+        // Bandingkan output
+        if (actualOutput === expectedOutput) {
+          resultLog += `✅ Test Case ${tc.id}: PASSED\n`;
+        } else {
+          allPassed = false;
+          resultLog += `❌ Test Case ${tc.id}: FAILED\n`;
+          resultLog += `   Expected:\n${expectedOutput.split("\n").map((l: string) => `   │ ${l}`).join("\n")}\n`;
+          resultLog += `   Got:\n${actualOutput.split("\n").map((l: string) => `   │ ${l}`).join("\n")}\n`;
+        }
+        resultLog += "\n";
+        setExecutionResult(resultLog);
+      }
+
+      if (allPassed) {
+        resultLog += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        resultLog += "🎉 Semua test case PASSED! Lesson selesai!\n";
+        setExecutionResult(resultLog);
+        setIsError(false);
+
+        // Tandai lesson selesai setelah delay singkat agar user bisa lihat hasil
+        setTimeout(() => {
+          completeLesson(params?.id as string);
+          triggerConfetti();
+          playSuccessSound();
+          setTimeout(() => {
+            router.push("/learn");
+          }, 1500);
+        }, 800);
+      } else {
+        resultLog += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        resultLog += "⚠️ Beberapa test case gagal. Perbaiki kode dan coba lagi.\n";
+        setExecutionResult(resultLog);
+        setIsError(true);
+      }
+    } catch (error: any) {
+      resultLog += `\n❌ Gagal menghubungi Execution API: ${error.message}\n`;
+      setExecutionResult(resultLog);
+      setIsError(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -127,12 +249,12 @@ export default function LessonIDEPage() {
               <div className="p-8">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 text-xs font-bold rounded-full uppercase tracking-wider">
-                    Materi Dasar
+                    {problem?.category || 'Materi Dasar'}
                   </span>
                   <span className="text-sm font-bold text-zinc-400">Stage {stageNumber}</span>
                 </div>
                 <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-4">
-                  Memahami Konsep Dasar
+                  {problem?.title || 'Memahami Konsep Dasar'}
                 </h1>
 
                 {/* DUMMY DESCRIPTION UNTUK SUMMARY */}
@@ -248,9 +370,9 @@ export default function LessonIDEPage() {
             <ArrowLeft className="w-4 h-4" /> Kembali Rangkuman
           </Button>
           <div className="hidden sm:flex items-center gap-2 text-zinc-400">
-            <span>Frontend</span>
+            <span>{problem?.category || 'Lesson'}</span>
             <span>/</span>
-            <span className="text-zinc-800 dark:text-zinc-100">Playing With Characters</span>
+            <span className="text-zinc-800 dark:text-zinc-100">{problem?.title || 'Unknown'}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -282,73 +404,32 @@ export default function LessonIDEPage() {
             ))}
           </div>
 
-          {/* Content Area */}
+          {/* Content Area — Dynamic dari problem data */}
           <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
-            <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-6">Objective</h1>
-            <p className="mb-4">This challenge will help you to learn how to take a character, a string and a sentence as input in C.</p>
-            <p className="mb-4">
-              To take a single character <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">ch</code> as input, you can use <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">scanf("%c", &amp;ch);</code> and <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">printf("%c", ch)</code> writes a character specified by the argument char to stdout
-            </p>
+            <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-6">{problem?.title || 'Problem'}</h1>
+            <p className="mb-6">{problem?.description}</p>
 
-            <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 mb-6 whitespace-pre shadow-inner">
-              <span className="text-pink-600 dark:text-pink-400">char</span> ch;<br />
-              <span className="text-blue-600 dark:text-blue-400">scanf</span>(<span className="text-green-600 dark:text-green-400">"%c"</span>, &amp;ch);<br />
-              <span className="text-blue-600 dark:text-blue-400">printf</span>(<span className="text-green-600 dark:text-green-400">"%c"</span>, ch);
-            </div>
-
-            <p className="mb-4">This piece of code prints the character <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">ch</code>.</p>
-
-            <p className="mb-4">You can take a string as input in C using <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">scanf("%s", s)</code>. But, it accepts string only until it finds the first space.</p>
-
-            <p className="mb-4">
-              In order to take a line as input, you can use <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">scanf("%[^\n]%*c", s);</code> where <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">s</code> is defined as <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">char s[MAX_LEN]</code> where <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">MAX_LEN</code> is the maximum size of <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">s</code>. Here, <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">[]</code> is the scanset character. <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">^\n</code> stands for taking input until a newline isn't encountered. Then, with this <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">%*c</code>, it reads the newline character and here, the used <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">*</code> indicates that this newline character is discarded.
-            </p>
-
-            <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-8 text-sm text-blue-800 dark:text-blue-300 rounded-r-xl">
-              <strong className="font-bold flex items-center gap-2 mb-1"><FileCode2 className="w-4 h-4" /> Note:</strong> The statement: <code className="bg-blue-100 dark:bg-blue-800/50 px-1 py-0.5 rounded text-blue-900 dark:text-blue-100">scanf("%[^\n]%*c", s);</code> will not work because the last statement will read a newline character, <code className="bg-blue-100 dark:bg-blue-800/50 px-1 py-0.5 rounded text-blue-900 dark:text-blue-100">\n</code>, from the previous line. This can be handled in a variety of ways. One way is to use <code className="bg-blue-100 dark:bg-blue-800/50 px-1 py-0.5 rounded text-blue-900 dark:text-blue-100">scanf("\n");</code> before the last statement.
-            </div>
-
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Task</h2>
-            <p className="mb-8">
-              You have to print the character, <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">ch</code>, in the first line. Then print <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">s</code> in next line. In the last line print the sentence, <code className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200 dark:border-zinc-700">sen</code>.
-            </p>
-
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Input Format</h2>
-            <p className="mb-8 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-1">
-              <span>First, take a character, <code className="text-zinc-800 dark:text-zinc-200 font-bold">ch</code> as input.</span>
-              <span>Then take the string, <code className="text-zinc-800 dark:text-zinc-200 font-bold">s</code> as input.</span>
-              <span>Lastly, take the sentence <code className="text-zinc-800 dark:text-zinc-200 font-bold">sen</code> as input.</span>
-            </p>
-
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Constraints</h2>
-            <p className="mb-8 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
-              Strings for <code className="text-zinc-800 dark:text-zinc-200 font-bold">s</code> and <code className="text-zinc-800 dark:text-zinc-200 font-bold">sen</code> will have fewer than 100 characters, including the newline.
-            </p>
-
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Output Format</h2>
-            <p className="mb-8 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-1">
-              <span>Print three lines of output. The first line prints the character, <code className="text-zinc-800 dark:text-zinc-200 font-bold">ch</code>.</span>
-              <span>The second line prints the string, <code className="text-zinc-800 dark:text-zinc-200 font-bold">s</code>.</span>
-              <span>The third line prints the sentence, <code className="text-zinc-800 dark:text-zinc-200 font-bold">sen</code>.</span>
-            </p>
-
+            <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Sample</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div>
-                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Input 0</h2>
+                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Input</h2>
                 <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre shadow-inner">
-                  C
-                  Language
-                  Welcome To C!!
+                  {problem?.sampleInput}
                 </div>
               </div>
               <div>
-                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Output 0</h2>
+                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Output</h2>
                 <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre shadow-inner">
-                  C
-                  Language
-                  Welcome To C!!
+                  {problem?.sampleOutput}
                 </div>
               </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-4 text-sm text-blue-800 dark:text-blue-300 rounded-r-xl">
+              <strong className="font-bold flex items-center gap-2 mb-1"><FileCode2 className="w-4 h-4" /> Info:</strong>
+              {problem?.testCases && (
+                <span>Kode Anda akan diuji terhadap {problem.testCases.length} test case ({problem.testCases.filter(tc => !tc.hidden).length} terlihat, {problem.testCases.filter(tc => tc.hidden).length} tersembunyi).</span>
+              )}
             </div>
 
           </div>
@@ -393,7 +474,7 @@ export default function LessonIDEPage() {
               <div className="flex-1 w-full relative pt-4">
             <Editor
               height="100%"
-              defaultLanguage="c"
+              defaultLanguage={language}
               theme="vs-dark"
               value={code}
               onChange={(val) => setCode(val || "")}
@@ -405,8 +486,10 @@ export default function LessonIDEPage() {
                 padding: { top: 8 },
                 scrollBeyondLastLine: false,
                 smoothScrolling: true,
-                cursorBlinking: "smooth",
-                cursorSmoothCaretAnimation: "on",
+                cursorBlinking: "blink",
+                cursorStyle: "line",
+                cursorWidth: 2,
+                cursorSmoothCaretAnimation: "off",
                 formatOnPaste: true,
               }}
             />
@@ -449,15 +532,17 @@ export default function LessonIDEPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button variant="secondary" disabled={isRunning} className="bg-zinc-800 hover:bg-zinc-700 text-white h-11 px-8 font-bold text-sm shadow-lg border border-zinc-700" onClick={handleRunCode}>
+              <Button variant="secondary" disabled={isRunning || isSubmitting} className="bg-zinc-800 hover:bg-zinc-700 text-white h-11 px-8 font-bold text-sm shadow-lg border border-zinc-700" onClick={handleRunCode}>
                 {isRunning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />} 
                 {isRunning ? 'Running...' : 'Run Code'}
               </Button>
               <Button
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white h-11 px-8 font-extrabold text-sm border-none shadow-xl shadow-blue-900/50 hover:scale-105 active:scale-95 transition-all"
-                onClick={handleComplete}
+                disabled={isSubmitting || isRunning}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white h-11 px-8 font-extrabold text-sm border-none shadow-xl shadow-blue-900/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                onClick={handleSubmit}
               >
-                Submit & Selesai
+                {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                {isSubmitting ? 'Menguji...' : 'Submit & Selesai'}
               </Button>
             </div>
           </div>

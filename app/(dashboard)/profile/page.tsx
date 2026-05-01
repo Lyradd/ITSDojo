@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
 import { COURSES } from "@/lib/dummydata";
+import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -316,8 +317,12 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                     {COURSES.slice(0, 3).map((course, idx) => ( 
                         <div key={course.id} className="flex items-center gap-3 pb-3 border-b last:border-0 last:pb-0">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${course.color}`}>
-                                {course.image}
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 dark:border-zinc-800 ${course.color}`}>
+                                <img 
+                                  src={course.image} 
+                                  alt={course.title}
+                                  className="w-full h-full object-cover"
+                                />
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <h4 className="font-bold text-sm truncate">{course.title}</h4>
@@ -342,7 +347,7 @@ export default function ProfilePage() {
             <Card className="p-4 rounded-2xl border-2">
                 <h3 className="font-bold text-lg mb-4 text-zinc-700 dark:text-zinc-200">Teman Belajar</h3>
                  <div className="space-y-4">
-                    {["Sarah K.", "Budi S.", "Citra A."].map((friend, idx) => (
+                    {["Sarah K.", "Budi S.", "Citra A."].map((friend: string, idx: number) => (
                         <div key={idx} className="flex items-center gap-3">
                              <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-500 border-2 border-zinc-200">
                                 {friend.charAt(0)}
@@ -424,7 +429,7 @@ export default function ProfilePage() {
                 <Trophy className="w-5 h-5 text-yellow-500" /> Daftar Pencapaian
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {achievements.map((ach) => (
+                 {achievements.map((ach: any) => (
                     <div key={ach.id} className={`flex flex-col gap-3 p-5 border-2 rounded-2xl bg-card ${ach.unlocked ? 'border-zinc-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-shadow' : 'border-zinc-100 dark:border-zinc-800 opacity-70 bg-zinc-50/50 dark:bg-zinc-900/50'}`}>
                         <div className="flex items-start gap-4">
                             {/* Icon Badge */}
@@ -551,11 +556,11 @@ function ActivityHeatmap() {
 
           {/* Grid Kotak */}
           <div className="flex gap-1.5">
-            {weeks.map((week, weekIdx) => (
+            {weeks.map((week: Date[], weekIdx: number) => (
               <div key={weekIdx} className="flex flex-col gap-1.5">
-                {week.map((dayObj, dayIdx) => {
-                  const dateStr = dayObj.toISOString().split('T')[0];
-                  const record = activityHistory.find(h => h.date === dateStr);
+                {week.map((dayObj: Date, dayIdx: number) => {
+                  const dateStr = formatLocalDate(dayObj);
+                  const record = activityHistory.find((h: { date: string, count: number }) => h.date === dateStr);
                   const count = record ? record.count : 0;
                   const isFuture = dayObj > today;
                   

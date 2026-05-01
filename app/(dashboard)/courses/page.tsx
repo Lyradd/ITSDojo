@@ -4,73 +4,53 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List
+  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List, Search
 } from "lucide-react";
 import { COURSES as RAW_COURSES } from "@/lib/dummydata";
+import { COURSE_CONTENT } from "@/lib/lesson-data";
 import { useUserStore } from "@/lib/store";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { Input } from "@/components/ui/input";
 
 type SortOption = "name-asc" | "last-accessed" | "progress-desc";
 type ViewMode = "grid" | "list";
 
-const CircularProgress = ({ progress, size = 44, strokeWidth = 4, color = "text-blue-500" }: { progress: number, size?: number, strokeWidth?: number, color?: string }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90 w-full h-full">
-        <circle
-          className="text-zinc-100 dark:text-zinc-800"
-          strokeWidth={strokeWidth}
-          stroke="currentColor"
-          fill="transparent"
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-        />
-        <motion.circle
-          className={color}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference}
-          strokeLinecap="round"
-          stroke="currentColor"
-          fill="transparent"
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: circumference - (progress / 100) * circumference }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        />
-      </svg>
-      <span className="absolute text-[10px] font-bold text-zinc-700 dark:text-zinc-300">{progress}%</span>
-    </div>
-  )
-}
+import { CircularProgress } from "@/components/ui/circular-progress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { setActiveCourse, level, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, requestEnrollment } = useUserStore();
+  const { setActiveCourse, level, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, requestEnrollment, courseAccessHistory } = useUserStore();
 
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null);
+  const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // 1. Menyiapkan Data — semua kursus tampil, status dibedakan berdasar semester & enrolment
-  const processedCourses = useMemo(() => {
-    return RAW_COURSES.map((course, index) => {
+  // Data Processing (Mapping, Filtering, Sorting combined)
+  const sortedCourses = useMemo(() => {
+    // 1. Map status and progress
+    let data = RAW_COURSES.map((course) => {
       const completedCount = completedLessonIds.filter(id => id.startsWith(course.id)).length;
-      const targetLessons = 4;
+      const targetLessons = COURSE_CONTENT[course.id]?.nodes?.length || 4;
       const progress = Math.min(Math.floor((completedCount / targetLessons) * 100), 100);
 
-      const mockDate = new Date();
-      mockDate.setDate(mockDate.getDate() - (index * 2));
+      const accessDateStr = courseAccessHistory?.[course.id];
+      const lastAccessed = accessDateStr ? new Date(accessDateStr) : new Date(0);
 
       const semesterRequired = course.requiredSemester || 1;
       const isSemesterMet = semester >= semesterRequired;
 
-      let status = 'locked'; // locked = semester ok, can request; semester-locked = belum nyampe
+      let status = 'locked'; 
       if (!isSemesterMet) {
         status = 'semester-locked';
       } else if (enrolledCourseIds.includes(course.id)) {
@@ -85,21 +65,24 @@ export default function CoursesPage() {
         status,
         semesterRequired,
         isSemesterMet,
-        lastAccessed: mockDate,
+        lastAccessed,
       };
     });
-  }, [completedLessonIds, semester, enrolledCourseIds, pendingCourseIds]);
 
-  // 2. Logika Sorting
-  const sortedCourses = useMemo(() => {
-    const data = [...processedCourses];
+    // 2. Filter by search query
+    if (searchQuery.trim() !== "") {
+      const lowerQ = searchQuery.toLowerCase();
+      data = data.filter(c => c.title.toLowerCase().includes(lowerQ) || c.description.toLowerCase().includes(lowerQ));
+    }
+
+    // 3. Sort
     return data.sort((a, b) => {
       if (sortOption === "name-asc") return a.title.localeCompare(b.title);
       else if (sortOption === "last-accessed") return b.lastAccessed.getTime() - a.lastAccessed.getTime();
       else if (sortOption === "progress-desc") return b.progress - a.progress;
       return 0;
     });
-  }, [processedCourses, sortOption]);
+  }, [completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption]);
 
   const formatDate = (date: Date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
 
@@ -119,9 +102,21 @@ export default function CoursesPage() {
           <p className="text-zinc-500 mt-1">Pilih kursus untuk menjadikannya materi belajar aktifmu.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto pb-2 md:pb-0">
+          {/* Search Bar */}
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+            <Input 
+              type="text" 
+              placeholder="Cari kursus..." 
+              className="pl-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
           {/* View Toggle */}
-          <div className="flex items-center p-1 bg-background rounded-md border border-input">
+          <div className="flex items-center p-1 bg-background rounded-md border border-input shrink-0">
             <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -131,36 +126,33 @@ export default function CoursesPage() {
           </div>
 
           {/* Filter Dropdown */}
-          <div className="relative">
-            <Button variant="outline" className="gap-2 min-w-[180px] justify-between" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-              <div className="flex items-center gap-2">
-                <ListFilter className="w-4 h-4 text-zinc-500" />
-                <span>{sortOption === "name-asc" ? "Name (A-Z)" : sortOption === "progress-desc" ? "Highest Progress" : "Last Accessed"}</span>
-              </div>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isFilterOpen ? "rotate-180" : ""}`} />
-            </Button>
-
-            {isFilterOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
-                <div className="absolute right-0 mt-2 w-[200px] rounded-md border bg-white p-1 shadow-lg z-20 dark:bg-zinc-950 dark:border-zinc-800">
-                  <div className="px-2 py-1.5 text-xs font-semibold text-zinc-500">Urutkan Berdasarkan</div>
-                  <button onClick={() => { setSortOption("name-asc"); setIsFilterOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                    {sortOption === "name-asc" && <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><Check className="h-4 w-4" /></span>}
-                    Course Name (A-Z)
-                  </button>
-                  <button onClick={() => { setSortOption("last-accessed"); setIsFilterOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                    {sortOption === "last-accessed" && <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><Check className="h-4 w-4" /></span>}
-                    Last Accessed
-                  </button>
-                  <button onClick={() => { setSortOption("progress-desc"); setIsFilterOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                    {sortOption === "progress-desc" && <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><Check className="h-4 w-4" /></span>}
-                    Highest Progress
-                  </button>
+          <DropdownMenu open={isSortOpen} onOpenChange={setIsSortOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 min-w-[180px] justify-between">
+                <div className="flex items-center gap-2">
+                  <ListFilter className="w-4 h-4 text-zinc-500" />
+                  <span>{sortOption === "name-asc" ? "Name (A-Z)" : sortOption === "progress-desc" ? "Highest Progress" : "Last Accessed"}</span>
                 </div>
-              </>
-            )}
-          </div>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Urutkan Berdasarkan</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortOption("name-asc")} className="flex items-center gap-2 cursor-pointer">
+                {sortOption === "name-asc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
+                Course Name (A-Z)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("last-accessed")} className="flex items-center gap-2 cursor-pointer">
+                {sortOption === "last-accessed" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
+                Last Accessed
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("progress-desc")} className="flex items-center gap-2 cursor-pointer">
+                {sortOption === "progress-desc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
+                Highest Progress
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -170,13 +162,19 @@ export default function CoursesPage() {
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {sortedCourses.map((course) => (
-            <div key={course.id} className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden">
+            <div 
+              key={course.id} 
+              className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden"
+              onMouseEnter={() => setHoveredCourseId(course.id)}
+              onMouseLeave={() => setHoveredCourseId(null)}
+            >
               {/* Header Gambar */}
-              <div className={`h-32 w-full ${course.color} flex items-center justify-center text-6xl relative transition-all duration-300 group-hover:h-24 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
-                {course.image}
+              <div className={`h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300 group-hover:h-24 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
+                <div className={`absolute inset-0 ${course.color} opacity-20`} />
+                <Image src={course.image} alt={course.title} fill className="object-cover" />
                 {(course.status === 'locked' || course.status === 'semester-locked') && (
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                    <Lock className="w-8 h-8 text-zinc-600/50" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                    <Lock className="w-8 h-8 text-white/70" />
                   </div>
                 )}
               </div>
@@ -197,7 +195,7 @@ export default function CoursesPage() {
                 </h3>
 
                 <p className="text-xs text-zinc-400 mb-2">
-                  Last activity: {formatDate(course.lastAccessed)}
+                  Last activity: {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
                 </p>
 
                 {/* Status & Progress */}
@@ -207,8 +205,8 @@ export default function CoursesPage() {
                     <span className={`text-sm font-bold ${course.status === 'semester-locked' ? 'text-red-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
                       {course.status === 'unlocked' ? 'Lanjutkan Materi'
                         : course.status === 'pending' ? 'Menunggu Approval'
-                        : course.status === 'semester-locked' ? `Butuh Semester ${course.semesterRequired}`
-                        : 'Minta Akses'}
+                          : course.status === 'semester-locked' ? `Butuh Semester ${course.semesterRequired}`
+                            : 'Minta Akses'}
                     </span>
                   </div>
                   {course.status === 'unlocked' || course.status === 'pending' ? (
@@ -220,12 +218,22 @@ export default function CoursesPage() {
                   )}
                 </div>
 
-                {/* Deskripsi: Hidden Default, Block on Hover */}
-                <div className="max-h-0 opacity-0 group-hover:max-h-24 group-hover:opacity-100 transition-all duration-500 ease-in-out overflow-hidden">
-                  <p className="text-sm text-zinc-500 mb-4 pt-1">
-                    {course.description}
-                  </p>
-                </div>
+                {/* Deskripsi: Animasi AnimatePresence */}
+                <AnimatePresence>
+                  {hoveredCourseId === course.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-sm text-zinc-500 mb-4 pt-1">
+                        {course.description}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="mt-auto pt-4 border-t flex items-center justify-between">
                   <div className="text-xs text-zinc-500 flex items-center gap-1">
@@ -257,11 +265,12 @@ export default function CoursesPage() {
           {sortedCourses.map((course) => (
             <div key={course.id} className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border bg-card hover:bg-zinc-50/50 hover:border-blue-500/30 transition-all dark:hover:bg-zinc-900">
               {/* Icon Box */}
-              <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 ${course.color} flex items-center justify-center text-3xl sm:text-4xl relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
-                {course.image}
+              <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
+                <div className={`absolute inset-0 ${course.color} opacity-20`} />
+                <Image src={course.image} alt={course.title} fill className="object-cover" />
                 {(course.status === 'locked' || course.status === 'semester-locked') && (
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px]">
-                    <Lock className="w-5 h-5 text-zinc-600/50" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                    <Lock className="w-5 h-5 text-white/70" />
                   </div>
                 )}
               </div>
@@ -307,7 +316,7 @@ export default function CoursesPage() {
                     <Star className="w-3 h-3 fill-current" /> +{course.xpReward} XP
                   </span>
                   <span>
-                    • {formatDate(course.lastAccessed)}
+                    • {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
                   </span>
                 </div>
               </div>

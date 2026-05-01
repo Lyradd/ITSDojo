@@ -230,7 +230,13 @@ export default function LearnPage() {
             </div>
           </Card>
 
-          <LeaderboardWidget topUser={topUser as any} name={name} xp={xp} userRank={userRank} />
+          <LeaderboardWidget 
+            topUsers={computedLeaderboard} 
+            currentUserId="current"
+            currentUserName={name} 
+            currentUserXp={xp} 
+            currentUserRank={userRank} 
+          />
         </div>
 
       </div>

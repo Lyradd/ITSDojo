@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { 
   Home, 
   BookOpen, 
@@ -26,7 +28,9 @@ import {
   LogOut,
   PanelLeftClose,
   ShoppingBag,
-  MoreVertical
+  MoreVertical,
+  Gem,
+  Zap
 } from "lucide-react";
 
 
@@ -64,8 +68,11 @@ const asdosMenuItems = [
 export function Sidebar({ onToggle }: { onToggle?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { name, role, level, xp, logout } = useUserStore(); 
-  
+  const { name, role, level, xp, xpToNextLevel, gems, logout } = useUserStore(); 
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);  
+  const xpPercentage = Math.min((xp / xpToNextLevel) * 100, 100);
   // Pilih menu berdasarkan role
   const sidebarItems = role === 'dosen' 
     ? dosenMenuItems 
@@ -82,9 +89,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
     <div className="flex flex-col h-full border-r bg-card text-card-foreground">
       {/* --- LOGO APLIKASI --- */}
       <div className="h-20 flex items-center justify-between px-6 lg:px-8">
-        <Link href="/learn" className="flex items-center gap-2 font-bold text-2xl text-blue-600 transition-opacity hover:opacity-80">
-          <GraduationCap className="w-8 h-8 shrink-0" />
-          <span className="tracking-tight">ITSDojo</span>
+        <Link href="/learn" className="flex items-center gap-2 font-black text-2xl group">
+          <GraduationCap className="w-8 h-8 shrink-0 text-blue-600 dark:text-white" />
+          <span className="tracking-tighter">
+            <span className="text-blue-600 dark:text-white">ITS</span>
+            <span className="text-blue-600 dark:text-white">Dojo</span>
+          </span>
         </Link>
         
         {/* Toggle Button - Only shown when onToggle is provided */}
@@ -171,9 +181,25 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               <p className="font-semibold text-sm truncate text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {name}
               </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Level {level} • {xp} XP
-              </p>
+              <div className="flex flex-col gap-1 mt-1">
+                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
+                  <span>Level {level}</span>
+                  <span className="flex items-center gap-0.5 text-blue-500">
+                    <Gem className="w-2.5 h-2.5 fill-current" /> {gems}
+                  </span>
+                </div>
+                {/* XP Progress Bar */}
+                <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${xpPercentage}%` }}
+                    className="h-full bg-linear-to-r from-blue-500 to-cyan-400"
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-400 font-medium">
+                  {xp} / {xpToNextLevel} XP
+                </p>
+              </div>
             </div>
           </Link>
           <div className="flex items-center gap-1">

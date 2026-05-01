@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageTransition } from "@/components/providers/page-transition";
 import { DynamicEnvironment } from "@/components/dynamic-environment";
+import { useUserStore } from "@/lib/store";
+import { RewardAnimation } from "@/components/shared/reward-animation";
 
 export default function DashboardLayout({
   children,
@@ -14,9 +16,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { checkDailyReset } = useUserStore();
+
+  useEffect(() => {
+    checkDailyReset();
+  }, [checkDailyReset]);
 
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative">
+      <RewardAnimation />
       <DynamicEnvironment />
 
       {/* Sidebar - Collapsible */}

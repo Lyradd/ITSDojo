@@ -19,14 +19,14 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect if not dosen or asdos
-    if (role !== 'dosen' && role !== 'asdos') {
+    // Redirect if not dosen, asdos, or admin
+    if (role !== 'dosen' && role !== 'asdos' && role !== 'admin') {
       router.push('/learn');
     }
   }, [role, router]);
 
-  // Don't render if not dosen or asdos
-  if (role !== 'dosen' && role !== 'asdos') {
+  // Don't render if not allowed
+  if (role !== 'dosen' && role !== 'asdos' && role !== 'admin') {
     return null;
   }
 

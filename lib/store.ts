@@ -25,7 +25,7 @@ interface UserState {
   gems: number; // NEW: Gems currency
   streakFreezeCount: number; // Max 3
   activeCourseId: string;
-  role: 'mahasiswa' | 'asdos' | 'dosen'; 
+  role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin'; 
   semester: number; // NEW: Semester mahasiswa
   enrolledCourseIds: string[]; // NEW: Courses they are enrolled in
   pendingCourseIds: string[]; // NEW: Courses waiting for dosen approval
@@ -54,7 +54,7 @@ interface UserState {
   completeLesson: (lessonId?: string) => void;
   claimGoalReward: (goalId: string) => void;
   buyItem: (type: 'freeze' | 'multiplier' | 'shield-3x', cost: number) => boolean; // NEW: Shop purchase
-  setRole: (role: 'mahasiswa' | 'asdos' | 'dosen') => void; // NEW: Set role method
+  setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => void; // NEW: Set role method
   setSemester: (semester: number) => void;
   requestEnrollment: (courseId: string) => void;
   acceptEnrollment: (courseId: string) => void;
@@ -92,7 +92,7 @@ export const useUserStore = create<UserState>()(
       gems: 300, // Starting Gems
       streakFreezeCount: 0,
       activeCourseId: "fe-basic",
-      role: 'mahasiswa', 
+      role: 'admin', 
       semester: 5, // Default for Daryl
       enrolledCourseIds: ['fe-basic'], // Default tes biar langsung bisa nyoba
       pendingCourseIds: [],

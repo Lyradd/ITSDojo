@@ -1,37 +1,143 @@
-import { pgTable, serial, text, integer, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, boolean, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
-// Tabel Courses (Mata Pelajaran)
-export const courses = pgTable('courses', {
-  id: serial('id').primaryKey(),
-  title: text('title').notNull(),
-  description: text('description').notNull(),
-  imageSrc: text('image_src'), // URL gambar 
+// ==========================================
+// ENUMS (Tipe Data Khusus)
+// ==========================================
+export const roleEnum = pgEnum('role', ['mahasiswa', 'dosen', 'asdos', 'admin']);
+export const enrollStatusEnum = pgEnum('enroll_status', ['pending', 'accepted', 'rejected']);
+export const difficultyEnum = pgEnum('difficulty', ['Beginner', 'Intermediate', 'Advanced']);
+
+// ==========================================
+// 1. TABEL USERS & ROLES
+// ==========================================
+export const users = pgTable('users', {
+  id: text('id').primaryKey(), // ID string (bisa disinkronkan dengan Clerk/Auth)
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  role: roleEnum('role').default('mahasiswa').notNull(),
+  
+  // Academic Data
+  semester: integer('semester').default(1).notNull(),
+  
+  // Gamification Data
+  level: integer('level').default(1).notNull(),
+  xp: integer('xp').default(0).notNull(),
+  accuracy: integer('accuracy').default(0), // Persentase akurasi
+  streak: integer('streak').default(0).notNull(),
+  avatar: text('avatar').default('bg-blue-200 text-blue-700'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Tabel Units (Bab dalam Course)
+// ==========================================
+// 2. TABEL COURSES & STRUCTURE
+// ==========================================
+export const courses = pgTable('courses', {
+  id: text('id').primaryKey(), // Contoh: 'fe-basic', 'react-mastery'
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  imageSrc: text('image_src'),
+  color: text('color').default('bg-blue-500').notNull(),
+  
+  // Metadata & Prasyarat
+  difficulty: difficultyEnum('difficulty').default('Beginner').notNull(),
+  xpReward: integer('xp_reward').default(100).notNull(),
+  requiredSemester: integer('required_semester').default(1).notNull(),
+});
+
 export const units = pgTable('units', {
   id: serial('id').primaryKey(),
-  courseId: integer('course_id').references(() => courses.id).notNull(),
+  courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
   title: text('title').notNull(),
   description: text('description').notNull(),
   order: integer('order').notNull(),
 });
 
-// Tabel Lessons 
 export const lessons = pgTable('lessons', {
   id: serial('id').primaryKey(),
-  unitId: integer('unit_id').references(() => units.id).notNull(),
+  unitId: integer('unit_id').references(() => units.id, { onDelete: 'cascade' }).notNull(),
   title: text('title').notNull(),
+  content: text('content'), // Materi pelajaran
   order: integer('order').notNull(),
-  type: text('type').default('lesson'),
+  type: text('type').default('lesson').notNull(),
 });
 
-// Tabel Questions (Soal Kuis) - sesi dosen
 export const questions = pgTable('questions', {
   id: serial('id').primaryKey(),
-  lessonId: integer('lesson_id').references(() => lessons.id).notNull(),
+  lessonId: integer('lesson_id').references(() => lessons.id, { onDelete: 'cascade' }).notNull(),
   questionText: text('question_text').notNull(),
-  options: text('options').array(),
+  options: text('options').array().notNull(),
   correctAnswer: text('correct_answer').notNull(),
-  xpReward: integer('xp_reward').default(10),
+  xpReward: integer('xp_reward').default(10).notNull(),
 });
+
+// ==========================================
+// 3. TABEL ENROLLMENTS & PROGRESS
+// ==========================================
+export const enrollments = pgTable('enrollments', {
+  id: serial('id').primaryKey(),
+  studentId: text('student_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  status: enrollStatusEnum('status').default('pending').notNull(),
+  requestedAt: timestamp('requested_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const userProgress = pgTable('user_progress', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  lessonId: integer('lesson_id').references(() => lessons.id, { onDelete: 'cascade' }).notNull(),
+  completedAt: timestamp('completed_at').defaultNow().notNull(),
+});
+
+// ==========================================
+// 4. TABEL EVALUATIONS (Kuis Real-time)
+// ==========================================
+export const evaluations = pgTable('evaluations', {
+  id: text('id').primaryKey(), // Contoh: 'eval-fe-basic-1'
+  courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  duration: integer('duration').notNull(), // dalam menit
+  isActive: boolean('is_active').default(true).notNull(),
+  totalPoints: integer('total_points').default(100).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const evaluationResults = pgTable('evaluation_results', {
+  id: serial('id').primaryKey(),
+  evaluationId: text('evaluation_id').references(() => evaluations.id, { onDelete: 'cascade' }).notNull(),
+  studentId: text('student_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  score: integer('score').notNull(),
+  accuracy: integer('accuracy').notNull(), // Persentase
+  timeSpent: integer('time_spent').notNull(), // dalam detik
+  completedAt: timestamp('completed_at').defaultNow().notNull(),
+});
+
+// ==========================================
+// 5. TABEL ACTIVITY & LOGS
+// ==========================================
+export const activityLogs = pgTable('activity_logs', {
+  id: serial('id').primaryKey(),
+  studentId: text('student_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  action: text('action').notNull(), // Contoh: 'started_course', 'completed_evaluation'
+  details: text('details').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ==========================================
+// RELATIONS (Opsional: Membantu Drizzle Query)
+// ==========================================
+export const usersRelations = relations(users, ({ many }) => ({
+  enrollments: many(enrollments),
+  progress: many(userProgress),
+  evaluationResults: many(evaluationResults),
+  activities: many(activityLogs),
+}));
+
+export const coursesRelations = relations(courses, ({ many }) => ({
+  units: many(units),
+  enrollments: many(enrollments),
+  evaluations: many(evaluations),
+}));

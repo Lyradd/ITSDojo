@@ -65,6 +65,17 @@ const asdosMenuItems = [
   { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
 ];
 
+// Menu untuk Super Admin
+const superAdminMenuItems = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+  { icon: Users, label: "Manage Users", href: "/admin/users" },
+  { icon: BookOpen, label: "Courses", href: "/admin/courses" },
+  { icon: ClipboardCheck, label: "Evaluations", href: "/admin/evaluations" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
+  { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+  { icon: Settings, label: "System Settings", href: "/admin/settings" },
+];
+
 export function Sidebar({ onToggle }: { onToggle?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -74,11 +85,13 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
   useEffect(() => setMounted(true), []);  
   const xpPercentage = Math.min((xp / xpToNextLevel) * 100, 100);
   // Pilih menu berdasarkan role
-  const sidebarItems = role === 'dosen' 
-    ? dosenMenuItems 
-    : role === 'asdos' 
-      ? asdosMenuItems 
-      : studentMenuItems;
+  const sidebarItems = role === 'admin'
+    ? superAdminMenuItems
+    : role === 'dosen' 
+      ? dosenMenuItems 
+      : role === 'asdos' 
+        ? asdosMenuItems 
+        : studentMenuItems;
 
   const handleLogout = () => {
     logout();
@@ -173,7 +186,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               </div>
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
                 <span className="text-xs">
-                  {role === "dosen" ? "👨‍🏫" : role === "asdos" ? "🧑‍💻" : "👨‍🎓"}
+                  {role === "admin" ? "👑" : role === "dosen" ? "👨‍🏫" : role === "asdos" ? "🧑‍💻" : "👨‍🎓"}
                 </span>
               </div>
             </div>

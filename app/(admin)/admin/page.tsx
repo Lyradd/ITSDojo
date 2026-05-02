@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
           <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
           <div className="relative">
             <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              {isAsdos ? 'Dashboard Asisten Dosen' : 'Dashboard Admin'}
+              {role === 'admin' ? 'Super Admin Dashboard' : isAsdos ? 'Dashboard Asisten Dosen' : 'Dashboard Admin'}
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">
               Selamat datang kembali, <span className="font-bold text-blue-600">{name}</span> 👋
@@ -93,21 +93,38 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {role === 'admin' && (
+            <Link href="/admin/users">
+              <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                    <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Users</div>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">Atur role & akses</div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                </div>
+              </Card>
+            </Link>
+          )}
+
           <Link href="/admin/courses">
-            <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-zinc-800 dark:text-zinc-100">{isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}</div>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">{isAsdos ? 'Lihat materi kursus' : 'Tambah & edit materi'}</div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                 </div>
-                <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">{isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">{isAsdos ? 'Lihat materi kursus' : 'Tambah & edit materi'}</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-              </div>
-            </Card>
-          </Link>
+              </Card>
+            </Link>
 
           <Link href="/admin/evaluations">
             <Card className="p-6 rounded-2xl border-2 hover:border-purple-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">

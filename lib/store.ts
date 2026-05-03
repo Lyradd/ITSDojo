@@ -21,6 +21,8 @@ interface UserState {
   level: number;
   xp: number; 
   xpToNextLevel: number;
+  bio: string;
+  avatarUrl: string | null;
   streak: number;
   gems: number; // NEW: Gems currency
   streakFreezeCount: number; // Max 3
@@ -38,6 +40,9 @@ interface UserState {
   longestStreak: number;
   mostXpInDay: number;
   totalPerfectLessons: number;
+  league: string;
+  top3Finishes: number;
+  bookmarkedCourseIds: string[]; // NEW: Saved/Bookmarked courses
   unlockAchievement: (id: string) => void;
   purchaseHistory: { id: string, type: string, cost: number, date: string, itemName: string }[];
   
@@ -58,7 +63,10 @@ interface UserState {
   setSemester: (semester: number) => void;
   requestEnrollment: (courseId: string) => void;
   acceptEnrollment: (courseId: string) => void;
+  toggleBookmarkCourse: (courseId: string) => void; // NEW: Bookmark toggle
+  updateProfile: (data: { name?: string, bio?: string, avatarUrl?: string | null }) => void;
 
+  lastActiveDate: string; // Tanggal terakhir user melakukan aktivitas
   lastDailyReset: string;
   checkDailyReset: () => void;
   weeklyRewardClaimed: boolean;
@@ -88,6 +96,8 @@ export const useUserStore = create<UserState>()(
       level: 1,
       xp: 0,
       xpToNextLevel: 100,
+      bio: "Belajar coding itu seru! 🚀",
+      avatarUrl: null,
       streak: 3,
       gems: 300, // Starting Gems
       streakFreezeCount: 0,
@@ -105,12 +115,16 @@ export const useUserStore = create<UserState>()(
       longestStreak: 3,
       mostXpInDay: 0,
       totalPerfectLessons: 0,
+      league: "Silver",
+      top3Finishes: 0,
+      bookmarkedCourseIds: [],
       purchaseHistory: [],
       
       dailyGoals: INITIAL_GOALS,
       
       xpMultiplier: 1,
       multiplierEndTime: null,
+      lastActiveDate: formatLocalDate(new Date()),
       lastDailyReset: formatLocalDate(new Date()),
       weeklyRewardClaimed: false,
 
@@ -126,6 +140,28 @@ export const useUserStore = create<UserState>()(
            // Reset weekly reward on Monday (1)
            if (now.getDay() === 1) {
              updates.weeklyRewardClaimed = false;
+           }
+
+           // --- STREAK LOGIC ---
+           // Cek apakah user aktif kemarin
+           const yesterday = new Date(now);
+           yesterday.setDate(yesterday.getDate() - 1);
+           const yesterdayStr = formatLocalDate(yesterday);
+           const wasActiveYesterday = state.lastActiveDate === yesterdayStr;
+           const wasActiveToday = state.lastActiveDate === today;
+
+           if (wasActiveYesterday || wasActiveToday) {
+             // User aktif kemarin atau sudah aktif hari ini — streak aman
+             // (streak di-increment saat completeLesson, bukan di sini)
+           } else {
+             // User TIDAK aktif kemarin — cek streak freeze
+             if (state.streakFreezeCount > 0) {
+               // Pakai streak freeze, streak dipertahankan
+               updates.streakFreezeCount = state.streakFreezeCount - 1;
+             } else {
+               // Tidak ada freeze, reset streak
+               updates.streak = 0;
+             }
            }
 
            return updates;
@@ -156,7 +192,7 @@ export const useUserStore = create<UserState>()(
 
       login: () => set({ isLoggedIn: true }),
       logout: () => set({ isLoggedIn: false }),
-      setRole: (role: 'mahasiswa' | 'asdos' | 'dosen') => set({ role }), // NEW: Set role implementation
+      setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => set({ role }), // NEW: Set role implementation
       setSemester: (semester: number) => set({ semester }),
       requestEnrollment: (courseId: string) => set((state: UserState) => {
         if (state.enrolledCourseIds.includes(courseId) || state.pendingCourseIds.includes(courseId)) {
@@ -251,8 +287,11 @@ export const useUserStore = create<UserState>()(
           earnedXp = isNew ? 50 : 0;
           earnedGems = isNew ? 10 : 0;
 
-          // Catat aktivitas untuk Heatmap
+          // Catat aktivitas untuk Heatmap + Streak
            let newHistory = [...state.activityHistory];
+           let newStreak = state.streak;
+           let newLastActiveDate = state.lastActiveDate;
+
            if (isNew) {
               const today = formatLocalDate(new Date());
               const todayIndex = newHistory.findIndex((h: { date: string, count: number }) => h.date === today);
@@ -260,6 +299,22 @@ export const useUserStore = create<UserState>()(
                  newHistory[todayIndex] = { ...newHistory[todayIndex], count: newHistory[todayIndex].count + 1 };
               } else {
                  newHistory.push({ date: today, count: 1 });
+              }
+
+              // Increment streak jika ini aktivitas pertama hari ini
+              if (newLastActiveDate !== today) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = formatLocalDate(yesterday);
+
+                if (newLastActiveDate === yesterdayStr || newStreak === 0) {
+                  // Aktif berturut-turut atau memulai streak baru
+                  newStreak = newStreak + 1;
+                } else {
+                  // Gap lebih dari 1 hari — mulai streak baru
+                  newStreak = 1;
+                }
+                newLastActiveDate = today;
               }
            }
 
@@ -298,6 +353,8 @@ export const useUserStore = create<UserState>()(
              newCourseAccess[activeCourse] = new Date().toISOString();
           }
 
+          const updatedLongestStreak = Math.max(newLongestStreak, newStreak);
+
           return { 
             dailyGoals: updatedGoals, 
             completedLessonIds: updatedLessonIds, 
@@ -307,8 +364,10 @@ export const useUserStore = create<UserState>()(
             unlockedAchievements: newAchievements,
             nocturnalCount: newNocturnalCount,
             earlyBirdCount: newEarlyBirdCount,
-            longestStreak: newLongestStreak,
-            mostXpInDay: newMostXpInDay
+            longestStreak: updatedLongestStreak,
+            mostXpInDay: newMostXpInDay,
+            streak: newStreak,
+            lastActiveDate: newLastActiveDate
           };
         });
 
@@ -400,6 +459,18 @@ export const useUserStore = create<UserState>()(
         }
         return true;
       },
+      toggleBookmarkCourse: (courseId: string) => set((state: UserState) => {
+        const isBookmarked = state.bookmarkedCourseIds.includes(courseId);
+        return {
+          bookmarkedCourseIds: isBookmarked
+            ? state.bookmarkedCourseIds.filter(id => id !== courseId)
+            : [...state.bookmarkedCourseIds, courseId]
+        };
+      }),
+      updateProfile: (data) => set((state) => ({
+        ...state,
+        ...data
+      })),
     }),
     {
       name: 'itsdojo-user-store',

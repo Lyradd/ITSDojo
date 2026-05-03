@@ -27,6 +27,7 @@ export type LessonNode = {
   id: string;
   title: string;
   desc: string;
+  duration?: string;
 };
 
 export type CourseUnit = {
@@ -41,27 +42,27 @@ export const COURSE_CONTENT: Record<string, CourseUnit> = {
     unitTitle: "Unit 1: HTML & CSS Basics",
     unitDesc: "Fondasi halaman web modern",
     nodes: [
-      { id: "fe-basic-1", title: "HTML Structure", desc: "Tag & Element Dasar" },
-      { id: "fe-basic-2", title: "CSS Styling", desc: "Warna & Layout" },
-      { id: "fe-basic-3", title: "Flexbox", desc: "Layout Responsif" },
-      { id: "fe-basic-4", title: "Grid System", desc: "Layout 2 Dimensi" },
+      { id: "fe-basic-1", title: "HTML Structure", desc: "Tag & Element Dasar", duration: "~10 menit" },
+      { id: "fe-basic-2", title: "CSS Styling", desc: "Warna & Layout", duration: "~15 menit" },
+      { id: "fe-basic-3", title: "Flexbox", desc: "Layout Responsif", duration: "~20 menit" },
+      { id: "fe-basic-4", title: "Grid System", desc: "Layout 2 Dimensi", duration: "~25 menit" },
     ]
   },
   "react-mastery": {
     unitTitle: "Unit 1: React Components",
     unitDesc: "Membuat UI interaktif",
     nodes: [
-      { id: "react-mastery-1", title: "JSX Syntax", desc: "Javascript + XML" },
-      { id: "react-mastery-2", title: "Props & State", desc: "Data Flow" },
+      { id: "react-mastery-1", title: "JSX Syntax", desc: "Javascript + XML", duration: "~15 menit" },
+      { id: "react-mastery-2", title: "Props & State", desc: "Data Flow", duration: "~30 menit" },
     ]
   },
   "backend-ninja": {
     unitTitle: "Unit 1: Intro to API",
     unitDesc: "Dasar komunikasi server",
     nodes: [
-      { id: "backend-ninja-1", title: "HTTP Methods", desc: "GET, POST, PUT" },
-      { id: "backend-ninja-2", title: "Express JS", desc: "Routing Dasar" },
-      { id: "backend-ninja-3", title: "Database", desc: "SQL Basics" },
+      { id: "backend-ninja-1", title: "HTTP Methods", desc: "GET, POST, PUT", duration: "~15 menit" },
+      { id: "backend-ninja-2", title: "Express JS", desc: "Routing Dasar", duration: "~20 menit" },
+      { id: "backend-ninja-3", title: "Database", desc: "SQL Basics", duration: "~45 menit" },
     ]
   }
 };

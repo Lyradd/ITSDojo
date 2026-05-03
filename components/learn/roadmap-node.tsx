@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Lock, Check, Play, CheckCircle, Star, Gem, Zap } from "lucide-react";
+import { Lock, Check, Play, CheckCircle, Star, Gem, Zap, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export interface ComputedLessonNode {
@@ -7,6 +7,7 @@ export interface ComputedLessonNode {
   title: string;
   desc: string;
   type: 'completed' | 'active' | 'next_locked' | 'far_locked';
+  duration?: string;
 }
 
 interface RoadmapNodeProps {
@@ -51,7 +52,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
             {/* INFO OVERVIEW ON HOVER */}
             <div className="max-h-0 opacity-0 group-hover:max-h-32 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
               <p className="text-xs text-zinc-500 font-normal mb-2 whitespace-normal min-w-[140px] text-center sm:text-left">{node.desc}</p>
-              <div className={`flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded text-[10px] text-green-700 dark:text-green-400 w-fit ${!isEven && 'sm:self-end'}`}>
+              <div className={`flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded text-[10px] text-green-700 dark:text-green-400 w-fit font-bold border border-green-100 dark:border-green-900/40`}>
                 <CheckCircle className="w-3 h-3" /> Diselesaikan
               </div>
             </div>
@@ -91,15 +92,21 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
             <span className="text-zinc-800 dark:text-white text-base">{node.title}</span>
 
             {/* INFO OVERVIEW ON HOVER */}
-            <div className="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
+            <div className="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-3 transition-all duration-300 ease-in-out overflow-hidden">
               <p className="text-xs text-zinc-500 font-normal mb-3 whitespace-normal min-w-[160px] text-center sm:text-left">{node.desc}</p>
-              <div className={`flex flex-col gap-1.5 ${!isEven ? 'sm:items-end items-center' : 'sm:items-start items-center'}`}>
-                <div className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-[10px] text-blue-700 dark:text-blue-300 w-fit">
-                  <Zap className="w-3 h-3 block" /> <span className="block">+50 XP</span>
+              
+              <div className={`flex flex-wrap items-center gap-2 ${!isEven && 'sm:justify-end'}`}>
+                <div className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-[10px] text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">
+                  <Zap className="w-3 h-3" /> +50 XP
                 </div>
-                <div className="flex items-center gap-1.5 bg-cyan-100 dark:bg-cyan-900/40 px-2 py-1 rounded text-[10px] text-cyan-700 dark:text-cyan-300 w-fit">
-                  <Gem className="w-3 h-3 block" /> <span className="block">+10 Gems</span>
+                <div className="flex items-center gap-1.5 bg-cyan-100 dark:bg-cyan-900/40 px-2 py-1 rounded text-[10px] text-cyan-700 dark:text-cyan-300 font-bold border border-cyan-200 dark:border-cyan-800">
+                  <Gem className="w-3 h-3" /> +10 Gems
                 </div>
+                {node.duration && (
+                  <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-[10px] text-zinc-500 dark:text-zinc-400 font-bold border border-zinc-200 dark:border-zinc-700">
+                    <Clock className="w-3 h-3" /> {node.duration}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { PageTransition } from "@/components/providers/page-transition";
 import { DynamicEnvironment } from "@/components/dynamic-environment";
 import { useUserStore } from "@/lib/store";
 import { RewardAnimation } from "@/components/shared/reward-animation";
+import { StreakReminder } from "@/components/shared/streak-reminder";
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative">
       <RewardAnimation />
       <DynamicEnvironment />
+      <StreakReminder />
 
       {/* Sidebar - Collapsible */}
       <aside

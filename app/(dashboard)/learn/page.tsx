@@ -16,7 +16,10 @@ import {
   Zap,
   Lock,
   RotateCcw,
-  GraduationCap
+  GraduationCap,
+  Clock,
+  ArrowRight,
+  Play
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
@@ -81,6 +84,20 @@ export default function LearnPage() {
     }
   };
 
+  // Hitung Progress Unit
+  const completedCount = currentContent.nodes.filter((n: LessonNode) => completedLessonIds.includes(n.id)).length;
+  const totalCount = currentContent.nodes.length;
+  const progressPercent = Math.round((completedCount / totalCount) * 100);
+
+  // Cari Node Aktif untuk Banner
+  const activeNodeIndex = currentContent.nodes.findIndex((n: LessonNode, idx: number) => {
+    const prevId = idx === 0 ? null : currentContent.nodes[idx-1].id;
+    const isPrevCompleted = prevId ? completedLessonIds.includes(prevId) : true;
+    const isCurrCompleted = completedLessonIds.includes(n.id);
+    return isPrevCompleted && !isCurrCompleted;
+  });
+  const activeNode = activeNodeIndex !== -1 ? currentContent.nodes[activeNodeIndex] : null;
+
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
@@ -97,39 +114,80 @@ export default function LearnPage() {
             <StatWidget icon={Trophy} color="text-yellow-500" label="Rank" value={`#${userRank}`} />
           </div>
 
+          {/* 0. CONTINUE BANNER */}
+          {activeNode && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xl border border-zinc-800 dark:border-zinc-200"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Play className="w-6 h-6 text-white fill-current" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">Lanjutkan belajar!</h3>
+                  <p className="text-xs opacity-70">Stage {activeNodeIndex + 1}: {activeNode.title}</p>
+                </div>
+              </div>
+              <Link href={`/learn/lesson/${activeNode.id}`}>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white border-none gap-2 rounded-xl group px-4">
+                  Lanjutkan <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </motion.div>
+          )}
+
           {/* 1. HEADER KURSUS (Card Warna-Warni) */}
-          <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors duration-500 ${activeCourseId === 'fe-basic' ? 'bg-pink-600 shadow-pink-600/20' :
+          <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${activeCourseId === 'fe-basic' ? 'bg-pink-600 shadow-pink-600/20' :
               activeCourseId === 'react-mastery' ? 'bg-blue-600 shadow-blue-600/20' :
                 'bg-emerald-600 shadow-emerald-600/20'
             }`}>
-            <div className="text-center sm:text-left">
-              <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
-                <GraduationCap className="w-6 h-6" />
-                {activeCourse.title}
-              </h2>
-              <p className="text-white/80 text-sm max-w-md">{activeCourse.description}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                   if(confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
-                      resetProgress();
-                   }
-                }}
-                className="bg-black/20 hover:bg-black/40 border-none text-white transition-colors"
-                title="Reset Pembelajaran (Testing)"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </Button>
-              <Link href="/courses">
-                <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${activeCourseId === 'fe-basic' ? 'text-pink-600' :
-                    activeCourseId === 'react-mastery' ? 'text-blue-600' :
-                      'text-emerald-600'
-                  }`}>
-                  Ganti Kursus
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
+                  <GraduationCap className="w-6 h-6" />
+                  {activeCourse.title}
+                </h2>
+                <p className="text-white/80 text-sm max-w-md">{activeCourse.description}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                     if(confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
+                        resetProgress();
+                     }
+                  }}
+                  className="bg-black/20 hover:bg-black/40 border-none text-white transition-colors"
+                  title="Reset Pembelajaran (Testing)"
+                >
+                  <RotateCcw className="w-4 h-4" />
                 </Button>
-              </Link>
+                <Link href="/courses">
+                  <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${activeCourseId === 'fe-basic' ? 'text-pink-600' :
+                      activeCourseId === 'react-mastery' ? 'text-blue-600' :
+                        'text-emerald-600'
+                    }`}>
+                    Ganti Kursus
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Progress Bar Unit */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="opacity-80">PROGRESS UNIT</span>
+                <span>{progressPercent}% ({completedCount}/{totalCount})</span>
+              </div>
+              <div className="h-3 bg-black/20 rounded-full overflow-hidden p-0.5">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                />
+              </div>
             </div>
           </div>
 
@@ -177,7 +235,11 @@ export default function LearnPage() {
                         computedType = 'far_locked';
                       }
                       
-                      const node: ComputedLessonNode = { ...origNode, type: computedType as ComputedLessonNode['type'] };
+                      const node: ComputedLessonNode = { 
+                        ...origNode, 
+                        type: computedType as ComputedLessonNode['type'],
+                        duration: origNode.duration 
+                      };
 
                       return (
                         <RoadmapNode

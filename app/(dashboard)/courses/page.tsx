@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List, Search
+  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List, Search, Bookmark, BookmarkCheck
 } from "lucide-react";
 import { COURSES as RAW_COURSES } from "@/lib/dummydata";
 import { COURSE_CONTENT } from "@/lib/lesson-data";
@@ -28,9 +28,14 @@ import {
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { setActiveCourse, level, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, requestEnrollment, courseAccessHistory } = useUserStore();
+  const { 
+    setActiveCourse, level, completedLessonIds, semester, 
+    enrolledCourseIds, pendingCourseIds, requestEnrollment, 
+    courseAccessHistory, bookmarkedCourseIds, toggleBookmarkCourse 
+  } = useUserStore();
 
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null);
@@ -69,20 +74,25 @@ export default function CoursesPage() {
       };
     });
 
-    // 2. Filter by search query
+    // 2. Filter by saved only if active
+    if (showSavedOnly) {
+      data = data.filter(c => bookmarkedCourseIds.includes(c.id));
+    }
+
+    // 3. Filter by search query
     if (searchQuery.trim() !== "") {
       const lowerQ = searchQuery.toLowerCase();
       data = data.filter(c => c.title.toLowerCase().includes(lowerQ) || c.description.toLowerCase().includes(lowerQ));
     }
 
-    // 3. Sort
+    // 4. Sort
     return data.sort((a, b) => {
       if (sortOption === "name-asc") return a.title.localeCompare(b.title);
       else if (sortOption === "last-accessed") return b.lastAccessed.getTime() - a.lastAccessed.getTime();
       else if (sortOption === "progress-desc") return b.progress - a.progress;
       return 0;
     });
-  }, [completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption]);
+  }, [completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption, bookmarkedCourseIds, showSavedOnly]);
 
   const formatDate = (date: Date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
 
@@ -131,7 +141,11 @@ export default function CoursesPage() {
               <Button variant="outline" className="gap-2 min-w-[180px] justify-between">
                 <div className="flex items-center gap-2">
                   <ListFilter className="w-4 h-4 text-zinc-500" />
-                  <span>{sortOption === "name-asc" ? "Name (A-Z)" : sortOption === "progress-desc" ? "Highest Progress" : "Last Accessed"}</span>
+                  <span>{
+                    sortOption === "name-asc" ? "Name (A-Z)" : 
+                    sortOption === "progress-desc" ? "Highest Progress" : 
+                    "Last Accessed"
+                  }</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`} />
               </Button>
@@ -153,6 +167,16 @@ export default function CoursesPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Saved Toggle Button */}
+          <Button 
+            variant={showSavedOnly ? "secondary" : "outline"} 
+            className={`gap-2 ${showSavedOnly ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : ""}`}
+            onClick={() => setShowSavedOnly(!showSavedOnly)}
+          >
+            {showSavedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+            <span>Saved {bookmarkedCourseIds.length > 0 && `(${bookmarkedCourseIds.length})`}</span>
+          </Button>
         </div>
       </div>
 
@@ -177,6 +201,23 @@ export default function CoursesPage() {
                     <Lock className="w-8 h-8 text-white/70" />
                   </div>
                 )}
+                {/* Bookmark Button Overlay */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleBookmarkCourse(course.id);
+                  }}
+                  className={`absolute top-2 right-2 p-2 rounded-full backdrop-blur-md shadow-md transition-all active:scale-90 ${
+                    bookmarkedCourseIds.includes(course.id) 
+                      ? "bg-blue-600 text-white" 
+                      : "bg-white/50 text-zinc-800 hover:bg-white"
+                  }`}
+                >
+                  {bookmarkedCourseIds.includes(course.id) 
+                    ? <BookmarkCheck className="w-4 h-4" /> 
+                    : <Bookmark className="w-4 h-4" />
+                  }
+                </button>
               </div>
 
               <div className="p-6 flex flex-col flex-1">
@@ -249,7 +290,7 @@ export default function CoursesPage() {
                     <Button size="sm" variant="secondary" disabled>Menunggu Persetujuan</Button>
                   ) : course.status === 'semester-locked' ? (
                     <Button size="sm" variant="ghost" disabled className="text-red-400 text-xs">
-                      <Lock className="w-3 h-3 mr-1" /> Belum Nyampe
+                      <Lock className="w-3 h-3 mr-1" /> Semester Belum Tercapai
                     </Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => requestEnrollment(course.id)}>Minta Akses Kelas</Button>
@@ -285,6 +326,22 @@ export default function CoursesPage() {
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
                       {course.difficulty}
                     </span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBookmarkCourse(course.id);
+                      }}
+                      className={`ml-2 p-1.5 rounded-lg transition-all active:scale-90 ${
+                        bookmarkedCourseIds.includes(course.id) 
+                          ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40" 
+                          : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      {bookmarkedCourseIds.includes(course.id) 
+                        ? <BookmarkCheck className="w-4 h-4" /> 
+                        : <Bookmark className="w-4 h-4" />
+                      }
+                    </button>
                   </div>
                 </div>
 
@@ -333,7 +390,7 @@ export default function CoursesPage() {
                   </Button>
                 ) : course.status === 'semester-locked' ? (
                   <Button size="sm" variant="ghost" disabled className="text-red-400 text-xs w-full sm:w-auto">
-                    <Lock className="w-3 h-3 mr-1" /> Belum Nyampe
+                    <Lock className="w-3 h-3 mr-1" /> Semester Belum Tercapai
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => requestEnrollment(course.id)}>

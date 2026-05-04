@@ -249,9 +249,11 @@ export function QuestionCard({
                   {question.explanation}
                 </p>
               )}
-              <p className="text-sm font-bold mt-2 text-zinc-700 dark:text-zinc-300">
-                Poin yang didapat: {isCorrect ? question.points : 0}
-              </p>
+              {isCorrect && (
+                <p className="text-sm font-bold mt-2 text-zinc-700 dark:text-zinc-300">
+                  Poin yang didapat: {question.points}
+                </p>
+              )}
             </div>
           </div>
         </div>

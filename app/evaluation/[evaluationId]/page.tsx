@@ -31,7 +31,27 @@ import { triggerConfetti, triggerBigConfetti, cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as React from 'react';
 
-// ─── Countdown Overlay Component ───────────────────────────────────
+// ─── Pre-Quiz Carousel Component ───────────────────────────────────
+const FUN_FACTS = [
+  "Bug pertama di dunia adalah ngengat asli yang tersangkut di komputer Mark II pada tahun 1947.",
+  "JavaScript dibuat hanya dalam waktu 10 hari oleh Brendan Eich pada tahun 1995.",
+  "Tahukah kamu? Nama 'Python' bukan dari ular, melainkan grup komedi Monty Python.",
+  "Developer menghabiskan 80% waktunya untuk membaca kode, dan 20% untuk menulisnya.",
+  "Bahasa pemrograman pertama di dunia adalah 'Ada', dinamai dari Ada Lovelace.",
+  "Sekitar 90% dari mata uang dunia saat ini hanya eksis di dalam komputer (digital).",
+  "Linux menjalankan 100% dari 500 superkomputer tercepat di dunia saat ini.",
+  "Domain pertama yang pernah didaftarkan adalah symbolics.com pada 15 Maret 1985.",
+  "Lebih dari 70% dari semua kode di GitHub adalah duplikat dari kode yang sudah ada.",
+  "Keyboard QWERTY didesain untuk memperlambat pengetikan agar mesin ketik manual tidak macet.",
+  "NASA masih menggunakan kode dari tahun 70-an untuk beberapa misi luar angkasa Voyager.",
+  "Steve Jobs dan Steve Wozniak memulai Apple di sebuah garasi rumah pada tahun 1976.",
+  "Versi pertama Google disimpan di dalam sepuluh hard drive 4GB dalam kotak LEGO.",
+  "Istilah 'Spam' untuk email sampah berasal dari sketsa grup komedi Monty Python.",
+  "Minecraft awalnya ditulis menggunakan bahasa Java sebelum diakuisisi Microsoft.",
+  "91% dari semua serangan siber di seluruh dunia dimulai dari email phishing.",
+  "C++ awalnya dinamai 'C with Classes' sebelum akhirnya diganti pada tahun 1983."
+];
+
 function CountdownOverlay({
   evaluationTitle,
   onComplete,
@@ -39,108 +59,84 @@ function CountdownOverlay({
   evaluationTitle: string;
   onComplete: () => void;
 }) {
-  const [count, setCount] = useState<number | 'go'>(3);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
 
   useEffect(() => {
-    if (count === 'go') {
-      const t = setTimeout(onComplete, 800);
-      return () => clearTimeout(t);
+    if (timeLeft <= 0) {
+      onComplete();
+      return;
     }
     const t = setTimeout(() => {
-      setCount((prev) => {
-        if (typeof prev === 'number' && prev > 1) return prev - 1;
-        return 'go';
-      });
+      setTimeLeft((prev) => prev - 1);
     }, 1000);
     return () => clearTimeout(t);
-  }, [count, onComplete]);
+  }, [timeLeft, onComplete]);
+
+  const nextFact = () => setCurrentFactIndex((p) => (p + 1) % FUN_FACTS.length);
+  const prevFact = () => setCurrentFactIndex((p) => (p - 1 + FUN_FACTS.length) % FUN_FACTS.length);
 
   return (
     <motion.div
-      className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-linear-to-br from-blue-600 via-blue-700 to-indigo-800"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950 text-white"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.1 }}
+      exit={{ opacity: 0, y: -50 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Decorative background rings */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[1, 2, 3].map((i) => (
-          <motion.div
-            key={i}
-            className="absolute left-1/2 top-1/2 rounded-full border border-white/10"
-            style={{
-              width: `${i * 250}px`,
-              height: `${i * 250}px`,
-              marginLeft: `${-i * 125}px`,
-              marginTop: `${-i * 125}px`,
-            }}
-            animate={{
-              scale: [1, 1.15, 1],
-              opacity: [0.2, 0.05, 0.2],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              delay: i * 0.4,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Title */}
+      <div className="absolute inset-0 bg-radial-gradient from-blue-900/20 to-transparent pointer-events-none" />
+      
       <motion.p
-        className="text-blue-200 text-lg font-medium mb-8 tracking-wide"
+        className="text-blue-400 text-lg font-bold mb-12 tracking-wide"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
       >
-        {evaluationTitle}
+        Mempersiapkan: {evaluationTitle}
       </motion.p>
 
-      {/* Countdown Number */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={String(count)}
-          initial={{ opacity: 0, scale: 0.3, y: 30 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 1.8, y: -30 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="relative"
-        >
-          {count === 'go' ? (
-            <span className="text-8xl md:text-9xl font-black text-white drop-shadow-2xl tracking-tight">
-              Mulai!
-            </span>
-          ) : (
-            <span className="text-[12rem] md:text-[16rem] font-black text-white drop-shadow-2xl leading-none">
-              {count}
-            </span>
-          )}
+      {/* Fun Fact Carousel */}
+      <div className="flex items-center gap-6 max-w-2xl w-full px-4">
+        <Button variant="ghost" size="icon" onClick={prevFact} className="text-white hover:bg-white/10 shrink-0">
+          <ChevronLeft className="w-8 h-8" />
+        </Button>
+        
+        <div className="flex-1 text-center min-h-[120px] flex flex-col justify-center">
+          <div className="text-sm text-zinc-400 font-bold tracking-widest uppercase mb-4 flex items-center justify-center gap-2">
+            <Zap className="w-4 h-4 text-yellow-500" />
+            Fun Fact Koding
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={currentFactIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="text-2xl md:text-3xl font-medium text-zinc-100 leading-relaxed"
+            >
+              "{FUN_FACTS[currentFactIndex]}"
+            </motion.p>
+          </AnimatePresence>
+        </div>
 
-          {/* Pulse ring behind number */}
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background:
-                'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-              transform: 'scale(2.5)',
-            }}
-            animate={{ opacity: [0.6, 0, 0.6] }}
-            transition={{ duration: 1, repeat: Infinity }}
+        <Button variant="ghost" size="icon" onClick={nextFact} className="text-white hover:bg-white/10 shrink-0">
+          <ChevronRight className="w-8 h-8" />
+        </Button>
+      </div>
+
+      {/* Timer Bar */}
+      <div className="absolute bottom-20 w-full max-w-md px-6 flex flex-col items-center gap-4">
+        <div className="text-sm font-bold text-zinc-400 flex items-center gap-2">
+          Kuis dimulai dalam <span className="text-2xl text-white font-black">{timeLeft}</span> detik
+        </div>
+        <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+          <motion.div 
+            className="h-full bg-blue-500 rounded-full"
+            initial={{ width: '100%' }}
+            animate={{ width: `${(timeLeft / 10) * 100}%` }}
+            transition={{ duration: 1, ease: "linear" }}
           />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Subtitle */}
-      <motion.p
-        className="text-white/60 text-sm mt-10 font-medium"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
-        Bersiaplah...
-      </motion.p>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -168,6 +164,7 @@ export default function EvaluationFullscreenPage() {
     isLiveUpdateActive,
     startTime,
     currentStreak,
+    isEvaluationActive,
     getProgress,
     getAccuracy,
   } = useEvaluationStore();
@@ -176,26 +173,29 @@ export default function EvaluationFullscreenPage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCountdownActive, setIsCountdownActive] = useState(true);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
+  const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
 
-  // Calculate elapsed time
-  const getElapsedTime = () => {
-    if (!startTime) return '00:00';
+  // Calculate remaining time
+  const getRemainingTime = () => {
+    if (!startTime || !currentEvaluation) return '00:00';
+    const durationSecs = currentEvaluation.duration * 60;
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
+    const remaining = Math.max(0, durationSecs - elapsed);
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const [elapsedTime, setElapsedTime] = React.useState(getElapsedTime());
+  const [remainingTime, setRemainingTime] = React.useState(getRemainingTime());
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setElapsedTime(getElapsedTime());
+      setRemainingTime(getRemainingTime());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [startTime]);
+  }, [startTime, currentEvaluation]);
 
   // Initialize evaluation
   useEffect(() => {
@@ -212,7 +212,7 @@ export default function EvaluationFullscreenPage() {
       return;
     }
 
-    if (!currentEvaluation || currentEvaluation.id !== evaluationId) {
+    if (!currentEvaluation || currentEvaluation.id !== evaluationId || !isEvaluationActive) {
       startEvaluation(evaluation);
 
       // Initialize leaderboard with current user
@@ -392,9 +392,9 @@ export default function EvaluationFullscreenPage() {
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
               <div>
-                <span className="font-bold text-lg font-mono">{elapsedTime}</span>
+                <span className="font-bold text-lg font-mono">{remainingTime}</span>
                 <span className="text-blue-100 ml-2 text-xs">
-                  {currentEvaluation.duration} menit tersedia
+                  tersisa dari {currentEvaluation.duration} mnt
                 </span>
               </div>
             </div>
@@ -453,9 +453,79 @@ export default function EvaluationFullscreenPage() {
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden flex relative">
+        {/* Toggle Navigator Button (Left) */}
+        <AnimatePresence>
+          {!isNavigatorOpen && (
+            <motion.button
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
+              onClick={() => setIsNavigatorOpen(true)}
+              className="absolute left-0 top-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 border-l-0 shadow-[10px_0_20px_-10px_rgba(0,0,0,0.1)] pr-4 pl-3 py-3 rounded-r-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:pl-5 transition-all group z-20 flex items-center gap-3 text-zinc-600 dark:text-zinc-400"
+              title="Tampilkan Navigasi Soal"
+            >
+              <div className="flex items-center gap-1.5 font-bold text-sm">
+                <Target className="w-4 h-4 text-blue-500" />
+                Navigasi
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Navigator Sidebar - Collapsible (Left) */}
+        <AnimatePresence initial={false}>
+          {isNavigatorOpen && (
+            <motion.div 
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 280, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 overflow-hidden z-10 relative"
+            >
+              <div className="w-[248px] h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-blue-500" />
+                    Navigasi Soal
+                  </h3>
+                  <Button variant="ghost" size="icon" onClick={() => setIsNavigatorOpen(false)} className="h-8 w-8 rounded-full text-zinc-500">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-3 overflow-y-auto pb-4 pr-1">
+                  {currentEvaluation.questions.map((q, idx) => {
+                    const isAnswered = userAnswers.has(q.id);
+                    const isCurrent = currentQuestionIndex === idx;
+                    
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => useEvaluationStore.setState({ currentQuestionIndex: idx })}
+                        className={cn(
+                          "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base shrink-0 transition-all border-2",
+                          isCurrent 
+                            ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 scale-105 shadow-md" 
+                            : isAnswered 
+                              ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 opacity-80 hover:opacity-100" 
+                              : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 hover:border-blue-300"
+                        )}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Question Area */}
         <div className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6 pb-20">
             {/* Question Card */}
             {currentQuestion && (
               <QuestionCard

@@ -28,7 +28,7 @@ export default function LeaderboardPage() {
   const { isLoggedIn, name, xp, level } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [scopeFilter, setScopeFilter] = useState<'all' | 'angkatan' | 'course' | 'evaluation'>('all');
+  const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course' | 'evaluation'>('angkatan');
   const [subScope, setSubScope] = useState<string>('2023');
   const [isConnected, setIsConnected] = useState(false);
 
@@ -110,8 +110,6 @@ export default function LeaderboardPage() {
 
   // Simulate filtering the leaderboard based on the chosen scope
   const filteredLeaderboard = useMemo(() => {
-    if (scopeFilter === 'all') return leaderboard;
-    
     // Create a deterministic pseudo-random filter based on the subScope string length
     // This is just to mock the UI behavior
     const seed = subScope.length;
@@ -299,7 +297,7 @@ export default function LeaderboardPage() {
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
                     <Filter className="w-4 h-4 text-zinc-500 shrink-0" />
                     <div className="flex gap-1">
-                      {(['all', 'angkatan', 'course', 'evaluation'] as const).map((filter) => (
+                      {(['angkatan', 'course', 'evaluation'] as const).map((filter) => (
                         <Button
                           key={filter}
                           size="sm"
@@ -310,8 +308,7 @@ export default function LeaderboardPage() {
                             scopeFilter === filter && "bg-blue-600 hover:bg-blue-700"
                           )}
                         >
-                          {filter === 'all' && 'Keseluruhan'}
-                          {filter === 'angkatan' && 'Per Angkatan'}
+                          {filter === 'angkatan' && 'Angkatan'}
                           {filter === 'course' && 'Mata Kuliah'}
                           {filter === 'evaluation' && 'Per Evaluasi'}
                         </Button>

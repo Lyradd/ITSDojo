@@ -22,7 +22,7 @@ export function RewardAnimation() {
       
       rewardAnimationQueue.forEach(reward => {
         const generated = Array.from({ length: reward.count }).map((_, i) => ({
-          id: reward.id + '-' + i,
+          id: `${reward.id}-${i}-${Math.random().toString(36).substring(2, 9)}`,
           type: reward.type as 'xp' | 'gem',
           x: typeof window !== 'undefined' ? window.innerWidth / 2 + (Math.random() * 100 - 50) : 500,
           y: typeof window !== 'undefined' ? window.innerHeight / 2 + (Math.random() * 100 - 50) : 500,

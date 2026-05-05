@@ -235,15 +235,16 @@ export default function AdminDashboardPage() {
 
               <div className="space-y-3">
                 {activeEvaluations.map((evaluation) => (
-                  <div 
+                  <Link 
                     key={evaluation.id}
-                    className="p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 bg-linear-to-br from-white to-orange-50 dark:from-zinc-900 dark:to-orange-950/20"
+                    href={`/evaluation/${evaluation.id}`}
+                    className="block p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-orange-400 dark:hover:border-orange-600 transition-all duration-300 bg-linear-to-br from-white to-orange-50 dark:from-zinc-900 dark:to-orange-950/20 group"
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100">
+                      <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100 group-hover:text-orange-600 transition-colors">
                         {evaluation.title}
                       </div>
-                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 text-xs font-bold rounded-full flex items-center gap-1">
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full flex items-center gap-1">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
                         AKTIF
                       </span>
@@ -251,11 +252,16 @@ export default function AdminDashboardPage() {
                     <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">
                       {evaluation.questions.length} soal • {evaluation.duration} menit
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>12 submission</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                        <Users className="w-3 h-3" />
+                        <span>12 submission</span>
+                      </div>
+                      <div className="text-[10px] font-bold text-orange-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Buka Ruang <ArrowRight className="w-3 h-3" />
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
 
                 {!isAsdos && (

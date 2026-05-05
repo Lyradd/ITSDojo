@@ -183,7 +183,7 @@ function WaitingRoomOverlay({
           )}
         </AnimatePresence>
 
-        {(role === 'dosen' || role === 'admin') ? (
+        {(role === 'dosen' || role === 'admin' || role === 'asdos') ? (
           <Button 
             onClick={onStart}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-14 rounded-2xl text-lg shadow-lg shadow-blue-500/25"
@@ -230,8 +230,9 @@ export default function EvaluationFullscreenPage() {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isWaitingRoomActive, setIsWaitingRoomActive] = useState(true);
+  const { isWaitingRoomActive, startWaitingRoomSession } = useEvaluationStore();
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
+
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
 
@@ -255,6 +256,19 @@ export default function EvaluationFullscreenPage() {
 
     return () => clearInterval(interval);
   }, [startTime, currentEvaluation]);
+
+  // Sync across tabs (when Dosen starts the session)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'itsdojo-evaluation-storage') {
+        // Force rehydrate store from local storage
+        useEvaluationStore.persist.rehydrate();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Initialize evaluation
   useEffect(() => {
@@ -339,9 +353,8 @@ export default function EvaluationFullscreenPage() {
 
   // Waiting Room finished → start the real timer
   const handleStartQuiz = useCallback(() => {
-    setIsWaitingRoomActive(false);
-    setStartTime(Date.now());
-  }, [setStartTime]);
+    startWaitingRoomSession();
+  }, [startWaitingRoomSession]);
 
   const handleExitQuiz = () => {
     router.push('/evaluation');

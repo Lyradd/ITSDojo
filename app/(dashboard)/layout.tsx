@@ -10,6 +10,7 @@ import { DynamicEnvironment } from "@/components/dynamic-environment";
 import { useUserStore } from "@/lib/store";
 import { RewardAnimation } from "@/components/shared/reward-animation";
 import { StreakReminder } from "@/components/shared/streak-reminder";
+import { LevelUpModal } from "@/components/shared/level-up-modal";
 
 export default function DashboardLayout({
   children,
@@ -25,6 +26,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative">
+      <LevelUpModal />
       <RewardAnimation />
       <DynamicEnvironment />
       <StreakReminder />

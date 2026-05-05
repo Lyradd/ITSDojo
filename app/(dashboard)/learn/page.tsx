@@ -19,15 +19,24 @@ import {
   GraduationCap,
   Clock,
   ArrowRight,
-  Play
+  Play,
+  PartyPopper
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
-import { AnimatedNumber } from "@/components/ui/animated-number";
 import { StatWidget } from "@/components/shared/stat-widget";
 import { DailyGoalWidget } from "@/components/shared/daily-goal-widget";
 import { LeaderboardWidget } from "@/components/shared/leaderboard-widget";
 import { RoadmapNode, ComputedLessonNode } from "@/components/learn/roadmap-node";
+
+// Helper: Warna tema berdasarkan kursus aktif
+const getCourseTheme = (courseId: string) => {
+  switch (courseId) {
+    case 'fe-basic':       return { bg: 'bg-pink-600', shadow: 'shadow-pink-600/20', text: 'text-pink-600', pill: 'bg-pink-600 shadow-pink-500/30 border-pink-400' };
+    case 'react-mastery':  return { bg: 'bg-blue-600', shadow: 'shadow-blue-600/20', text: 'text-blue-600', pill: 'bg-blue-600 shadow-blue-500/30 border-blue-400' };
+    default:               return { bg: 'bg-emerald-600', shadow: 'shadow-emerald-600/20', text: 'text-emerald-600', pill: 'bg-emerald-600 shadow-emerald-500/30 border-emerald-400' };
+  }
+};
 
 export default function LearnPage() {
   const router = useRouter();
@@ -61,6 +70,7 @@ export default function LearnPage() {
   // Logika Data Kursus
   const activeCourse = COURSES.find(c => c.id === activeCourseId) || COURSES[0];
   const currentContent = COURSE_CONTENT[activeCourseId] || COURSE_CONTENT["fe-basic"];
+  const theme = getCourseTheme(activeCourseId);
 
   // Hitung Peringkat & Leaderboard
   const computedLeaderboard = [
@@ -69,7 +79,6 @@ export default function LearnPage() {
   ];
   computedLeaderboard.sort((a, b) => b.score - a.score);
   const userRank = computedLeaderboard.findIndex(u => u.userId === 'current') + 1;
-  const topUser = computedLeaderboard[0];
 
   const handleSimulateLesson = () => {
     // Cari node pertama yang belum diselesaikan dalam konten kursus saat ini
@@ -88,6 +97,7 @@ export default function LearnPage() {
   const completedCount = currentContent.nodes.filter((n: LessonNode) => completedLessonIds.includes(n.id)).length;
   const totalCount = currentContent.nodes.length;
   const progressPercent = Math.round((completedCount / totalCount) * 100);
+  const isUnitComplete = progressPercent === 100;
 
   // Cari Node Aktif untuk Banner
   const activeNodeIndex = currentContent.nodes.findIndex((n: LessonNode, idx: number) => {
@@ -114,8 +124,29 @@ export default function LearnPage() {
             <StatWidget icon={Trophy} color="text-yellow-500" label="Rank" value={`#${userRank}`} />
           </div>
 
-          {/* 0. CONTINUE BANNER */}
-          {activeNode && (
+          {/* 0. CONTINUE BANNER or COMPLETION STATE */}
+          {isUnitComplete ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-2xl flex items-center justify-between gap-4 shadow-xl"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <PartyPopper className="w-7 h-7 text-yellow-300" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Selamat! Unit Selesai 🎉</h3>
+                  <p className="text-sm opacity-90">Anda telah menyelesaikan seluruh materi di {currentContent.unitTitle}.</p>
+                </div>
+              </div>
+              <Link href="/courses">
+                <Button size="sm" className="bg-white text-green-700 hover:bg-white/90 border-none gap-2 rounded-xl font-bold px-4">
+                  Pilih Kursus Lain <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </motion.div>
+          ) : activeNode && (
             <motion.div 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -139,10 +170,7 @@ export default function LearnPage() {
           )}
 
           {/* 1. HEADER KURSUS (Card Warna-Warni) */}
-          <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${activeCourseId === 'fe-basic' ? 'bg-pink-600 shadow-pink-600/20' :
-              activeCourseId === 'react-mastery' ? 'bg-blue-600 shadow-blue-600/20' :
-                'bg-emerald-600 shadow-emerald-600/20'
-            }`}>
+          <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${theme.bg} ${theme.shadow}`}>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
                 <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
@@ -165,10 +193,7 @@ export default function LearnPage() {
                   <RotateCcw className="w-4 h-4" />
                 </Button>
                 <Link href="/courses">
-                  <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${activeCourseId === 'fe-basic' ? 'text-pink-600' :
-                      activeCourseId === 'react-mastery' ? 'text-blue-600' :
-                        'text-emerald-600'
-                    }`}>
+                  <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${theme.text}`}>
                     Ganti Kursus
                   </Button>
                 </Link>
@@ -185,6 +210,7 @@ export default function LearnPage() {
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
                   className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
                 />
               </div>
@@ -196,10 +222,7 @@ export default function LearnPage() {
 
             {/* Header Unit (Floating Label) */}
             <div className="flex flex-col items-center relative mb-16 z-20">
-              <span className={`px-6 py-2 text-white rounded-full text-sm font-bold shadow-lg border-2 ${activeCourseId === 'fe-basic' ? 'bg-pink-600 shadow-pink-500/30 border-pink-400' :
-                  activeCourseId === 'react-mastery' ? 'bg-blue-600 shadow-blue-500/30 border-blue-400' :
-                    'bg-emerald-600 shadow-emerald-500/30 border-emerald-400'
-                }`}>
+              <span className={`px-6 py-2 text-white rounded-full text-sm font-bold shadow-lg border-2 ${theme.pill}`}>
                 {currentContent.unitTitle}
               </span>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm px-3 py-1 rounded-full border border-zinc-200/50 dark:border-zinc-800/50">
@@ -211,46 +234,38 @@ export default function LearnPage() {
             <div className="w-full relative flex flex-col items-center">
 
               <div className="flex flex-col items-center gap-16 relative z-10 w-full max-w-md mx-auto">
-                {(() => {
-                   const activeNodeIndex = currentContent.nodes.findIndex((n: LessonNode, idx: number) => {
-                      const prevId = idx === 0 ? null : currentContent.nodes[idx-1].id;
-                      const isPrevCompleted = prevId ? completedLessonIds.includes(prevId) : true;
-                      const isCurrCompleted = completedLessonIds.includes(n.id);
-                      return isPrevCompleted && !isCurrCompleted;
-                   });
+                {currentContent.nodes.map((origNode: LessonNode, index: number) => {
+                    const isEven = index % 2 === 0;
+                    
+                    const isCompleted = completedLessonIds.includes(origNode.id);
+                    
+                    let computedType = 'locked';
+                    if (isCompleted) {
+                      computedType = 'completed';
+                    } else if (index === activeNodeIndex) {
+                      computedType = 'active';
+                    } else if (index === activeNodeIndex + 1) {
+                      computedType = 'next_locked';
+                    } else {
+                      computedType = 'far_locked';
+                    }
+                    
+                    const node: ComputedLessonNode = { 
+                      ...origNode, 
+                      type: computedType as ComputedLessonNode['type'],
+                      duration: origNode.duration 
+                    };
 
-                   return currentContent.nodes.map((origNode: LessonNode, index: number) => {
-                      const isEven = index % 2 === 0;
-                      
-                      const isCompleted = completedLessonIds.includes(origNode.id);
-                      
-                      let computedType = 'locked';
-                      if (isCompleted) {
-                        computedType = 'completed';
-                      } else if (index === activeNodeIndex) {
-                        computedType = 'active';
-                      } else if (index === activeNodeIndex + 1) {
-                        computedType = 'next_locked';
-                      } else {
-                        computedType = 'far_locked';
-                      }
-                      
-                      const node: ComputedLessonNode = { 
-                        ...origNode, 
-                        type: computedType as ComputedLessonNode['type'],
-                        duration: origNode.duration 
-                      };
-
-                      return (
-                        <RoadmapNode
-                          key={node.id}
-                          node={node}
-                          index={index}
-                          totalNodes={currentContent.nodes.length}
-                          isEven={isEven}
-                        />
-                      );
-                })})()}
+                    return (
+                      <RoadmapNode
+                        key={node.id}
+                        node={node}
+                        index={index}
+                        totalNodes={currentContent.nodes.length}
+                        isEven={isEven}
+                      />
+                    );
+                })}
               </div>
 
               {/* Footer Section: Next Unit */}
@@ -262,8 +277,8 @@ export default function LearnPage() {
                   <div className="w-12 h-12 bg-zinc-200 dark:bg-zinc-700 rounded-full mx-auto mb-2 flex items-center justify-center">
                     <Lock className="w-5 h-5 text-zinc-400" />
                   </div>
-                  <h3 className="text-sm font-bold text-zinc-500">Unit 2: Lanjutan</h3>
-                  <p className="text-xs text-zinc-400 mt-1">Selesaikan Unit 1 untuk membuka.</p>
+                  <h3 className="text-sm font-bold text-zinc-500">Unit Selanjutnya</h3>
+                  <p className="text-xs text-zinc-400 mt-1">Selesaikan {currentContent.unitTitle} untuk membuka.</p>
                 </div>
               </div>
 

@@ -11,25 +11,69 @@ import { playCoinSound } from "@/lib/sounds";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
 import { SHOP_PRICES } from "@/lib/shop-config";
+import { PurchaseModal } from "@/components/shared/purchase-modal";
+import { AlertModal } from "@/components/shared/alert-modal";
+import { toast } from "react-hot-toast";
 
 export default function ShopPage() {
-  const { gems, streakFreezeCount, buyItem, multiplierEndTime, purchaseHistory = [] } = useUserStore();
+  const { 
+    gems, streakFreezeCount, buyItem, multiplierEndTime, 
+    purchaseHistory = [], level, unlockedInventorySlotIds = [], unlockInventorySlot,
+    hasGemMiner, hasShieldPack, useShieldPack, addGems 
+  } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<{ type: string, cost: number, title: string, icon: React.ReactNode } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ type: string, cost: number, title: string, icon: React.ReactNode, actionType?: 'buy' | 'unlock' } | null>(null);
+  const [alertInfo, setAlertInfo] = useState<{ title: string, message: string, icon: React.ReactNode } | null>(null);
   const timeLeft = useMultiplierTimer();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Keyboard Accessibility: Tutup modal dengan ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedItem(null);
+    };
+    if (selectedItem) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedItem]);
+
   if (!isMounted) return null;
 
   const confirmBuy = () => {
     if (!selectedItem || gems < selectedItem.cost) return;
+    
+    if (selectedItem.actionType === 'unlock') {
+      const success = unlockInventorySlot(selectedItem.type, selectedItem.cost);
+      if (success) {
+        triggerConfetti();
+        playCoinSound();
+        toast.success(`${selectedItem.title} berhasil dibuka!`);
+        setSelectedItem(null);
+      }
+      return;
+    }
+
+    // Safety check: Jangan biarkan beli jika sudah penuh/aktif
+    const itemInCatalog = storeItems.find(i => i.type === selectedItem.type);
+    if (itemInCatalog && (itemInCatalog.isFull || itemInCatalog.isActive)) {
+      setAlertInfo({
+        title: 'Penyimpanan Penuh',
+        message: 'Anda sudah memiliki item ini atau penyimpanan untuk item ini sudah penuh!',
+        icon: <ShieldAlert className="w-10 h-10 text-red-500" />
+      });
+      setSelectedItem(null);
+      return;
+    }
+
     const success = buyItem(selectedItem.type as any, selectedItem.cost);
     if (success) {
       triggerConfetti();
       playCoinSound();
+      toast.success(`${selectedItem.title} berhasil dibeli!`);
       setSelectedItem(null);
     }
   };
@@ -51,14 +95,14 @@ export default function ShopPage() {
     },
     {
       id: 'shield-3x',
-      title: 'Paket Shield (3x)',
-      description: 'Beli paket hemat! Langsung isi penuh slot Streak Freeze Anda untuk perlindungan maksimal.',
+      title: 'Shield Pack',
+      description: 'Gunakan saat darurat! Item ini akan langsung mengisi penuh seluruh slot Streak Freeze Anda (maksimal 3).',
       icon: <ShieldCheck className="w-10 h-10 text-green-500" />,
       cost: SHOP_PRICES.SHIELD_PACK,
       type: 'shield-3x',
       color: 'from-green-100 to-green-50 dark:from-green-950/40 dark:to-green-900/10',
-      isFull: streakFreezeCount >= 3,
-      fullText: 'Penuh (3/3)'
+      isFull: hasShieldPack || !unlockedInventorySlotIds.includes('slot-3'),
+      fullText: !unlockedInventorySlotIds.includes('slot-3') ? 'Inventori Penuh' : 'Penuh'
     },
     {
       id: 'multiplier',
@@ -69,6 +113,18 @@ export default function ShopPage() {
       type: 'multiplier',
       color: 'from-purple-100 to-purple-50 dark:from-purple-950/40 dark:to-purple-900/10',
       isActive: isMultiplierActive
+    },
+    {
+      id: 'gem-miner',
+      title: 'Gem Miner',
+      description: 'Investasi jangka panjang! Dapatkan bonus +50% Gems (+5 extra) secara permanen setiap kali menyelesaikan pelajaran.',
+      icon: <Gem className="w-10 h-10 text-blue-500" fill="currentColor" />,
+      badge: <Crown className="w-5 h-5 text-yellow-500 absolute -bottom-1 -right-1 drop-shadow-md" />,
+      cost: SHOP_PRICES.GEM_MINER,
+      type: 'gem-miner',
+      color: 'from-blue-100 to-blue-50 dark:from-blue-950/40 dark:to-blue-900/10',
+      isActive: hasGemMiner,
+      fullText: 'Sudah Dimiliki'
     }
   ];
 
@@ -89,16 +145,26 @@ export default function ShopPage() {
             <p className="text-blue-100 max-w-md">Gunakan saldo Gems Anda untuk membeli Power-Ups yang akan membantu proses belajar.</p>
          </div>
 
-         {/* Saldo Gems */}
-         <div className="relative z-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg cursor-default hover:bg-white/30 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-inner">
-               <Gem className="w-7 h-7 text-cyan-200 fill-current" />
-            </div>
-            <div>
-               <div className="text-3xl font-black tracking-tight"><AnimatedNumber value={gems} /></div>
-               <div className="text-xs font-bold uppercase tracking-widest text-blue-100">Gems Tersedia</div>
-            </div>
-         </div>
+          {/* Saldo Gems - Clickable for Cheat in Dev/Testing */}
+          <div 
+            onClick={() => {
+              addGems(500);
+              triggerConfetti();
+            }}
+            className="relative z-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg cursor-pointer hover:bg-white/30 transition-colors group"
+            title="Klik untuk Cheat +500 Gems (Testing)"
+          >
+             <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                <Gem className="w-7 h-7 text-cyan-200 fill-current animate-pulse" />
+             </div>
+             <div>
+                <div className="text-3xl font-black tracking-tight flex items-center gap-2">
+                  <AnimatedNumber value={gems} />
+                  <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">TEST +500</span>
+                </div>
+                <div className="text-xs font-bold uppercase tracking-widest text-blue-100">Gems Tersedia</div>
+             </div>
+          </div>
       </div>
 
       {/* INVENTORY / TAS PENYIMPANAN */}
@@ -142,21 +208,118 @@ export default function ShopPage() {
               </div>
            </div>
 
-           {/* Locked Slot 1 */}
-           <div className="bg-zinc-50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 opacity-60">
-              <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-2xl flex items-center justify-center">
-                 <Lock className="w-6 h-6" />
-              </div>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Locked</p>
-           </div>
+           {/* Slot 3: Shield Slot — Unlockable with Gems */}
+           {unlockedInventorySlotIds.includes('slot-3') ? (
+             <div className="bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-green-500/50 transition-colors relative overflow-hidden">
+               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-500 rounded-2xl flex items-center justify-center">
+                  <ShieldCheck className={`w-8 h-8 ${hasShieldPack ? 'animate-bounce' : 'opacity-20'}`} />
+               </div>
+               <div className="text-center">
+                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Shield Pack</p>
+                 <p className="text-sm font-black text-zinc-800 dark:text-zinc-200">
+                    {hasShieldPack ? 'Tersedia' : 'Kosong'}
+                 </p>
+               </div>
+               {hasShieldPack && (
+                 <Button 
+                   size="sm" 
+                   className="mt-1 h-7 text-[10px] bg-green-600 hover:bg-green-700 text-white rounded-lg px-4"
+                   onClick={() => {
+                     if (streakFreezeCount >= 3) {
+                       setAlertInfo({
+                         title: 'Slot Freeze Penuh',
+                         message: 'Tidak dapat menggunakan Shield Pack. Slot Streak Freeze Anda sudah penuh (3/3).',
+                         icon: <Flame className="w-10 h-10 text-orange-500" />
+                       });
+                     } else {
+                       useShieldPack();
+                       triggerConfetti();
+                       toast.success("Shield Pack berhasil digunakan! Streak Freeze terisi penuh.");
+                     }
+                   }}
+                 >
+                    Gunakan
+                 </Button>
+               )}
+            </div>
+           ) : (
+             <button 
+                onClick={() => {
+                  if (gems >= 500) {
+                    setSelectedItem({
+                      type: 'slot-3',
+                      cost: 500,
+                      title: 'Slot Inventori 3',
+                      icon: <Lock className="w-10 h-10 text-blue-500" />,
+                      actionType: 'unlock'
+                    });
+                  } else {
+                    setAlertInfo({
+                      title: 'Gem Tidak Cukup',
+                      message: 'Gems Anda tidak cukup untuk membuka slot ini! Butuh 500 Gems.',
+                      icon: <AlertCircle className="w-10 h-10 text-red-500" />
+                    });
+                  }
+                }}
+                className="bg-zinc-50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 group hover:bg-white dark:hover:bg-zinc-900 hover:border-blue-500/50 transition-all cursor-pointer"
+             >
+               <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-500 transition-colors">
+                  <Lock className="w-6 h-6" />
+               </div>
+               <div className="text-center">
+                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-blue-500">Buka Slot</p>
+                 <div className="flex items-center justify-center gap-1 mt-0.5">
+                    <Gem className="w-3 h-3 text-blue-500" />
+                    <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">500</span>
+                 </div>
+               </div>
+            </button>
+           )}
 
-           {/* Locked Slot 2 */}
-           <div className="bg-zinc-50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 opacity-60">
-              <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-2xl flex items-center justify-center">
-                 <Lock className="w-6 h-6" />
-              </div>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Locked</p>
-           </div>
+           {/* Slot 4: Booster Slot — Unlockable with Gems */}
+           {unlockedInventorySlotIds.includes('slot-4') ? (
+             <div className="bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-blue-500/50 transition-colors">
+               <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center">
+                  <Package className="w-8 h-8" />
+               </div>
+               <div className="text-center">
+                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Booster Slot</p>
+                 <p className="text-sm font-black text-zinc-800 dark:text-zinc-200">Aktif</p>
+               </div>
+            </div>
+           ) : (
+             <button 
+                onClick={() => {
+                  if (gems >= 750) {
+                    setSelectedItem({
+                      type: 'slot-4',
+                      cost: 750,
+                      title: 'Slot Inventori 4',
+                      icon: <Lock className="w-10 h-10 text-blue-500" />,
+                      actionType: 'unlock'
+                    });
+                  } else {
+                    setAlertInfo({
+                      title: 'Gem Tidak Cukup',
+                      message: 'Gems Anda tidak cukup untuk membuka slot ini! Butuh 750 Gems.',
+                      icon: <AlertCircle className="w-10 h-10 text-red-500" />
+                    });
+                  }
+                }}
+                className="bg-zinc-50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 group hover:bg-white dark:hover:bg-zinc-900 hover:border-blue-500/50 transition-all cursor-pointer"
+             >
+               <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-500 transition-colors">
+                  <Lock className="w-6 h-6" />
+               </div>
+               <div className="text-center">
+                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-blue-500">Buka Slot</p>
+                 <div className="flex items-center justify-center gap-1 mt-0.5">
+                    <Gem className="w-3 h-3 text-blue-500" />
+                    <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">750</span>
+                 </div>
+               </div>
+            </button>
+           )}
         </div>
       </div>
 
@@ -240,11 +403,15 @@ export default function ShopPage() {
                        </Button>
                     ) : item.isActive ? (
                        <Button disabled className="w-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-bold rounded-xl h-11 border-none flex gap-2">
-                          <Clock className="w-4 h-4 animate-spin-slow" /> Aktif
+                          {item.fullText ? (
+                            item.fullText
+                          ) : (
+                            <><Clock className="w-4 h-4 animate-spin-slow" /> Aktif</>
+                          )}
                        </Button>
                     ) : (
                        <Button 
-                          onClick={() => setSelectedItem(item)}
+                          onClick={() => setSelectedItem({ ...item, actionType: 'buy' })}
                           disabled={gems < item.cost}
                           className={`w-full font-bold rounded-xl h-11 shadow-md transition-all active:scale-95 ${gems >= item.cost ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'}`}
                        >
@@ -288,51 +455,21 @@ export default function ShopPage() {
       )}
 
       {/* CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {selectedItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800"
-            >
-              <button 
-                onClick={() => setSelectedItem(null)}
-                className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-              >
-                <X className="w-5 h-5 text-zinc-500" />
-              </button>
-              
-              <div className="flex flex-col items-center text-center mt-4">
-                 <div className="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-                    {selectedItem.icon}
-                 </div>
-                 <h3 className="text-2xl font-black mb-2 text-zinc-800 dark:text-white">Konfirmasi</h3>
-                 <p className="text-zinc-500 dark:text-zinc-400 mb-6">
-                   Anda akan menukarkan <strong className="text-blue-500">{selectedItem.cost} Gems</strong> untuk membeli <strong className="text-zinc-800 dark:text-zinc-200">{selectedItem.title}</strong>. Lanjutkan?
-                 </p>
-                 
-                 <div className="flex gap-3 w-full">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 font-bold rounded-xl h-12"
-                      onClick={() => setSelectedItem(null)}
-                    >
-                       Batal
-                    </Button>
-                    <Button 
-                      className="flex-1 font-bold rounded-xl h-12 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={confirmBuy}
-                    >
-                       Ya, Beli
-                    </Button>
-                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <PurchaseModal 
+        isOpen={!!selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onConfirm={confirmBuy}
+        item={selectedItem}
+      />
+
+      {/* ALERT MODAL */}
+      <AlertModal 
+        isOpen={!!alertInfo}
+        onClose={() => setAlertInfo(null)}
+        title={alertInfo?.title || ''}
+        message={alertInfo?.message || ''}
+        icon={alertInfo?.icon || <AlertCircle className="w-10 h-10" />}
+      />
     </div>
   );
 }

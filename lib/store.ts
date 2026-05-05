@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { formatLocalDate } from './utils';
 
+// --- SHARED TYPES ---
+
 export type DailyGoal = {
   id: string;
   title: string;
@@ -14,68 +16,6 @@ export type DailyGoal = {
   rewardValue: number;
 };
 
-interface UserState {
-  isLoggedIn: boolean;
-  name: string;
-  email: string;
-  level: number;
-  xp: number; 
-  xpToNextLevel: number;
-  bio: string;
-  avatarUrl: string | null;
-  streak: number;
-  gems: number; // NEW: Gems currency
-  streakFreezeCount: number; // Max 3
-  activeCourseId: string;
-  role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin'; 
-  semester: number; // NEW: Semester mahasiswa
-  enrolledCourseIds: string[]; // NEW: Courses they are enrolled in
-  pendingCourseIds: string[]; // NEW: Courses waiting for dosen approval
-  courseAccessHistory: Record<string, string>; // Maps courseId to last access ISO date
-  completedLessonIds: string[]; 
-  activityHistory: { date: string, count: number }[];
-  unlockedAchievements: string[];
-  nocturnalCount: number;
-  earlyBirdCount: number;
-  longestStreak: number;
-  mostXpInDay: number;
-  totalPerfectLessons: number;
-  league: string;
-  top3Finishes: number;
-  bookmarkedCourseIds: string[]; // NEW: Saved/Bookmarked courses
-  unlockAchievement: (id: string) => void;
-  purchaseHistory: { id: string, type: string, cost: number, date: string, itemName: string }[];
-  
-  dailyGoals: DailyGoal[];
-  
-  xpMultiplier: number;
-  multiplierEndTime: number | null;
-
-  login: () => void;
-  logout: () => void;
-  addXp: (amount: number) => void;
-  resetProgress: () => void; // NEW: Debug/Testing method
-  setActiveCourse: (courseId: string) => void;
-  completeLesson: (lessonId?: string) => void;
-  claimGoalReward: (goalId: string) => void;
-  buyItem: (type: 'freeze' | 'multiplier' | 'shield-3x', cost: number) => boolean; // NEW: Shop purchase
-  setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => void; // NEW: Set role method
-  setSemester: (semester: number) => void;
-  requestEnrollment: (courseId: string) => void;
-  acceptEnrollment: (courseId: string) => void;
-  toggleBookmarkCourse: (courseId: string) => void; // NEW: Bookmark toggle
-  updateProfile: (data: { name?: string, bio?: string, avatarUrl?: string | null }) => void;
-
-  lastActiveDate: string; // Tanggal terakhir user melakukan aktivitas
-  lastDailyReset: string;
-  checkDailyReset: () => void;
-  weeklyRewardClaimed: boolean;
-  claimWeeklyReward: () => void;
-  rewardAnimationQueue: { id: string, type: 'xp' | 'gem', count: number }[];
-  triggerReward: (type: 'xp' | 'gem', count: number) => void;
-  clearRewardAnimationQueue: () => void;
-}
-
 const INITIAL_GOALS: DailyGoal[] = [
   { 
     id: 'xp-goal', title: 'Raih 50 XP', target: 50, current: 0, type: 'xp', 
@@ -87,29 +27,114 @@ const INITIAL_GOALS: DailyGoal[] = [
   },
 ];
 
+// --- STORE INTERFACE ---
+
+export interface UserState {
+  // 1. Profile & Account
+  isLoggedIn: boolean;
+  name: string;
+  email: string;
+  bio: string;
+  avatarUrl: string | null;
+  gems: number;
+  level: number;
+  role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin'; 
+  semester: number;
+  createdAt: string;
+  login: () => void;
+  logout: () => void;
+  updateProfile: (data: { name?: string, bio?: string, avatarUrl?: string | null }) => void;
+  addGems: (amount: number) => void;
+  setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => void;
+  setSemester: (semester: number) => void;
+
+  // 2. Progress & Learning
+  xp: number; 
+  xpToNextLevel: number;
+  streak: number;
+  activeCourseId: string;
+  enrolledCourseIds: string[];
+  pendingCourseIds: string[];
+  courseAccessHistory: Record<string, string>;
+  completedLessonIds: string[]; 
+  activityHistory: { date: string, count: number, xpEarned: number }[];
+  unlockedAchievements: string[];
+  nocturnalCount: number;
+  earlyBirdCount: number;
+  longestStreak: number;
+  mostXpInDay: number;
+  totalPerfectLessons: number;
+  league: string;
+  top3Finishes: number;
+  bookmarkedCourseIds: string[];
+  xpMultiplier: number;
+  multiplierEndTime: number | null;
+  
+  addXp: (amount: number) => void;
+  completeLesson: (lessonId?: string) => void;
+  setActiveCourse: (courseId: string) => void;
+  requestEnrollment: (courseId: string) => void;
+  acceptEnrollment: (courseId: string) => void;
+  rejectEnrollment: (courseId: string) => void;
+  unlockAchievement: (id: string) => void;
+  toggleBookmarkCourse: (courseId: string) => void;
+  resetProgress: () => void;
+
+  // 3. Shop & Inventory
+  streakFreezeCount: number;
+  purchaseHistory: { id: string, type: string, cost: number, date: string, itemName: string }[];
+  unlockedInventorySlotIds: string[];
+  hasGemMiner: boolean;
+  hasShieldPack: boolean;
+  unlockInventorySlot: (slotId: string, cost: number) => boolean;
+  buyItem: (type: 'freeze' | 'multiplier' | 'shield-3x' | 'gem-miner', cost: number) => boolean;
+  useShieldPack: () => void;
+
+  // 4. Goals & Daily Logic
+  dailyGoals: DailyGoal[];
+  lastActiveDate: string;
+  lastDailyReset: string;
+  weeklyRewardClaimed: boolean;
+  checkDailyReset: () => void;
+  claimWeeklyReward: () => void;
+  claimGoalReward: (goalId: string) => void;
+
+  // 5. UI State & Animations
+  isLevelUpModalOpen: boolean;
+  levelUpData: { oldLevel: number; newLevel: number; gemsGained: number } | null;
+  rewardAnimationQueue: { id: string, type: 'xp' | 'gem', count: number }[];
+  closeLevelUpModal: () => void;
+  triggerReward: (type: 'xp' | 'gem', count: number) => void;
+  clearRewardAnimationQueue: () => void;
+}
+
+// --- CONSOLIDATED STORE ---
+
 export const useUserStore = create<UserState>()(
   persist<UserState>(
     (set, get) => ({
+      // --- INITIAL STATE ---
       isLoggedIn: false,
       name: "Daryl",
       email: "daryl@student.its.ac.id",
-      level: 1,
-      xp: 0,
-      xpToNextLevel: 100,
       bio: "Belajar coding itu seru! 🚀",
       avatarUrl: null,
-      streak: 3,
-      gems: 300, // Starting Gems
-      streakFreezeCount: 0,
-      activeCourseId: "fe-basic",
+      gems: 300,
+      level: 1,
       role: 'admin', 
-      semester: 5, // Default for Daryl
-      enrolledCourseIds: ['fe-basic'], // Default tes biar langsung bisa nyoba
+      semester: 5,
+      createdAt: new Date().toISOString(),
+      
+      xp: 0,
+      xpToNextLevel: 100,
+      streak: 3,
+      activeCourseId: "fe-basic",
+      enrolledCourseIds: ['fe-basic'],
       pendingCourseIds: [],
-      courseAccessHistory: { 'fe-basic': new Date().toISOString() }, // Default access
-      completedLessonIds: ['fe-basic-1'], // Default tes biar node 1 selesai, node 2 aktif
-      activityHistory: [], // Dinamis untuk Heatmap
-      unlockedAchievements: [], // Menyimpan ID achievement yang terbuka
+      courseAccessHistory: { 'fe-basic': new Date().toISOString() },
+      completedLessonIds: ['fe-basic-1'],
+      activityHistory: [],
+      unlockedAchievements: [],
       nocturnalCount: 0,
       earlyBirdCount: 0,
       longestStreak: 3,
@@ -118,116 +143,42 @@ export const useUserStore = create<UserState>()(
       league: "Silver",
       top3Finishes: 0,
       bookmarkedCourseIds: [],
-      purchaseHistory: [],
-      
-      dailyGoals: INITIAL_GOALS,
-      
       xpMultiplier: 1,
       multiplierEndTime: null,
+
+      streakFreezeCount: 0,
+      purchaseHistory: [],
+      unlockedInventorySlotIds: [],
+      hasGemMiner: false,
+      hasShieldPack: false,
+
+      dailyGoals: INITIAL_GOALS,
       lastActiveDate: formatLocalDate(new Date()),
       lastDailyReset: formatLocalDate(new Date()),
       weeklyRewardClaimed: false,
 
-      checkDailyReset: () => set((state) => {
-        const now = new Date();
-        const today = formatLocalDate(now);
-        if (state.lastDailyReset !== today) {
-           const updates: any = {
-             dailyGoals: INITIAL_GOALS,
-             lastDailyReset: today
-           };
-
-           // Reset weekly reward on Monday (1)
-           if (now.getDay() === 1) {
-             updates.weeklyRewardClaimed = false;
-           }
-
-           // --- STREAK LOGIC ---
-           // Cek apakah user aktif kemarin
-           const yesterday = new Date(now);
-           yesterday.setDate(yesterday.getDate() - 1);
-           const yesterdayStr = formatLocalDate(yesterday);
-           const wasActiveYesterday = state.lastActiveDate === yesterdayStr;
-           const wasActiveToday = state.lastActiveDate === today;
-
-           if (wasActiveYesterday || wasActiveToday) {
-             // User aktif kemarin atau sudah aktif hari ini — streak aman
-             // (streak di-increment saat completeLesson, bukan di sini)
-           } else {
-             // User TIDAK aktif kemarin — cek streak freeze
-             if (state.streakFreezeCount > 0) {
-               // Pakai streak freeze, streak dipertahankan
-               updates.streakFreezeCount = state.streakFreezeCount - 1;
-             } else {
-               // Tidak ada freeze, reset streak
-               updates.streak = 0;
-             }
-           }
-
-           return updates;
-        }
-        return state;
-      }),
-
-      claimWeeklyReward: () => {
-        set((state) => {
-          if (state.weeklyRewardClaimed) return state;
-          return {
-            gems: state.gems + 100, // Reward: 100 Gems
-            weeklyRewardClaimed: true
-          };
-        });
-        get().triggerReward('gem', 5); // Trigger 5 gem particles
-      },
-
+      isLevelUpModalOpen: false,
+      levelUpData: null,
       rewardAnimationQueue: [],
-      triggerReward: (type: 'xp' | 'gem', count: number) => set((state: UserState) => ({ 
-        rewardAnimationQueue: [...state.rewardAnimationQueue, { 
-          id: Math.random().toString(36).substring(7) + Date.now(), 
-          type, 
-          count 
-        }]
-      })),
-      clearRewardAnimationQueue: () => set({ rewardAnimationQueue: [] }),
 
+      // --- ACTIONS: PROFILE ---
       login: () => set({ isLoggedIn: true }),
       logout: () => set({ isLoggedIn: false }),
-      setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => set({ role }), // NEW: Set role implementation
-      setSemester: (semester: number) => set({ semester }),
-      requestEnrollment: (courseId: string) => set((state: UserState) => {
-        if (state.enrolledCourseIds.includes(courseId) || state.pendingCourseIds.includes(courseId)) {
-          return state;
-        }
-        return { pendingCourseIds: [...state.pendingCourseIds, courseId] };
-      }),
-      acceptEnrollment: (courseId: string) => set((state: UserState) => {
-        return {
-          pendingCourseIds: state.pendingCourseIds.filter((id: string) => id !== courseId),
-          enrolledCourseIds: [...state.enrolledCourseIds, courseId]
-        };
-      }),
-      rejectEnrollment: (courseId: string) => set((state: UserState) => ({
-        pendingCourseIds: state.pendingCourseIds.filter((id: string) => id !== courseId)
-      })),
-      unlockAchievement: (id: string) => set((state: UserState) => {
-        const current = state.unlockedAchievements || [];
-        if (current.includes(id)) return state;
-        return { unlockedAchievements: [...current, id] };
-      }),
-      
+      updateProfile: (data) => set((state) => ({ ...state, ...data })),
+      addGems: (amount: number) => set((state) => ({ gems: state.gems + amount })),
+      setRole: (role) => set({ role }),
+      setSemester: (semester) => set({ semester }),
+
+      // --- ACTIONS: PROGRESS ---
       addXp: (amount: number) => {
-        set((state: UserState) => {
-          // 1. Cek Multiplier
+        set((state) => {
           const now = Date.now();
           const isMultiplierActive = state.multiplierEndTime && now < state.multiplierEndTime;
           const currentMultiplier = isMultiplierActive ? state.xpMultiplier : 1;
-          
-          // 2. Hitung Total XP Baru
           const finalXpAmount = amount * currentMultiplier;
           const newTotalXp = state.xp + finalXpAmount;
           
-          // 3. Update Progress Daily Goal (Tipe XP)
-          const updatedGoals = state.dailyGoals.map((goal: DailyGoal) => {
+          const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'xp') {
               const newCurrent = Math.min(goal.current + amount, goal.target);
               return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
@@ -235,43 +186,53 @@ export const useUserStore = create<UserState>()(
             return goal;
           });
 
-          // 4. Logika Level Up
           let currentLevel = state.level;
           let currentTarget = state.xpToNextLevel;
-
+          let levelsGained = 0;
           while (newTotalXp >= currentTarget) {
             currentLevel++;
-            currentTarget = Math.floor(currentTarget * 1.5); 
+            currentTarget = Math.floor(currentTarget * 1.5);
+            levelsGained++;
           }
 
+          let finalGems = state.gems;
+          let levelUpInfo = state.levelUpData;
+          let isModalOpen = state.isLevelUpModalOpen;
+
+          if (levelsGained > 0) {
+            const gemReward = levelsGained * 50;
+            finalGems += gemReward;
+            isModalOpen = true;
+            levelUpInfo = { oldLevel: state.level, newLevel: currentLevel, gemsGained: gemReward };
+            setTimeout(() => { get().triggerReward('gem', 10); }, 500);
+          }
+
+          const today = formatLocalDate(new Date());
+          const updatedHistory = [...state.activityHistory];
+          const todayIdx = updatedHistory.findIndex((h) => h.date === today);
+          if (todayIdx !== -1) {
+            updatedHistory[todayIdx] = { ...updatedHistory[todayIdx], xpEarned: (updatedHistory[todayIdx].xpEarned || 0) + finalXpAmount };
+          } else {
+            updatedHistory.push({ date: today, count: 0, xpEarned: finalXpAmount });
+          }
+
+          const todayEntry = updatedHistory.find((h) => h.date === today);
+          const newMostXpInDay = Math.max(state.mostXpInDay || 0, todayEntry ? todayEntry.xpEarned : 0);
+
           return {
-            xp: newTotalXp,
-            level: currentLevel,
-            xpToNextLevel: currentTarget,
-            dailyGoals: updatedGoals,
-            xpMultiplier: isMultiplierActive ? state.xpMultiplier : 1,
-            multiplierEndTime: isMultiplierActive ? state.multiplierEndTime : null
+            xp: newTotalXp, level: currentLevel, xpToNextLevel: currentTarget,
+            dailyGoals: updatedGoals, gems: finalGems, isLevelUpModalOpen: isModalOpen,
+            levelUpData: levelUpInfo, activityHistory: updatedHistory, mostXpInDay: newMostXpInDay
           };
         });
         get().triggerReward('xp', 5);
       },
 
-      setActiveCourse: (courseId: string) => set((state: UserState) => ({
-        activeCourseId: courseId,
-        courseAccessHistory: {
-          ...(state.courseAccessHistory || {}),
-          [courseId]: new Date().toISOString()
-        }
-      })),
-      
-      resetProgress: () => set({ completedLessonIds: ['fe-basic-1'] }),
-
-      completeLesson: (lessonId?: string) => {
+      completeLesson: (lessonId) => {
         let earnedXp = 0;
         let earnedGems = 0;
-
-        set((state: UserState) => {
-          const updatedGoals = state.dailyGoals.map((goal: DailyGoal) => {
+        set((state) => {
+          const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'lesson') {
               const newCurrent = Math.min(goal.current + 1, goal.target);
               return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
@@ -280,109 +241,187 @@ export const useUserStore = create<UserState>()(
           });
 
           const isNew = lessonId && !state.completedLessonIds.includes(lessonId);
-          const updatedLessonIds = isNew
-            ? [...state.completedLessonIds, lessonId!]
-            : state.completedLessonIds;
-
+          const updatedLessonIds = isNew ? [...state.completedLessonIds, lessonId!] : state.completedLessonIds;
           earnedXp = isNew ? 50 : 0;
-          earnedGems = isNew ? 10 : 0;
+          earnedGems = isNew ? (state.hasGemMiner ? 15 : 10) : 0;
 
-          // Catat aktivitas untuk Heatmap + Streak
-           let newHistory = [...state.activityHistory];
-           let newStreak = state.streak;
-           let newLastActiveDate = state.lastActiveDate;
+          let newHistory = [...state.activityHistory];
+          let newStreak = state.streak;
+          let newLastActiveDate = state.lastActiveDate;
 
-           if (isNew) {
-              const today = formatLocalDate(new Date());
-              const todayIndex = newHistory.findIndex((h: { date: string, count: number }) => h.date === today);
-              if (todayIndex !== -1) {
-                 newHistory[todayIndex] = { ...newHistory[todayIndex], count: newHistory[todayIndex].count + 1 };
+          if (isNew) {
+            const today = formatLocalDate(new Date());
+            const todayIndex = newHistory.findIndex((h) => h.date === today);
+            if (todayIndex !== -1) {
+              newHistory[todayIndex] = { ...newHistory[todayIndex], count: newHistory[todayIndex].count + 1 };
+            } else {
+              newHistory.push({ date: today, count: 1, xpEarned: 0 });
+            }
+
+            if (newLastActiveDate !== today) {
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              const yesterdayStr = formatLocalDate(yesterday);
+              if (newLastActiveDate === yesterdayStr || newStreak === 0) {
+                newStreak += 1;
               } else {
-                 newHistory.push({ date: today, count: 1 });
+                newStreak = 1;
               }
+              newLastActiveDate = today;
+            }
+          }
 
-              // Increment streak jika ini aktivitas pertama hari ini
-              if (newLastActiveDate !== today) {
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = formatLocalDate(yesterday);
-
-                if (newLastActiveDate === yesterdayStr || newStreak === 0) {
-                  // Aktif berturut-turut atau memulai streak baru
-                  newStreak = newStreak + 1;
-                } else {
-                  // Gap lebih dari 1 hari — mulai streak baru
-                  newStreak = 1;
-                }
-                newLastActiveDate = today;
-              }
-           }
-
-          // Cek Secret Achievements berdasarkan waktu pengerjaan
           let newAchievements = [...(state.unlockedAchievements || [])];
           let newNocturnalCount = state.nocturnalCount || 0;
           let newEarlyBirdCount = state.earlyBirdCount || 0;
 
           if (isNew) {
-             const hour = new Date().getHours();
-             if (hour >= 0 && hour < 5) {
-                newNocturnalCount++;
-                if (!newAchievements.includes('nocturnal')) newAchievements.push('nocturnal');
-             }
-             if (hour >= 6 && hour <= 9) {
-                newEarlyBirdCount++;
-                if (!newAchievements.includes('early-bird')) newAchievements.push('early-bird');
-             }
-          }
-
-          const newLongestStreak = Math.max(state.longestStreak || 0, state.streak);
-          
-          let newMostXpInDay = state.mostXpInDay || 0;
-          if (isNew) {
-              const today = formatLocalDate(new Date());
-              const todayHistory = newHistory.find(h => h.date === today);
-              if (todayHistory) {
-                  const estimatedTodayXp = todayHistory.count * 100;
-                  newMostXpInDay = Math.max(newMostXpInDay, estimatedTodayXp);
-              }
+            const hour = new Date().getHours();
+            if (hour >= 0 && hour < 5) {
+              newNocturnalCount++;
+              if (!newAchievements.includes('nocturnal')) newAchievements.push('nocturnal');
+            }
+            if (hour >= 6 && hour <= 9) {
+              newEarlyBirdCount++;
+              if (!newAchievements.includes('early-bird')) newAchievements.push('early-bird');
+            }
           }
 
           const activeCourse = state.activeCourseId;
           const newCourseAccess = { ...(state.courseAccessHistory || {}) };
-          if (activeCourse) {
-             newCourseAccess[activeCourse] = new Date().toISOString();
-          }
-
-          const updatedLongestStreak = Math.max(newLongestStreak, newStreak);
+          if (activeCourse) newCourseAccess[activeCourse] = new Date().toISOString();
 
           return { 
-            dailyGoals: updatedGoals, 
-            completedLessonIds: updatedLessonIds, 
-            gems: state.gems + earnedGems,
-            activityHistory: newHistory,
-            courseAccessHistory: newCourseAccess,
-            unlockedAchievements: newAchievements,
-            nocturnalCount: newNocturnalCount,
-            earlyBirdCount: newEarlyBirdCount,
-            longestStreak: updatedLongestStreak,
-            mostXpInDay: newMostXpInDay,
-            streak: newStreak,
-            lastActiveDate: newLastActiveDate
+            dailyGoals: updatedGoals, completedLessonIds: updatedLessonIds, 
+            gems: state.gems + earnedGems, activityHistory: newHistory,
+            courseAccessHistory: newCourseAccess, unlockedAchievements: newAchievements,
+            nocturnalCount: newNocturnalCount, earlyBirdCount: newEarlyBirdCount,
+            longestStreak: Math.max(state.longestStreak, newStreak),
+            streak: newStreak, lastActiveDate: newLastActiveDate
           };
         });
-
-        if (earnedXp > 0) get().addXp(earnedXp); // This handles XP goal, Level up, and XP animation
+        if (earnedXp > 0) get().addXp(earnedXp);
         if (earnedGems > 0) get().triggerReward('gem', 5);
       },
 
-      claimGoalReward: (goalId: string) => {
+      setActiveCourse: (courseId) => set((state) => ({
+        activeCourseId: courseId,
+        courseAccessHistory: { ...state.courseAccessHistory, [courseId]: new Date().toISOString() }
+      })),
+      
+      requestEnrollment: (courseId) => set((state) => {
+        if (state.enrolledCourseIds.includes(courseId) || state.pendingCourseIds.includes(courseId)) return state;
+        return { pendingCourseIds: [...state.pendingCourseIds, courseId] };
+      }),
+      
+      acceptEnrollment: (courseId) => set((state) => ({
+        pendingCourseIds: state.pendingCourseIds.filter((id) => id !== courseId),
+        enrolledCourseIds: [...state.enrolledCourseIds, courseId]
+      })),
+      
+      rejectEnrollment: (courseId) => set((state) => ({
+        pendingCourseIds: state.pendingCourseIds.filter((id) => id !== courseId)
+      })),
+      
+      unlockAchievement: (id) => set((state) => {
+        if (state.unlockedAchievements.includes(id)) return state;
+        return { unlockedAchievements: [...state.unlockedAchievements, id] };
+      }),
+      
+      toggleBookmarkCourse: (courseId) => set((state) => {
+        const isBookmarked = state.bookmarkedCourseIds.includes(courseId);
+        return {
+          bookmarkedCourseIds: isBookmarked ? state.bookmarkedCourseIds.filter(id => id !== courseId) : [...state.bookmarkedCourseIds, courseId]
+        };
+      }),
+      
+      resetProgress: () => set({ completedLessonIds: ['fe-basic-1'] }),
+
+      // --- ACTIONS: SHOP ---
+      unlockInventorySlot: (slotId, cost) => {
+        const state = get();
+        if (state.gems < cost) return false;
+        if (state.unlockedInventorySlotIds.includes(slotId)) return true;
+        set({ gems: state.gems - cost, unlockedInventorySlotIds: [...state.unlockedInventorySlotIds, slotId] });
+        return true;
+      },
+      
+      buyItem: (type, cost) => {
+        const state = get();
+        if (state.gems < cost) return false;
+
+        const newPurchase = {
+          id: Math.random().toString(36).substring(7) + Date.now(),
+          type, cost, date: new Date().toISOString(),
+          itemName: type === "freeze" ? "Streak Freeze" : type === "multiplier" ? "XP Booster (1 Jam)" : type === "shield-3x" ? "Shield Pack" : "Gem Miner (Permanen)"
+        };
+        const currentHistory = [newPurchase, ...state.purchaseHistory].slice(0, 50);
+
+        if (type === "freeze") {
+          if (state.streakFreezeCount >= 3) return false;
+          set({ gems: state.gems - cost, streakFreezeCount: state.streakFreezeCount + 1, purchaseHistory: currentHistory });
+          return true;
+        } else if (type === "multiplier") {
+          const durationMs = 60 * 60 * 1000;
+          const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() ? state.multiplierEndTime : Date.now();
+          set({ gems: state.gems - cost, xpMultiplier: 2, multiplierEndTime: currentEndTime + durationMs, purchaseHistory: currentHistory });
+          return true;
+        } else if (type === "shield-3x") {
+          if (state.hasShieldPack) return false;
+          set({ gems: state.gems - cost, hasShieldPack: true, purchaseHistory: currentHistory });
+          return true;
+        } else if (type === "gem-miner") {
+          if (state.hasGemMiner) return false;
+          set({ gems: state.gems - cost, hasGemMiner: true, purchaseHistory: currentHistory });
+          return true;
+        }
+        return false;
+      },
+      
+      useShieldPack: () => {
+        const state = get();
+        if (!state.hasShieldPack) return;
+        set({ streakFreezeCount: 3, hasShieldPack: false });
+      },
+
+      // --- ACTIONS: GOALS ---
+      checkDailyReset: () => set((state) => {
+        const now = new Date();
+        const today = formatLocalDate(now);
+        if (state.lastDailyReset !== today) {
+          const updates: any = { dailyGoals: INITIAL_GOALS, lastDailyReset: today };
+          if (now.getDay() === 1) updates.weeklyRewardClaimed = false;
+
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = formatLocalDate(yesterday);
+          const wasActiveYesterday = state.lastActiveDate === yesterdayStr;
+          const wasActiveToday = state.lastActiveDate === today;
+
+          if (!(wasActiveYesterday || wasActiveToday)) {
+            if (state.streakFreezeCount > 0) {
+              updates.streakFreezeCount = state.streakFreezeCount - 1;
+            } else {
+              updates.streak = 0;
+            }
+          }
+          return updates;
+        }
+        return state;
+      }),
+
+      claimWeeklyReward: () => {
+        if (get().weeklyRewardClaimed) return;
+        set((state) => ({ gems: state.gems + 100, weeklyRewardClaimed: true }));
+        get().triggerReward('gem', 5);
+      },
+
+      claimGoalReward: (goalId) => {
         let rewardType: 'xp' | 'gem' | 'multiplier' | undefined;
         let rewardValue = 0;
-        
-        set((state: UserState) => {
-          const goalIndex = state.dailyGoals.findIndex((g: DailyGoal) => g.id === goalId);
+        set((state) => {
+          const goalIndex = state.dailyGoals.findIndex((g) => g.id === goalId);
           if (goalIndex === -1) return state;
-
           const goal = state.dailyGoals[goalIndex];
           if (!goal.isCompleted || goal.isClaimed) return state;
 
@@ -391,91 +430,30 @@ export const useUserStore = create<UserState>()(
           const updatedGoals = [...state.dailyGoals];
           updatedGoals[goalIndex] = { ...goal, isClaimed: true };
 
-          let newState: Partial<UserState> = { dailyGoals: updatedGoals };
-
-          if (goal.rewardType === 'gem') {
-             newState.gems = state.gems + goal.rewardValue;
-          } 
+          const newState: any = { dailyGoals: updatedGoals };
+          if (goal.rewardType === 'gem') newState.gems = state.gems + goal.rewardValue;
           else if (goal.rewardType === 'multiplier') {
-             const durationMs = goal.rewardValue * 60 * 1000; 
-             newState.xpMultiplier = 2;
-             const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() 
-                ? state.multiplierEndTime 
-                : Date.now();
-             newState.multiplierEndTime = currentEndTime + durationMs;
+            const durationMs = goal.rewardValue * 60 * 1000; 
+            newState.xpMultiplier = 2;
+            const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() ? state.multiplierEndTime : Date.now();
+            newState.multiplierEndTime = currentEndTime + durationMs;
           }
-
           return newState;
         });
-
         if (rewardType === 'gem') get().triggerReward('gem', 8);
-        if (rewardType === 'xp') {
-          // addXp will trigger the XP animation automatically
-          get().addXp(rewardValue);
-        }
+        if (rewardType === 'xp') get().addXp(rewardValue);
       },
 
-      buyItem: (type: 'freeze' | 'multiplier' | 'shield-3x', cost: number) => {
-        const state = get();
-        if (state.gems < cost) return false;
-
-        const newPurchase = {
-          id: Math.random().toString(36).substring(7) + Date.now(),
-          type,
-          cost,
-          date: new Date().toISOString(),
-          itemName: type === 'freeze' ? 'Streak Freeze' : 
-                   type === 'multiplier' ? 'XP Booster (1 Jam)' : 'Paket Shield (3x)'
-        };
-
-        if (type === 'freeze') {
-           const currentCount = state.streakFreezeCount || 0;
-           if (currentCount >= 3) return false; // Maksimal 3
-           set({ 
-             gems: state.gems - cost, 
-             streakFreezeCount: currentCount + 1,
-             purchaseHistory: [newPurchase, ...(state.purchaseHistory || [])].slice(0, 50)
-           });
-        } else if (type === 'multiplier') {
-           const durationMs = 60 * 60 * 1000; // 1 Jam
-           const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() 
-              ? state.multiplierEndTime 
-              : Date.now();
-           set({ 
-             gems: state.gems - cost, 
-             xpMultiplier: 2, 
-             multiplierEndTime: currentEndTime + durationMs,
-             purchaseHistory: [newPurchase, ...(state.purchaseHistory || [])].slice(0, 50)
-           });
-        } else if (type === 'shield-3x') {
-           const currentCount = state.streakFreezeCount || 0;
-           const amountToAdd = Math.min(3, 3 - currentCount);
-           if (amountToAdd <= 0) return false;
-           set({ 
-             gems: state.gems - cost, 
-             streakFreezeCount: currentCount + amountToAdd,
-             purchaseHistory: [newPurchase, ...(state.purchaseHistory || [])].slice(0, 50)
-           });
-        }
-        return true;
-      },
-      toggleBookmarkCourse: (courseId: string) => set((state: UserState) => {
-        const isBookmarked = state.bookmarkedCourseIds.includes(courseId);
-        return {
-          bookmarkedCourseIds: isBookmarked
-            ? state.bookmarkedCourseIds.filter(id => id !== courseId)
-            : [...state.bookmarkedCourseIds, courseId]
-        };
-      }),
-      updateProfile: (data) => set((state) => ({
-        ...state,
-        ...data
+      // --- ACTIONS: UI ---
+      closeLevelUpModal: () => set({ isLevelUpModalOpen: false, levelUpData: null }),
+      triggerReward: (type, count) => set((state) => ({ 
+        rewardAnimationQueue: [...state.rewardAnimationQueue, { id: Math.random().toString(36).substring(7) + Date.now(), type, count }]
       })),
+      clearRewardAnimationQueue: () => set({ rewardAnimationQueue: [] }),
     }),
     {
       name: 'itsdojo-user-store',
-      partialize: (state: UserState) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      partialize: (state) => {
         const { rewardAnimationQueue, ...rest } = state;
         return rest as any;
       }

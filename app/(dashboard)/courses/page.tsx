@@ -12,6 +12,7 @@ import { useUserStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
+import { toast } from "react-hot-toast";
 
 type SortOption = "name-asc" | "last-accessed" | "progress-desc";
 type ViewMode = "grid" | "list";
@@ -102,6 +103,16 @@ export default function CoursesPage() {
     router.push("/learn");     // 2. Pindah ke halaman Learn
   };
 
+  const handleToggleBookmark = (courseId: string) => {
+    const isCurrentlyBookmarked = bookmarkedCourseIds.includes(courseId);
+    toggleBookmarkCourse(courseId);
+    if (isCurrentlyBookmarked) {
+      toast("Kursus dihapus dari simpanan.", { icon: "🔖" });
+    } else {
+      toast.success("Kursus disimpan!");
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
 
@@ -182,8 +193,25 @@ export default function CoursesPage() {
 
       {/* --- CONTENT AREA --- */}
 
-      {/* MODE 1: GRID VIEW (CARD) */}
-      {viewMode === "grid" ? (
+      {/* Empty State: Saved filter active but nothing bookmarked */}
+      {sortedCourses.length === 0 && showSavedOnly ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+            <Bookmark className="w-8 h-8 text-zinc-400" />
+          </div>
+          <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-1">Belum ada kursus yang disimpan</h3>
+          <p className="text-sm text-zinc-500 max-w-sm">Klik ikon bookmark pada kursus untuk menyimpannya agar mudah diakses kembali.</p>
+          <Button variant="outline" className="mt-4" onClick={() => setShowSavedOnly(false)}>Tampilkan Semua Kursus</Button>
+        </div>
+      ) : sortedCourses.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-zinc-400" />
+          </div>
+          <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tidak ada hasil ditemukan</h3>
+          <p className="text-sm text-zinc-500 max-w-sm">Coba ubah kata kunci pencarian Anda.</p>
+        </div>
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {sortedCourses.map((course) => (
             <div 
@@ -205,7 +233,7 @@ export default function CoursesPage() {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleBookmarkCourse(course.id);
+                    handleToggleBookmark(course.id);
                   }}
                   className={`absolute top-2 right-2 p-2 rounded-full backdrop-blur-md shadow-md transition-all active:scale-90 ${
                     bookmarkedCourseIds.includes(course.id) 
@@ -329,7 +357,7 @@ export default function CoursesPage() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleBookmarkCourse(course.id);
+                        handleToggleBookmark(course.id);
                       }}
                       className={`ml-2 p-1.5 rounded-lg transition-all active:scale-90 ${
                         bookmarkedCourseIds.includes(course.id) 

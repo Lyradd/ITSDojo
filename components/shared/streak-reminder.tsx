@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUserStore } from "@/lib/store";
+import { usePathname } from "next/navigation";
 import { formatLocalDate } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 import { AlertCircle, Bell, BellOff, X } from "lucide-react";
@@ -9,8 +10,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function StreakReminder() {
   const { streak, activityHistory, streakFreezeCount } = useUserStore();
+  const pathname = usePathname();
   const [showWarning, setShowWarning] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  // Hanya tampilkan di halaman belajar atau target harian
+  const isRelevantPage = pathname === "/learn" || pathname === "/goals";
 
   useEffect(() => {
     // 1. Cek Aktivitas Hari Ini
@@ -59,6 +64,8 @@ export function StreakReminder() {
     }
   };
 
+  if (!isRelevantPage) return null;
+
   return (
     <>
       {/* 1. STREAK RECOVERY WARNING (UI Banner) */}
@@ -68,7 +75,7 @@ export function StreakReminder() {
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 50, opacity: 0 }}
-            className="fixed bottom-20 left-4 right-4 md:left-auto md:right-8 md:w-96 z-50"
+            className="fixed bottom-24 left-4 right-4 md:bottom-20 md:left-auto md:right-8 md:w-96 z-50"
           >
             <div className="bg-orange-500 text-white p-4 rounded-2xl shadow-2xl flex gap-4 items-start border-2 border-orange-400">
               <div className="bg-white/20 p-2 rounded-xl">
@@ -94,24 +101,20 @@ export function StreakReminder() {
       </AnimatePresence>
 
       {/* 2. NOTIFICATION PERMISSION TOGGLE (Widget kecil di pojok) */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button 
-          onClick={notificationsEnabled ? undefined : requestNotificationPermission}
-          className={`group flex items-center gap-2 p-3 rounded-full shadow-lg transition-all duration-300 ${
-            notificationsEnabled 
-              ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-default" 
-              : "bg-blue-600 text-white hover:scale-110 active:scale-95 hover:bg-blue-700"
-          }`}
-          title={notificationsEnabled ? "Pengingat Aktif" : "Aktifkan Pengingat Streak"}
-        >
-          {notificationsEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-          {!notificationsEnabled && (
+      {!notificationsEnabled && (
+        <div className="fixed bottom-24 right-6 md:bottom-6 md:right-6 z-40">
+          <button 
+            onClick={requestNotificationPermission}
+            className="group flex items-center gap-2 p-3 bg-blue-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 hover:bg-blue-700"
+            title="Aktifkan Pengingat Streak"
+          >
+            <BellOff className="w-5 h-5" />
             <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-500 text-xs font-bold pr-2">
               Ingatkan Streak
             </span>
-          )}
-        </button>
-      </div>
+          </button>
+        </div>
+      )}
     </>
   );
 }

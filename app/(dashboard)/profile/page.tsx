@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
 import { COURSES } from "@/lib/dummydata";
-import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Flame,
   Zap,
@@ -27,9 +27,7 @@ import {
   X,
   Edit3,
   Check,
-  Copy,
-  Camera,
-  MoreVertical
+  Camera
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { StatWidget } from "@/components/shared/stat-widget";
@@ -40,7 +38,8 @@ export default function ProfilePage() {
   const {
     name, xp, streak, completedLessonIds = [], unlockedAchievements = [],
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
-    activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes
+    activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
+    createdAt
   } = useUserStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,7 +98,9 @@ export default function ProfilePage() {
 
   // --- MOCK DATA (Data Dummy untuk Profil) ---
   const username = name.toLowerCase().replace(/\s/g, "");
-  const joinDate = "Desember 2023";
+  const joinDate = createdAt 
+    ? new Date(createdAt).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+    : 'Baru Bergabung';
 
   // Data Pencapaian (Achievements)
   const achievements = getAchievementsData({
@@ -291,7 +292,7 @@ export default function ProfilePage() {
               ))}
             </div>
             <Link href="/courses">
-              <Button variant="ghost" className="w-full mt-2 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50">
+              <Button variant="ghost" className="w-full mt-2 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:text-blue-400">
                 Lihat Semua
               </Button>
             </Link>
@@ -310,13 +311,13 @@ export default function ProfilePage() {
                     <h4 className="font-bold text-sm">{friend}</h4>
                     <div className="text-xs text-zinc-400">1.2k XP • Lv. 5</div>
                   </div>
-                  <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-blue-500 border-blue-200 hover:bg-blue-50">
+                  <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-blue-500 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20">
                     Follow
                   </Button>
                 </div>
               ))}
             </div>
-            <Button variant="ghost" className="w-full mt-4 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50">
+            <Button variant="ghost" className="w-full mt-4 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
               Cari Teman
             </Button>
           </Card>
@@ -389,8 +390,14 @@ export default function ProfilePage() {
                 <Trophy className="w-5 h-5 text-yellow-500" /> Daftar Pencapaian
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {achievements.map((ach: any) => (
-                  <div key={ach.id} className={`flex flex-col gap-3 p-5 border-2 rounded-2xl bg-card ${ach.unlocked ? 'border-zinc-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-shadow' : 'border-zinc-100 dark:border-zinc-800 opacity-70 bg-zinc-50/50 dark:bg-zinc-900/50'}`}>
+                {achievements.map((ach: any, index: number) => (
+                  <motion.div 
+                    key={ach.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className={`flex flex-col gap-3 p-5 border-2 rounded-2xl bg-card ${ach.unlocked ? 'border-zinc-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-shadow' : 'border-zinc-100 dark:border-zinc-800 opacity-70 bg-zinc-50/50 dark:bg-zinc-900/50'}`}
+                  >
                     <div className="flex items-start gap-4">
                       {/* Icon Badge */}
                       <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 border-b-4 ${ach.unlocked ? ach.color : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 border-zinc-300 dark:border-zinc-700'}`}>
@@ -415,7 +422,7 @@ export default function ProfilePage() {
                         />
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>

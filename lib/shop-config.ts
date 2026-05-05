@@ -5,6 +5,7 @@ export const SHOP_PRICES = {
   STREAK_FREEZE: 150,
   SHIELD_PACK: 400,
   XP_BOOSTER: 100,
+  GEM_MINER: 1000,
 };
 
 export const SHOP_ITEMS = [
@@ -16,7 +17,7 @@ export const SHOP_ITEMS = [
   },
   {
     id: 'shield-3x',
-    title: 'Paket Shield (3x)',
+    title: 'Shield Pack',
     type: 'shield-3x',
     cost: SHOP_PRICES.SHIELD_PACK,
   },
@@ -25,5 +26,11 @@ export const SHOP_ITEMS = [
     title: 'XP Booster (1 Jam)',
     type: 'multiplier',
     cost: SHOP_PRICES.XP_BOOSTER,
+  },
+  {
+    id: 'gem-miner',
+    title: 'Gem Miner (Permanen)',
+    type: 'gem-miner',
+    cost: SHOP_PRICES.GEM_MINER,
   }
 ];

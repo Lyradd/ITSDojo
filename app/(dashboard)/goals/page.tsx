@@ -24,15 +24,15 @@ import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
 // --- Helper Functions for Goal Styling ---
 const getGoalCardStyle = (goal: any) => {
   if (goal.isClaimed) return "bg-zinc-50 border-zinc-100 opacity-60 dark:bg-zinc-900/50 dark:border-zinc-800 grayscale-[0.5]";
-  if (goal.isCompleted) return "border-green-400 bg-green-50 shadow-md ring-1 ring-green-200";
-  return "border-zinc-200 hover:border-blue-300";
+  if (goal.isCompleted) return "border-green-400 bg-green-50 shadow-md ring-1 ring-green-200 dark:bg-green-900/20 dark:border-green-600 dark:ring-green-800";
+  return "border-zinc-200 hover:border-blue-300 dark:border-zinc-700 dark:hover:border-blue-600";
 };
 
 const getGoalIconBoxStyle = (goal: any) => {
-  if (goal.isClaimed) return "bg-zinc-200 text-zinc-400 scale-95";
-  if (goal.isCompleted) return "bg-green-500 text-white shadow-green-200 scale-110";
-  if (goal.type === "xp") return "bg-blue-100 text-blue-500";
-  return "bg-purple-100 text-purple-500";
+  if (goal.isClaimed) return "bg-zinc-200 text-zinc-400 scale-95 dark:bg-zinc-700 dark:text-zinc-500";
+  if (goal.isCompleted) return "bg-green-500 text-white shadow-green-200 scale-110 dark:shadow-green-900";
+  if (goal.type === "xp") return "bg-blue-100 text-blue-500 dark:bg-blue-900/40 dark:text-blue-400";
+  return "bg-purple-100 text-purple-500 dark:bg-purple-900/40 dark:text-purple-400";
 };
 
 const getGoalProgressBarStyle = (goal: any) => {
@@ -58,7 +58,8 @@ export default function GoalsPage() {
     xp,
     weeklyRewardClaimed,
     claimWeeklyReward,
-    streakFreezeCount
+    streakFreezeCount,
+    level
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -101,15 +102,19 @@ export default function GoalsPage() {
     return { day, active: hasActivity, isToday: index === todayIndex };
   });
 
-  // Hitung Weekly Target (Contoh: Aktif 3 Hari seminggu)
+  // Hitung Weekly Target (Statis: 3 Hari seminggu)
   const activeDaysThisWeek = streakHistory.filter(h => h.active).length;
   const weeklyTarget = 3;
   const weeklyProgress = Math.min((activeDaysThisWeek / weeklyTarget) * 100, 100);
 
-  // Hitung Monthly Challenge (Contoh: 1000 XP)
+  // Hitung Monthly Challenge (XP asli bulan ini dari activityHistory)
   const monthlyTarget = 1000;
-  const monthlyProgress = Math.min(((xp % monthlyTarget) / monthlyTarget) * 100, 100);
-  const currentMonthlyXp = xp % monthlyTarget;
+  const currentMonthPrefix = now.toISOString().slice(0, 7); // "YYYY-MM"
+  const currentMonthlyXp = activityHistory
+    .filter((h: any) => h.date.startsWith(currentMonthPrefix))
+    .reduce((sum: number, h: any) => sum + (h.xpEarned || 0), 0); // XP aktual yang didapat
+  
+  const monthlyProgress = Math.min((currentMonthlyXp / monthlyTarget) * 100, 100);
 
   // 4. Wrapper Fungsi Klaim Hadiah
   const handleClaim = (goalId: string) => {
@@ -143,13 +148,13 @@ export default function GoalsPage() {
             <div className="flex items-center gap-3">
               {/* Streak Freeze Indicator */}
               {streakFreezeCount > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-600 rounded-xl font-bold text-sm" title={`${streakFreezeCount} Streak Freeze Aktif`}>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 rounded-xl font-bold text-sm" title={`${streakFreezeCount} Streak Freeze Aktif`}>
                   <Snowflake className="w-4 h-4" />
                   <span>{streakFreezeCount}</span>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-600 rounded-xl font-bold">
+              <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 rounded-xl font-bold">
                 <Flame className="w-5 h-5 fill-current" />
                 <span>{streak} Hari Streak</span>
               </div>
@@ -258,7 +263,7 @@ export default function GoalsPage() {
                           ) : (
                             // Tampilan Hadiah (Belum Selesai)
                             <div className="flex flex-col items-center justify-center gap-1 text-zinc-400">
-                              <div className="p-1.5 bg-zinc-100 rounded-lg">
+                              <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
                                 {goal.rewardType === 'gem' ? <Gem className="w-4 h-4 text-blue-400" /> : <Zap className="w-4 h-4 text-purple-400" />}
                               </div>
                               <div className="text-[10px] font-bold uppercase text-zinc-500">
@@ -357,7 +362,7 @@ export default function GoalsPage() {
               <Trophy className="w-10 h-10" />
             </div>
             <div className="p-4 flex-1">
-              <h4 className="font-bold text-sm text-zinc-700">Tantangan Bulanan</h4>
+              <h4 className="font-bold text-sm text-zinc-700 dark:text-zinc-200">Tantangan Bulanan</h4>
               <p className="text-xs text-zinc-500 mb-2">Kumpulkan {monthlyTarget} XP ({currentMonthlyXp}/{monthlyTarget})</p>
               <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
                 <div className="h-full bg-purple-500 transition-all duration-1000" style={{ width: `${monthlyProgress}%` }} />

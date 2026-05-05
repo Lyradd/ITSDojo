@@ -195,7 +195,7 @@ export default function LessonIDEPage() {
 
         // Tandai lesson selesai setelah delay singkat agar user bisa lihat hasil
         setTimeout(() => {
-          completeLesson(params?.id as string);
+          completeLesson(params?.id as string, true);
           triggerConfetti();
           playSuccessSound();
           setTimeout(() => {

@@ -20,6 +20,8 @@ import {
 import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
 import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
+import { StreakCalendarModal } from "@/components/shared/streak-calendar-modal";
+import { ChevronRight as ChevronRightIcon } from "lucide-react";
 
 // --- Helper Functions for Goal Styling ---
 const getGoalCardStyle = (goal: any) => {
@@ -32,6 +34,7 @@ const getGoalIconBoxStyle = (goal: any) => {
   if (goal.isClaimed) return "bg-zinc-200 text-zinc-400 scale-95 dark:bg-zinc-700 dark:text-zinc-500";
   if (goal.isCompleted) return "bg-green-500 text-white shadow-green-200 scale-110 dark:shadow-green-900";
   if (goal.type === "xp") return "bg-blue-100 text-blue-500 dark:bg-blue-900/40 dark:text-blue-400";
+  if (goal.type === "perfect") return "bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-400";
   return "bg-purple-100 text-purple-500 dark:bg-purple-900/40 dark:text-purple-400";
 };
 
@@ -44,6 +47,7 @@ const getGoalProgressBarStyle = (goal: any) => {
 const GoalIcon = ({ goal }: { goal: any }) => {
   if (goal.isClaimed) return <CheckCircle className="w-8 h-8" />;
   if (goal.type === "xp") return <Zap className="w-7 h-7 fill-current" />;
+  if (goal.type === "perfect") return <Trophy className="w-7 h-7" />;
   return <BookOpen className="w-7 h-7" />;
 };
 
@@ -58,6 +62,8 @@ export default function GoalsPage() {
     xp,
     weeklyRewardClaimed,
     claimWeeklyReward,
+    monthlyRewardClaimed,
+    claimMonthlyReward,
     streakFreezeCount,
     level
   } = useUserStore();
@@ -65,6 +71,7 @@ export default function GoalsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const timeLeft = useMultiplierTimer();
   const [resetTimeLeft, setResetTimeLeft] = useState<string | null>(null);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   // 1. Cek Mounted 
   useEffect(() => { setIsMounted(true); }, []);
@@ -296,21 +303,30 @@ export default function GoalsPage() {
               </div>
             </div>
 
-            {/* Row Hari Senin-Minggu */}
-            <div className="flex justify-between items-center mb-6">
-              {streakHistory.map((item, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2">
-                  <span className={`text-xs font-bold uppercase ${item.isToday ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
-                    {item.day}
-                  </span>
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${item.active
-                      ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
-                      : 'bg-transparent border-zinc-200 text-transparent'
-                    }`}>
-                    <CheckCircle className="w-5 h-5" />
+            {/* Row Hari Senin-Minggu - Clickable Preview */}
+            <div 
+              className="flex justify-between items-center mb-6 cursor-pointer group/cal p-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+              onClick={() => setIsCalendarModalOpen(true)}
+            >
+              <div className="flex flex-1 justify-between items-center">
+                {streakHistory.map((item, idx) => (
+                  <div key={idx} className="flex flex-col items-center gap-2">
+                    <span className={`text-xs font-bold uppercase ${item.isToday ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
+                      {item.day}
+                    </span>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${item.active
+                        ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
+                        : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
+                      }`}>
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="flex flex-col items-center justify-center ml-4 text-zinc-300 group-hover/cal:text-orange-500 transition-colors border-l pl-4 dark:border-zinc-800">
+                <ChevronRightIcon className="w-5 h-5" />
+                <span className="text-[8px] font-bold uppercase mt-1">Detail</span>
+              </div>
             </div>
 
             {/* Weekly Reward Box */}
@@ -342,9 +358,7 @@ export default function GoalsPage() {
                 </div>
 
                 {activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed && (
-                  <div className="text-sm font-bold text-orange-600 animate-pulse mt-1">
-                    Tap untuk klaim 100 Gems!
-                  </div>
+                  <div className="mt-1" />
                 )}
 
                 {weeklyRewardClaimed && (
@@ -356,22 +370,69 @@ export default function GoalsPage() {
             </div>
           </Card>
 
-          {/* Monthly Challenge Badge */}
-          <Card className="p-0 rounded-2xl border-2 overflow-hidden flex flex-row">
-            <div className="w-24 bg-purple-100 flex items-center justify-center text-purple-600">
-              <Trophy className="w-10 h-10" />
+           {/* Monthly Challenge Badge */}
+          <Card 
+            className={`p-0 rounded-2xl border-2 overflow-hidden flex flex-row transition-all duration-300 ${
+              monthlyProgress >= 100 && !monthlyRewardClaimed
+                ? 'border-purple-400 cursor-pointer hover:shadow-lg hover:shadow-purple-200 dark:hover:shadow-none'
+                : 'border-zinc-100 dark:border-zinc-800'
+            }`}
+            onClick={() => {
+              if (monthlyProgress >= 100 && !monthlyRewardClaimed) {
+                claimMonthlyReward();
+                triggerConfetti();
+                playCoinSound();
+              }
+            }}
+          >
+            <div className={`w-24 flex items-center justify-center transition-colors duration-500 ${
+              monthlyRewardClaimed ? 'bg-zinc-100 text-zinc-400' : 
+              monthlyProgress >= 100 ? 'bg-purple-500 text-white' : 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
+            }`}>
+              {monthlyRewardClaimed ? <CheckCircle className="w-10 h-10" /> : <Trophy className="w-10 h-10" />}
             </div>
             <div className="p-4 flex-1">
-              <h4 className="font-bold text-sm text-zinc-700 dark:text-zinc-200">Tantangan Bulanan</h4>
-              <p className="text-xs text-zinc-500 mb-2">Kumpulkan {monthlyTarget} XP ({currentMonthlyXp}/{monthlyTarget})</p>
-              <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 transition-all duration-1000" style={{ width: `${monthlyProgress}%` }} />
+              <div className="flex justify-between items-start">
+                <h4 className={`font-bold text-sm ${monthlyRewardClaimed ? 'text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}`}>
+                  Tantangan Bulanan
+                </h4>
+                {monthlyRewardClaimed && (
+                  <span className="text-[10px] font-bold text-green-600 uppercase tracking-tighter">Selesai</span>
+                )}
               </div>
+              <p className="text-xs text-zinc-500 mb-2">
+                {monthlyRewardClaimed ? "Target tercapai!" : `Kumpulkan ${monthlyTarget} XP (${currentMonthlyXp}/${monthlyTarget})`}
+              </p>
+              <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
+                <div 
+                  className={`h-full transition-all duration-1000 relative ${
+                    monthlyRewardClaimed ? 'bg-zinc-400' : 'bg-purple-500'
+                  }`} 
+                  style={{ width: `${monthlyProgress}%` }} 
+                >
+                  {monthlyProgress >= 100 && !monthlyRewardClaimed && (
+                    <div className="absolute inset-0 bg-white/30 animate-[shimmer_2s_infinite]" />
+                  )}
+                </div>
+              </div>
+              
+              {monthlyProgress >= 100 && !monthlyRewardClaimed && (
+                <div className="mt-2 text-[10px] font-bold text-purple-600 animate-pulse flex items-center gap-1">
+                  <Gift className="w-3 h-3" /> Tap untuk klaim 500 Gems!
+                </div>
+              )}
             </div>
           </Card>
 
         </div>
       </div>
+
+      <StreakCalendarModal 
+        isOpen={isCalendarModalOpen}
+        onClose={() => setIsCalendarModalOpen(false)}
+        activityHistory={activityHistory}
+        streak={streak}
+      />
     </div>
   );
 }

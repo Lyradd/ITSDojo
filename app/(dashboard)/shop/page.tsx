@@ -13,6 +13,7 @@ import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
 import { SHOP_PRICES } from "@/lib/shop-config";
 import { PurchaseModal } from "@/components/shared/purchase-modal";
 import { AlertModal } from "@/components/shared/alert-modal";
+import { PurchaseHistoryModal } from "@/components/shared/purchase-history-modal";
 import { toast } from "react-hot-toast";
 
 export default function ShopPage() {
@@ -24,6 +25,7 @@ export default function ShopPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ type: string, cost: number, title: string, icon: React.ReactNode, actionType?: 'buy' | 'unlock' } | null>(null);
   const [alertInfo, setAlertInfo] = useState<{ title: string, message: string, icon: React.ReactNode } | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const timeLeft = useMultiplierTimer();
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export default function ShopPage() {
     {
       id: 'gem-miner',
       title: 'Gem Miner',
-      description: 'Investasi jangka panjang! Dapatkan bonus +50% Gems (+5 extra) secara permanen setiap kali menyelesaikan pelajaran.',
+      description: 'Investasi jangka panjang! Dapatkan bonus +100% Gems (+10 extra) secara permanen setiap kali menyelesaikan pelajaran.',
       icon: <Gem className="w-10 h-10 text-blue-500" fill="currentColor" />,
       badge: <Crown className="w-5 h-5 text-yellow-500 absolute -bottom-1 -right-1 drop-shadow-md" />,
       cost: SHOP_PRICES.GEM_MINER,
@@ -179,44 +181,44 @@ export default function ShopPage() {
         
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
            {/* Slot Streak Freeze */}
-           <div className="bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-orange-500/50 transition-colors">
-              <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-2xl flex items-center justify-center relative">
-                 <Flame className="w-8 h-8" />
+           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-orange-500/50 transition-all ${streakFreezeCount > 0 ? 'ring-2 ring-orange-500/20' : ''}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative transition-all ${streakFreezeCount > 0 ? 'bg-orange-500 text-white scale-105 shadow-lg shadow-orange-500/20' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'}`}>
+                 <Flame className={`w-8 h-8 ${streakFreezeCount > 0 ? 'animate-pulse' : ''}`} />
                  {streakFreezeCount > 0 && (
-                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold border-2 border-white dark:border-zinc-950 shadow-md">
+                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-white dark:bg-zinc-800 text-orange-600 rounded-full flex items-center justify-center text-sm font-bold border-2 border-orange-500 shadow-md">
                        {streakFreezeCount}
                     </div>
                  )}
               </div>
               <div className="text-center">
                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Freeze</p>
-                <p className="text-sm font-black text-zinc-800 dark:text-zinc-200">{streakFreezeCount}/3</p>
+                <p className={`text-sm font-black ${streakFreezeCount > 0 ? 'text-orange-600' : 'text-zinc-800 dark:text-zinc-200'}`}>{streakFreezeCount}/3</p>
               </div>
            </div>
 
            {/* Slot XP Multiplier */}
-           <div className="bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-purple-500/50 transition-colors">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-500 rounded-2xl flex items-center justify-center relative overflow-hidden">
+           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-purple-500/50 transition-all ${isMultiplierActive ? 'ring-2 ring-purple-500/20 shadow-purple-500/10' : ''}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative overflow-hidden transition-all ${isMultiplierActive ? 'bg-purple-600 text-white scale-105 shadow-lg shadow-purple-500/30' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-500'}`}>
                  <Zap className={`w-8 h-8 ${isMultiplierActive ? 'animate-pulse' : ''}`} />
                  {isMultiplierActive && (
-                    <div className="absolute inset-0 bg-purple-500/10 animate-pulse" />
+                    <div className="absolute inset-0 bg-white/10 animate-pulse" />
                  )}
               </div>
               <div className="text-center">
                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Booster</p>
-                <p className="text-sm font-black text-zinc-800 dark:text-zinc-200">{isMultiplierActive ? timeLeft : 'Ready'}</p>
+                <p className={`text-sm font-black ${isMultiplierActive ? 'text-purple-600' : 'text-zinc-800 dark:text-zinc-200'}`}>{isMultiplierActive ? timeLeft : 'Ready'}</p>
               </div>
            </div>
 
            {/* Slot 3: Shield Slot — Unlockable with Gems */}
            {unlockedInventorySlotIds.includes('slot-3') ? (
-             <div className="bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-green-500/50 transition-colors relative overflow-hidden">
-               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-500 rounded-2xl flex items-center justify-center">
-                  <ShieldCheck className={`w-8 h-8 ${hasShieldPack ? 'animate-bounce' : 'opacity-20'}`} />
+             <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group transition-all ${hasShieldPack ? 'border-green-500/50 ring-2 ring-green-500/20' : 'hover:border-green-500/50'}`}>
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${hasShieldPack ? 'bg-green-600 text-white scale-105 shadow-md shadow-green-500/20' : 'bg-green-100 dark:bg-green-900/30 text-green-500 opacity-40'}`}>
+                  <ShieldCheck className={`w-8 h-8 ${hasShieldPack ? 'animate-bounce' : ''}`} />
                </div>
                <div className="text-center">
                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Shield Pack</p>
-                 <p className="text-sm font-black text-zinc-800 dark:text-zinc-200">
+                 <p className={`text-sm font-black ${hasShieldPack ? 'text-green-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
                     {hasShieldPack ? 'Tersedia' : 'Kosong'}
                  </p>
                </div>
@@ -276,17 +278,19 @@ export default function ShopPage() {
             </button>
            )}
 
-           {/* Slot 4: Booster Slot — Unlockable with Gems */}
+           {/* Slot 4: Special Slot — Displays Gem Miner status if owned */}
            {unlockedInventorySlotIds.includes('slot-4') ? (
-             <div className="bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-blue-500/50 transition-colors">
-               <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center">
-                  <Package className="w-8 h-8" />
+             <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group transition-all ${hasGemMiner ? 'border-blue-500/50 ring-2 ring-blue-500/20 shadow-blue-500/10' : 'hover:border-blue-500/50'}`}>
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${hasGemMiner ? 'bg-blue-600 text-white scale-105 shadow-md shadow-blue-500/20' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-500 opacity-40'}`}>
+                  {hasGemMiner ? <Crown className="w-8 h-8 animate-pulse" /> : <Package className="w-8 h-8" />}
                </div>
                <div className="text-center">
-                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Booster Slot</p>
-                 <p className="text-sm font-black text-zinc-800 dark:text-zinc-200">Aktif</p>
+                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Special Slot</p>
+                 <p className={`text-sm font-black ${hasGemMiner ? 'text-blue-600' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                    {hasGemMiner ? 'Miner Aktif' : 'Tersedia'}
+                 </p>
                </div>
-            </div>
+             </div>
            ) : (
              <button 
                 onClick={() => {
@@ -427,17 +431,36 @@ export default function ShopPage() {
       {/* RIWAYAT PEMBELIAN */}
       {purchaseHistory && purchaseHistory.length > 0 && (
          <div className="mt-12 animate-in fade-in duration-500">
-            <h2 className="text-2xl font-bold mb-6 text-zinc-800 dark:text-white flex items-center gap-2">
-               <History className="w-6 h-6 text-blue-500" /> 
-               Riwayat Pembelian
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-zinc-800 dark:text-white flex items-center gap-2">
+                <History className="w-6 h-6 text-blue-500" /> 
+                Riwayat Pembelian
+              </h2>
+              {purchaseHistory.length > 3 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsHistoryModalOpen(true)}
+                  className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-bold flex items-center gap-1"
+                >
+                  Lihat Semua
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
             <Card className="rounded-2xl border-2 overflow-hidden shadow-sm bg-white dark:bg-zinc-950">
                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {purchaseHistory.map((log) => (
-                     <div key={log.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                  {purchaseHistory.slice(0, 3).map((log) => (
+                     <div 
+                      key={log.id} 
+                      className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+                     >
                         <div className="flex items-center gap-3">
                            <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 dark:text-zinc-400">
-                              {log.type === 'freeze' ? <Flame className="w-5 h-5 text-orange-500" /> : <Zap className="w-5 h-5 text-purple-500" />}
+                              {log.type === 'freeze' ? <Flame className="w-5 h-5 text-orange-500" /> : 
+                               log.type === 'multiplier' ? <Zap className="w-5 h-5 text-purple-500" /> :
+                               log.type === 'shield-3x' ? <ShieldCheck className="w-5 h-5 text-green-500" /> :
+                               <Package className="w-5 h-5 text-blue-500" />}
                            </div>
                            <div>
                               <p className="font-bold text-zinc-800 dark:text-zinc-200">{log.itemName}</p>
@@ -451,8 +474,20 @@ export default function ShopPage() {
                   ))}
                </div>
             </Card>
+            {purchaseHistory.length > 3 && (
+              <p className="text-center text-xs text-zinc-400 mt-4 italic">
+                Menampilkan 3 transaksi terakhir. Klik "Lihat Semua" untuk riwayat lengkap.
+              </p>
+            )}
          </div>
       )}
+
+      {/* PURCHASE HISTORY MODAL */}
+      <PurchaseHistoryModal 
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        purchaseHistory={purchaseHistory}
+      />
 
       {/* CONFIRMATION MODAL */}
       <PurchaseModal 

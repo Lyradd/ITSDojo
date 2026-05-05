@@ -32,9 +32,9 @@ import { RoadmapNode, ComputedLessonNode } from "@/components/learn/roadmap-node
 // Helper: Warna tema berdasarkan kursus aktif
 const getCourseTheme = (courseId: string) => {
   switch (courseId) {
-    case 'fe-basic':       return { bg: 'bg-pink-600', shadow: 'shadow-pink-600/20', text: 'text-pink-600', pill: 'bg-pink-600 shadow-pink-500/30 border-pink-400' };
-    case 'react-mastery':  return { bg: 'bg-blue-600', shadow: 'shadow-blue-600/20', text: 'text-blue-600', pill: 'bg-blue-600 shadow-blue-500/30 border-blue-400' };
-    default:               return { bg: 'bg-emerald-600', shadow: 'shadow-emerald-600/20', text: 'text-emerald-600', pill: 'bg-emerald-600 shadow-emerald-500/30 border-emerald-400' };
+    case 'fe-basic': return { bg: 'bg-pink-600', shadow: 'shadow-pink-600/20', text: 'text-pink-600', pill: 'bg-pink-600 shadow-pink-500/30 border-pink-400' };
+    case 'react-mastery': return { bg: 'bg-blue-600', shadow: 'shadow-blue-600/20', text: 'text-blue-600', pill: 'bg-blue-600 shadow-blue-500/30 border-blue-400' };
+    default: return { bg: 'bg-emerald-600', shadow: 'shadow-emerald-600/20', text: 'text-emerald-600', pill: 'bg-emerald-600 shadow-emerald-500/30 border-emerald-400' };
   }
 };
 
@@ -83,9 +83,9 @@ export default function LearnPage() {
   const handleSimulateLesson = () => {
     // Cari node pertama yang belum diselesaikan dalam konten kursus saat ini
     const activeNode = currentContent.nodes.find((n: any) => !completedLessonIds.includes(n.id));
-    
+
     if (activeNode) {
-      completeLesson(activeNode.id);
+      completeLesson(activeNode.id, true);
       triggerConfetti();
       playSuccessSound();
     } else {
@@ -101,7 +101,7 @@ export default function LearnPage() {
 
   // Cari Node Aktif untuk Banner
   const activeNodeIndex = currentContent.nodes.findIndex((n: LessonNode, idx: number) => {
-    const prevId = idx === 0 ? null : currentContent.nodes[idx-1].id;
+    const prevId = idx === 0 ? null : currentContent.nodes[idx - 1].id;
     const isPrevCompleted = prevId ? completedLessonIds.includes(prevId) : true;
     const isCurrCompleted = completedLessonIds.includes(n.id);
     return isPrevCompleted && !isCurrCompleted;
@@ -126,7 +126,7 @@ export default function LearnPage() {
 
           {/* 0. CONTINUE BANNER or COMPLETION STATE */}
           {isUnitComplete ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-2xl flex items-center justify-between gap-4 shadow-xl"
@@ -147,7 +147,7 @@ export default function LearnPage() {
               </Link>
             </motion.div>
           ) : activeNode && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xl border border-zinc-800 dark:border-zinc-200"
@@ -180,12 +180,12 @@ export default function LearnPage() {
                 <p className="text-white/80 text-sm max-w-md">{activeCourse.description}</p>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
-                     if(confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
-                        resetProgress();
-                     }
+                    if (confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
+                      resetProgress();
+                    }
                   }}
                   className="bg-black/20 hover:bg-black/40 border-none text-white transition-colors"
                   title="Reset Pembelajaran (Testing)"
@@ -207,7 +207,7 @@ export default function LearnPage() {
                 <span>{progressPercent}% ({completedCount}/{totalCount})</span>
               </div>
               <div className="h-3 bg-black/20 rounded-full overflow-hidden p-0.5">
-                <motion.div 
+                <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
@@ -233,44 +233,44 @@ export default function LearnPage() {
             {/* --- MAP NODES --- */}
             <div className="w-full relative flex flex-col items-center">
 
-              <div className="flex flex-col items-center gap-16 relative z-10 w-full max-w-md mx-auto">
+              <div className="flex flex-col items-center gap-16 relative z-20 w-full max-w-md mx-auto">
                 {currentContent.nodes.map((origNode: LessonNode, index: number) => {
-                    const isEven = index % 2 === 0;
-                    
-                    const isCompleted = completedLessonIds.includes(origNode.id);
-                    
-                    let computedType = 'locked';
-                    if (isCompleted) {
-                      computedType = 'completed';
-                    } else if (index === activeNodeIndex) {
-                      computedType = 'active';
-                    } else if (index === activeNodeIndex + 1) {
-                      computedType = 'next_locked';
-                    } else {
-                      computedType = 'far_locked';
-                    }
-                    
-                    const node: ComputedLessonNode = { 
-                      ...origNode, 
-                      type: computedType as ComputedLessonNode['type'],
-                      duration: origNode.duration 
-                    };
+                  const isEven = index % 2 === 0;
 
-                    return (
-                      <RoadmapNode
-                        key={node.id}
-                        node={node}
-                        index={index}
-                        totalNodes={currentContent.nodes.length}
-                        isEven={isEven}
-                      />
-                    );
+                  const isCompleted = completedLessonIds.includes(origNode.id);
+
+                  let computedType = 'locked';
+                  if (isCompleted) {
+                    computedType = 'completed';
+                  } else if (index === activeNodeIndex) {
+                    computedType = 'active';
+                  } else if (index === activeNodeIndex + 1) {
+                    computedType = 'next_locked';
+                  } else {
+                    computedType = 'far_locked';
+                  }
+
+                  const node: ComputedLessonNode = {
+                    ...origNode,
+                    type: computedType as ComputedLessonNode['type'],
+                    duration: origNode.duration
+                  };
+
+                  return (
+                    <RoadmapNode
+                      key={node.id}
+                      node={node}
+                      index={index}
+                      totalNodes={currentContent.nodes.length}
+                      isEven={isEven}
+                    />
+                  );
                 })}
               </div>
 
               {/* Footer Section: Next Unit */}
               <div className="mt-16 flex flex-col items-center gap-4 z-10 pb-10 relative">
-                <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-2 h-16 z-0">
+                <div className="absolute -top-11 left-1/2 -translate-x-1/2 w-2 h-11 z-0">
                   <div className="w-0 h-full border-l-[4px] border-dashed border-zinc-300 dark:border-zinc-700 mx-auto" />
                 </div>
                 <div className="p-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-center w-64 grayscale opacity-70 relative z-20">
@@ -307,12 +307,12 @@ export default function LearnPage() {
             </div>
           </Card>
 
-          <LeaderboardWidget 
-            topUsers={computedLeaderboard} 
+          <LeaderboardWidget
+            topUsers={computedLeaderboard}
             currentUserId="current"
-            currentUserName={name} 
-            currentUserXp={xp} 
-            currentUserRank={userRank} 
+            currentUserName={name}
+            currentUserXp={xp}
+            currentUserRank={userRank}
           />
         </div>
 

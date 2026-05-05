@@ -52,6 +52,8 @@ export interface LeaderboardEntry {
   previousRank?: number;
   lastUpdate: number;
   isCurrentUser?: boolean;
+  batch?: string;
+  coursesTaken?: number;
   // Group fields
   groupId?: string;
   groupName?: string;
@@ -70,6 +72,7 @@ interface EvaluationState {
   currentStreak: number;
   startTime: number | null;
   isEvaluationActive: boolean;
+  isWaitingRoomActive: boolean;
   
   // Leaderboard Data
   leaderboard: LeaderboardEntry[];
@@ -88,6 +91,7 @@ interface EvaluationState {
   finishEvaluation: () => void;
   resetEvaluation: () => void;
   setStartTime: (time: number) => void;
+  startWaitingRoomSession: () => void;
   
   // Actions - Leaderboard
   updateLeaderboard: (entries: LeaderboardEntry[]) => void;
@@ -113,6 +117,7 @@ export const useEvaluationStore = create<EvaluationState>()(
       currentStreak: 0,
       startTime: null,
       isEvaluationActive: false,
+      isWaitingRoomActive: true,
       
       leaderboard: [],
       userRank: 0,
@@ -133,7 +138,13 @@ export const useEvaluationStore = create<EvaluationState>()(
         currentStreak: 0,
         startTime: null, // Deferred — set after countdown
         isEvaluationActive: true,
+        isWaitingRoomActive: true,
         isLiveUpdateActive: true,
+      }),
+
+      startWaitingRoomSession: () => set({ 
+        isWaitingRoomActive: false,
+        startTime: Date.now()
       }),
 
       setStartTime: (time) => set({ startTime: time }),
@@ -208,6 +219,7 @@ export const useEvaluationStore = create<EvaluationState>()(
         currentStreak: 0,
         startTime: null,
         isEvaluationActive: false,
+        isWaitingRoomActive: true,
         isLiveUpdateActive: false,
       }),
       
@@ -279,7 +291,9 @@ export const useEvaluationStore = create<EvaluationState>()(
       name: 'itsdojo-evaluation-storage',
       partialize: (state) => ({
         userRole: state.userRole,
-        // Don't persist evaluation session (should be fresh each time)
+        isWaitingRoomActive: state.isWaitingRoomActive,
+        startTime: state.startTime,
+        // Don't persist evaluation session details
       }),
     }
   )

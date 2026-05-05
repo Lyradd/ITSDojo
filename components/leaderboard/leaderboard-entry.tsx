@@ -91,46 +91,64 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
 
       {/* Name & Stats */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-0.5">
           <div className={cn(
-            "font-bold text-sm truncate",
-            entry.isCurrentUser && "text-blue-600 dark:text-blue-400"
+            "font-black text-base truncate",
+            entry.isCurrentUser ? "text-blue-600 dark:text-blue-400" : "text-zinc-800 dark:text-zinc-100"
           )}>
             {entry.name}
           </div>
           {entry.isCurrentUser && (
-            <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded-full">
+            <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-black rounded-full shadow-sm">
               YOU
             </span>
           )}
+          {entry.batch && (
+            <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-bold rounded-md border border-zinc-200 dark:border-zinc-700">
+              {entry.batch}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <span>{entry.answeredQuestions}/{entry.totalQuestions} soal</span>
-          <span>•</span>
-          <span>{entry.accuracy}% akurasi</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 rounded-lg border border-green-100 dark:border-green-900/50">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span className="text-xs font-black">{entry.accuracy}% Akurasi</span>
+          </div>
         </div>
       </div>
 
-      {/* Score */}
-      <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
-        <div className="flex items-center gap-1">
-          <Zap className="w-4 h-4 text-yellow-500" fill="currentColor" />
-          <span className="font-bold text-lg">{entry.score}</span>
-        </div>
-        {entry.previousRank && entry.previousRank !== entry.rank && (
-          <div className="flex items-center gap-1 text-xs">
-            {getRankChangeIcon()}
-            <span className={cn(
-              "font-medium",
-              rankChange === 'up' && "text-green-600",
-              rankChange === 'down' && "text-red-600",
-              rankChange === 'same' && "text-gray-500"
-            )}>
-              {rankChange === 'up' && `+${entry.previousRank - entry.rank}`}
-              {rankChange === 'down' && `-${entry.rank - entry.previousRank}`}
-            </span>
+      {/* Score & Courses */}
+      <div className="flex items-center gap-4 shrink-0 ml-2">
+        {/* Courses Taken */}
+        <div className="hidden sm:flex flex-col items-center">
+          <div className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Courses</div>
+          <div className="font-black text-sm text-zinc-600 dark:text-zinc-300">
+            {entry.coursesTaken || 0}
           </div>
-        )}
+        </div>
+
+        {/* XP Score */}
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-950/30 px-3 py-1.5 rounded-xl border border-yellow-200 dark:border-yellow-900/50 shadow-sm">
+            <Zap className="w-4 h-4 text-yellow-500" fill="currentColor" />
+            <span className="font-black text-xl text-yellow-700 dark:text-yellow-400 leading-none">{entry.score}</span>
+          </div>
+          
+          {entry.previousRank && entry.previousRank !== entry.rank && (
+            <div className="flex items-center gap-1 px-1">
+              {getRankChangeIcon()}
+              <span className={cn(
+                "font-black text-xs",
+                rankChange === 'up' && "text-green-600",
+                rankChange === 'down' && "text-red-600",
+                rankChange === 'same' && "text-gray-500"
+              )}>
+                {rankChange === 'up' && `+${entry.previousRank - entry.rank}`}
+                {rankChange === 'down' && `-${entry.rank - entry.previousRank}`}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );

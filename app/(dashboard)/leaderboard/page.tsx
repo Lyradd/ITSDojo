@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
 import { INITIAL_LEADERBOARD } from '@/lib/evaluation-data';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
@@ -27,7 +28,7 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { isLoggedIn, name, xp, level } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course' | 'evaluation'>('angkatan');
   const [subScope, setSubScope] = useState<string>('2023');
   const [isConnected, setIsConnected] = useState(false);
@@ -54,9 +55,16 @@ export default function LeaderboardPage() {
 
     // Subscribe to leaderboard updates
     const unsubscribeLeaderboard = wsClient.onLeaderboardUpdate((data) => {
+      // If data is empty, keep using our current leaderboard (which has mock data)
+      if (!data || data.length === 0) return;
+
       // Filter out current user from received data to prevent duplicates
       const otherUsers = data.filter(entry => entry.userId !== 'current-user');
       
+      // Also filter out any INITIAL_LEADERBOARD users that are in the live data
+      const liveUserIds = new Set(otherUsers.map(u => u.userId));
+      const filteredMockData = INITIAL_LEADERBOARD.filter(u => !liveUserIds.has(u.userId) && u.userId !== 'current-user');
+
       // Add current user with fresh data
       const currentUserEntry: LeaderboardEntry = {
         userId: 'current-user',
@@ -69,9 +77,11 @@ export default function LeaderboardPage() {
         rank: 0,
         lastUpdate: Date.now(),
         isCurrentUser: true,
+        batch: '2023',
+        coursesTaken: 4,
       };
 
-      const allEntries = [...otherUsers, currentUserEntry];
+      const allEntries = [...otherUsers, ...filteredMockData, currentUserEntry];
       const sorted = allEntries.sort((a, b) => b.score - a.score);
       const ranked = sorted.map((entry, index) => ({
         ...entry,
@@ -93,6 +103,8 @@ export default function LeaderboardPage() {
       rank: 0,
       lastUpdate: Date.now(),
       isCurrentUser: true,
+      batch: '2023',
+      coursesTaken: 4,
     };
     
     // Wait a bit for connection then add user
@@ -113,7 +125,15 @@ export default function LeaderboardPage() {
     // Create a deterministic pseudo-random filter based on the subScope string length
     // This is just to mock the UI behavior
     const seed = subScope.length;
-    const filtered = leaderboard.filter((_, i) => (i + seed) % 2 === 0 || i === 0); // Always keep current user if they are index 0, or just randomize
+    let filtered = leaderboard;
+    
+    if (scopeFilter === 'angkatan') {
+        filtered = leaderboard.filter(e => e.batch === subScope || e.isCurrentUser);
+    } else {
+        // For course and evaluation, we show everyone but simulate that they are filtered by context
+        // This ensures the leaderboard doesn't look empty and Batch info is still there
+        filtered = leaderboard;
+    }
     
     // Re-rank
     return filtered.map((entry, idx) => ({
@@ -134,88 +154,85 @@ export default function LeaderboardPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3">
-            <Trophy className="w-8 h-8 text-yellow-600" fill="currentColor" />
-            <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
-              Leaderboard
-            </h1>
+            <div className="p-3 bg-yellow-500/10 rounded-2xl border-2 border-yellow-500/20 shadow-xl shadow-yellow-500/5">
+              <Trophy className="w-8 h-8 text-yellow-600" fill="currentColor" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
+                Leaderboard
+              </h1>
+              <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-bold text-sm">
+                <span>ITSDojo Community</span>
+                {isConnected && (
+                   <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-500/20">
+                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                     Live Update
+                   </span>
+                )}
+              </div>
+            </div>
           </div>
           
-          {/* Live Connection Status */}
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all",
-            isConnected 
-              ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400" 
-              : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400"
-          )}>
-            {isConnected ? (
-              <>
-                <Wifi className="w-3.5 h-3.5" />
-                <span>Live</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-3.5 h-3.5" />
-                <span>Offline</span>
-              </>
-            )}
-          </div>
+          <Link href="/learn">
+            <Button className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl px-6 shadow-lg shadow-blue-600/20">
+              Mulai Belajar
+            </Button>
+          </Link>
         </div>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Lihat ranking dan kompetisi dengan sesama mahasiswa {isConnected && '• Real-time updates'}
-        </p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="p-6 rounded-2xl border-2 bg-linear-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 border-yellow-200 dark:border-yellow-800">
-          <div className="flex items-center gap-3 mb-2">
-            <Crown className="w-6 h-6 text-yellow-600" />
-            <span className="text-sm font-bold text-yellow-700 dark:text-yellow-400">Peringkat Kamu</span>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+        <Card className="p-6 rounded-3xl border-2 bg-linear-to-br from-yellow-500 to-orange-600 border-none shadow-xl shadow-orange-500/20 group hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center gap-3 mb-3 text-white/80">
+            <Crown className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">Peringkat Kamu</span>
           </div>
-          <div className="text-3xl font-bold text-yellow-800 dark:text-yellow-200">
-            #{currentUserEntry?.rank || '-'}
+          <div className="flex items-baseline gap-1 text-white">
+            <span className="text-4xl font-black tracking-tighter">#{currentUserEntry?.rank || '-'}</span>
+            <span className="text-sm font-bold opacity-80">/ {totalParticipants}</span>
           </div>
-          <div className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
-            dari {totalParticipants} peserta
-          </div>
-        </Card>
-
-        <Card className="p-6 rounded-2xl border-2">
-          <div className="flex items-center gap-3 mb-2">
-            <Zap className="w-6 h-6 text-blue-600" fill="currentColor" />
-            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Total XP</span>
-          </div>
-          <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
-            {xp}
-          </div>
-          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Level {level}
+          <div className="mt-4 h-1 w-full bg-white/20 rounded-full overflow-hidden">
+             <div className="h-full bg-white w-2/3" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-2">
-          <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="w-6 h-6 text-green-600" />
-            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Akurasi</span>
+        <Card className="p-6 rounded-3xl border-2 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-none hover:border-blue-500/50 transition-all duration-300">
+          <div className="flex items-center gap-3 mb-3 text-zinc-400">
+            <Zap className="w-5 h-5 text-blue-600" fill="currentColor" />
+            <span className="text-xs font-black uppercase tracking-widest">Total XP</span>
           </div>
-          <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
+          <div className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
+            {xp.toLocaleString()}
+          </div>
+          <div className="text-xs text-blue-600 font-black mt-2 uppercase tracking-widest">
+            Level {level} Master
+          </div>
+        </Card>
+
+        <Card className="p-6 rounded-3xl border-2 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-none hover:border-green-500/50 transition-all duration-300">
+          <div className="flex items-center gap-3 mb-3 text-zinc-400">
+            <TrendingUp className="w-5 h-5 text-green-600" />
+            <span className="text-xs font-black uppercase tracking-widest">Akurasi Rata-rata</span>
+          </div>
+          <div className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
             {currentUserEntry?.accuracy || 0}%
           </div>
-          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            rata-rata
+          <div className="text-xs text-green-600 font-black mt-2 uppercase tracking-widest">
+            Top 10% Batch
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-2">
-          <div className="flex items-center gap-3 mb-2">
-            <Users className="w-6 h-6 text-purple-600" />
-            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Peserta Aktif</span>
+        <Card className="p-6 rounded-3xl border-2 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-none hover:border-purple-500/50 transition-all duration-300">
+          <div className="flex items-center gap-3 mb-3 text-zinc-400">
+            <Users className="w-5 h-5 text-purple-600" />
+            <span className="text-xs font-black uppercase tracking-widest">Peserta Aktif</span>
           </div>
-          <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
+          <div className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
             {totalParticipants}
           </div>
-          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            mahasiswa
+          <div className="text-xs text-purple-600 font-black mt-2 uppercase tracking-widest">
+            Mahasiswa Terdaftar
           </div>
         </Card>
       </div>
@@ -286,72 +303,84 @@ export default function LeaderboardPage() {
           </Card>
 
           {/* Full Rankings */}
-          <Card className="p-6 rounded-2xl border-2">
-              {/* Scope Filter */}
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                    Semua Peringkat
-                  </h3>
-                  
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
-                    <Filter className="w-4 h-4 text-zinc-500 shrink-0" />
-                    <div className="flex gap-1">
+          <Card className="p-0 rounded-3xl border-2 bg-white dark:bg-zinc-900 overflow-hidden shadow-xl shadow-zinc-200/50 dark:shadow-none">
+              {/* Scope Filter Header */}
+              <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                      <h3 className="text-2xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
+                        Peringkat Mahasiswa
+                      </h3>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
                       {(['angkatan', 'course', 'evaluation'] as const).map((filter) => (
-                        <Button
+                        <button
                           key={filter}
-                          size="sm"
-                          variant={scopeFilter === filter ? 'default' : 'outline'}
-                          onClick={() => setScopeFilter(filter)}
+                          onClick={() => {
+                              setScopeFilter(filter);
+                              // Reset subscope to a default valid value for the new filter
+                              if (filter === 'angkatan') setSubScope('2023');
+                              else if (filter === 'course') setSubScope('web');
+                              else setSubScope('quiz1');
+                          }}
                           className={cn(
-                            "text-xs font-bold whitespace-nowrap",
-                            scopeFilter === filter && "bg-blue-600 hover:bg-blue-700"
+                            "px-4 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all duration-200",
+                            scopeFilter === filter 
+                              ? "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm" 
+                              : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                           )}
                         >
                           {filter === 'angkatan' && 'Angkatan'}
                           {filter === 'course' && 'Mata Kuliah'}
-                          {filter === 'evaluation' && 'Per Evaluasi'}
-                        </Button>
+                          {filter === 'evaluation' && 'Evaluasi'}
+                        </button>
                       ))}
                     </div>
                   </div>
-                </div>
 
-                {/* Sub Scope Selection */}
-                {scopeFilter !== 'all' && (
-                  <div className="flex sm:justify-end animate-in fade-in slide-in-from-top-2">
-                    <select 
-                      className="w-full sm:w-auto text-sm border-2 border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 font-medium text-zinc-700 dark:text-zinc-300 outline-none focus:border-blue-500 transition-colors"
-                      value={subScope}
-                      onChange={(e) => setSubScope(e.target.value)}
-                    >
-                      {scopeFilter === 'angkatan' && (
-                        <>
-                          <option value="2023">Angkatan 2023</option>
-                          <option value="2022">Angkatan 2022</option>
-                          <option value="2021">Angkatan 2021</option>
-                        </>
-                      )}
-                      {scopeFilter === 'course' && (
-                        <>
-                          <option value="web">Pemrograman Web</option>
-                          <option value="pbo">Pemrograman Berorientasi Objek</option>
-                          <option value="sbd">Sistem Basis Data</option>
-                        </>
-                      )}
-                      {scopeFilter === 'evaluation' && (
-                        <>
-                          <option value="quiz1">Kuis 1: HTML & CSS</option>
-                          <option value="quiz2">Kuis 2: React Native</option>
-                          <option value="quiz3">Evaluasi Tengah Semester</option>
-                        </>
-                      )}
-                    </select>
+                  {/* Sub Scope Selection Selection */}
+                  <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="flex-1 h-[1px] bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="relative">
+                      <select 
+                        className="appearance-none pl-4 pr-10 py-2 text-xs font-black uppercase tracking-widest border-2 border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 outline-none focus:border-blue-500 transition-all cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        value={subScope}
+                        onChange={(e) => setSubScope(e.target.value)}
+                      >
+                        {scopeFilter === 'angkatan' && (
+                          <>
+                            <option value="2023">Batch 2023 (Active)</option>
+                            <option value="2022">Batch 2022</option>
+                            <option value="2021">Batch 2021</option>
+                          </>
+                        )}
+                        {scopeFilter === 'course' && (
+                          <>
+                            <option value="web">Pemrograman Web</option>
+                            <option value="pbo">Pemrograman Berorientasi Objek</option>
+                            <option value="sbd">Sistem Basis Data</option>
+                          </>
+                        )}
+                        {scopeFilter === 'evaluation' && (
+                          <>
+                            <option value="quiz1">Kuis 1: HTML & CSS</option>
+                            <option value="quiz2">Kuis 2: React Native</option>
+                            <option value="quiz3">Evaluasi Tengah Semester</option>
+                          </>
+                        )}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <Filter className="w-3 h-3 text-zinc-400" />
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
 
-            <div className="space-y-2 mt-4 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+            <div className="p-4 space-y-2 max-h-[700px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
               {filteredLeaderboard.map((entry, index) => (
                 <LeaderboardEntryComponent 
                   key={entry.userId} 

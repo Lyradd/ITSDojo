@@ -26,24 +26,22 @@ import {
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
-
-export default function AdminDashboardPage() {
+export default function DosenDashboardPage() {
   const router = useRouter();
   const { role, name } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const isAsdos = role === 'asdos';
 
   useEffect(() => {
     setIsMounted(true);
-    // Redirect if not admin
-    if (isMounted && role !== 'admin') {
-      if (role === 'dosen') router.push('/dosen');
+    // Redirect if not dosen
+    if (isMounted && role !== 'dosen') {
+      if (role === 'admin') router.push('/admin');
       else if (role === 'asdos') router.push('/asdos');
       else router.push('/learn');
     }
   }, [isMounted, role, router]);
 
-  if (!isMounted || role !== 'admin') return null;
+  if (!isMounted || role !== 'dosen') return null;
 
   const stats = {
     totalStudents: MOCK_STUDENTS.length,
@@ -58,12 +56,11 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Header with Gradient */}
         <div className="mb-8 relative">
           <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
           <div className="relative">
             <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Super Admin Dashboard
+              Dashboard Dosen
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">
               Selamat datang kembali, <span className="font-bold text-blue-600">{name}</span> 👋
@@ -71,28 +68,22 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Stats Grid with Gradients */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { gradient: 'from-blue-500 to-blue-600', icon: <Users className="w-6 h-6" />, extra: <TrendingUp className="w-5 h-5 opacity-70" />, value: stats.totalStudents, label: 'Total Mahasiswa', textColor: 'text-blue-100' },
-            { gradient: 'from-green-500 to-emerald-600', icon: <Activity className="w-6 h-6" />, extra: <span className="text-xs font-bold bg-white/30 px-3 py-1 rounded-full">LIVE</span>, value: stats.activeToday, label: 'Aktif Hari Ini', textColor: 'text-green-100' },
-            { gradient: 'from-purple-500 to-pink-600', icon: <Target className="w-6 h-6" />, extra: null, value: `${stats.averageScore}%`, label: 'Rata-rata Akurasi', textColor: 'text-purple-100' },
-            { gradient: 'from-orange-500 to-red-600', icon: <ClipboardCheck className="w-6 h-6" />, extra: null, value: stats.activeEvaluations, label: 'Evaluasi Aktif', textColor: 'text-orange-100' },
+            { gradient: 'from-blue-500 to-blue-600', icon: <Users className="w-6 h-6" />, value: stats.totalStudents, label: 'Total Mahasiswa', textColor: 'text-blue-100' },
+            { gradient: 'from-green-500 to-emerald-600', icon: <Activity className="w-6 h-6" />, value: stats.activeToday, label: 'Aktif Hari Ini', textColor: 'text-green-100' },
+            { gradient: 'from-purple-500 to-pink-600', icon: <Target className="w-6 h-6" />, value: `${stats.averageScore}%`, label: 'Rata-rata Akurasi', textColor: 'text-purple-100' },
+            { gradient: 'from-orange-500 to-red-600', icon: <ClipboardCheck className="w-6 h-6" />, value: stats.activeEvaluations, label: 'Evaluasi Aktif', textColor: 'text-orange-100' },
           ].map((stat, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 24, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: i * 0.1, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              whileHover={{ scale: 1.04, y: -4 }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
             >
               <Card className={`p-6 rounded-2xl border-2 bg-linear-to-br ${stat.gradient} text-white shadow-lg`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    {stat.icon}
-                  </div>
-                  {stat.extra}
-                </div>
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl w-fit mb-4">{stat.icon}</div>
                 <div className="text-4xl font-bold mb-1">{stat.value}</div>
                 <div className={`text-sm ${stat.textColor}`}>{stat.label}</div>
               </Card>
@@ -101,65 +92,48 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {role === 'admin' && (
-            <Link href={`/${role}/users`}>
-              <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Users</div>
-                    <div className="text-sm text-zinc-600 dark:text-zinc-400">Atur role & akses</div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Card>
-            </Link>
-          )}
-
-          <Link href="/admin/courses">
-              <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
-                    <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-zinc-800 dark:text-zinc-100">{isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}</div>
-                    <div className="text-sm text-zinc-600 dark:text-zinc-400">{isAsdos ? 'Lihat materi kursus' : 'Tambah & edit materi'}</div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Card>
-            </Link>
-
-          <Link href="/admin/evaluations">
-            <Card className="p-6 rounded-2xl border-2 hover:border-purple-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <Link href="/dosen/courses">
+            <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-linear-to-br from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-800/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-xl group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">{isAsdos ? 'Monitor Evaluasi' : 'Buat Evaluasi'}</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">{isAsdos ? 'Pantau quiz & assessment' : 'Quiz & assessment'}</div>
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Kursus</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Tambah & edit materi</div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 transition-all" />
               </div>
             </Card>
           </Link>
 
-          <Link href="/admin/analytics">
-            <Card className="p-6 rounded-2xl border-2 hover:border-green-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
+          <Link href="/dosen/evaluations">
+            <Card className="p-6 rounded-2xl border-2 hover:border-purple-400 transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-linear-to-br from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                <div className="p-4 bg-purple-100 dark:bg-purple-900/50 rounded-xl group-hover:scale-110 transition-transform">
+                  <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Buat Evaluasi</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Quiz & assessment</div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-purple-600 transition-all" />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dosen/analytics">
+            <Card className="p-6 rounded-2xl border-2 hover:border-green-400 transition-all cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-xl group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1">
                   <div className="font-bold text-zinc-800 dark:text-zinc-100">Lihat Analytics</div>
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">Reports & insights</div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-green-600 transition-all" />
               </div>
             </Card>
           </Link>
@@ -175,7 +149,7 @@ export default function AdminDashboardPage() {
                   <Activity className="w-5 h-5 text-blue-600" />
                   Aktivitas Terbaru
                 </h3>
-                <Link href="/admin/students">
+                <Link href="/dosen/students">
                   <Button variant="outline" size="sm" className="font-bold hover:bg-blue-50 dark:hover:bg-blue-950/30">
                     Lihat Semua
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -264,14 +238,12 @@ export default function AdminDashboardPage() {
                   </Link>
                 ))}
 
-                {!isAsdos && (
-                  <Link href="/admin/evaluations">
-                    <Button className="w-full bg-linear-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold shadow-lg">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Buat Evaluasi Baru
-                    </Button>
-                  </Link>
-                )}
+                <Link href="/dosen/evaluations">
+                  <Button className="w-full bg-linear-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold shadow-lg">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Buat Evaluasi Baru
+                  </Button>
+                </Link>
               </div>
             </Card>
 

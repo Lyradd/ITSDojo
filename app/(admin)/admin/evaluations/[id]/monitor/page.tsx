@@ -18,8 +18,11 @@ import {
   XCircle,
   RefreshCw,
   Eye,
-  Filter
+  Filter,
+  Zap
 } from "lucide-react";
+import { useEvaluationStore } from "@/lib/evaluation-store";
+
 import { cn } from "@/lib/utils";
 
 // Mock live data with groups (in real app, this would come from WebSocket/polling)
@@ -114,6 +117,8 @@ export default function MonitorEvaluationPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // null = all groups
   const [enableGroups] = useState(true); // In real app, this comes from evaluation settings
+
+  const { isWaitingRoomActive, startWaitingRoomSession } = useEvaluationStore();
 
   // Find evaluation
   const evaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
@@ -214,6 +219,15 @@ export default function MonitorEvaluationPage() {
             <div className="flex items-center gap-3">
               {evaluation.isActive && (
                 <>
+                  {evaluation.isActive && (
+                    <Button 
+                      onClick={() => startWaitingRoomSession()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20"
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      Mulai Sesi Sekarang
+                    </Button>
+                  )}
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">
                     Last update: {lastUpdate.toLocaleTimeString()}
                   </div>

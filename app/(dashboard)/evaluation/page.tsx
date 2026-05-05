@@ -168,9 +168,9 @@ function EvaluationCard({ evaluation, getCourseName, getCourseColor, onStart }: 
             </h3>
 
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
-              <p>📌 Kuis ini <strong>bisa dikerjakan kapan saja</strong> — santai, nggak ada tekanan!</p>
-              <p>🎯 Tapi ingat ya: <strong>kalau diulang, poinnya bakal 0</strong>. Pastiin kamu udah siap dan koneksi aman.</p>
-              <p>⏱️ Durasi: <strong>{evaluation.duration} menit</strong> — timer langsung jalan begitu mulai.</p>
+              <p>📌 Kuis ini berjalan secara <strong>real-time sinkronus</strong>. Kamu akan masuk ke ruang tunggu (lobby) sebelum Dosen memulai kuis.</p>
+              <p>🎯 Kalau kamu sudah pernah mengerjakan, kamu <strong>bisa mengulanginya untuk belajar</strong>, tapi poin dan leaderboard tidak akan berubah lagi.</p>
+              <p>⏱️ Durasi: <strong>{evaluation.duration} menit</strong> — timer berjalan otomatis ketika Dosen memulai sesi.</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">

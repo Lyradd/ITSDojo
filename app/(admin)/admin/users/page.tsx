@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { MOCK_STUDENTS } from '@/lib/admin-data';
 import { Card } from '@/components/ui/card';
@@ -10,14 +11,28 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SuperAdminUsersPage() {
+  const router = useRouter();
   const { role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setUsers(MOCK_STUDENTS); // Sync initial data
+    if (isMounted && role !== 'admin') {
+      if (role === 'dosen') router.push('/dosen');
+      else if (role === 'asdos') router.push('/asdos');
+      else router.push('/learn');
+    }
+  }, [isMounted, role, router]);
+
   const [users, setUsers] = useState(MOCK_STUDENTS);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
   // Form state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('password123');
+  const [newBatch, setNewBatch] = useState('2023');
   const [newRole, setNewRole] = useState('mahasiswa');
   const [newSemester, setNewSemester] = useState(1);
   
@@ -25,9 +40,9 @@ export default function SuperAdminUsersPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
 
-  useEffect(() => { setIsMounted(true); }, []);
+  if (!isMounted || role !== 'admin') return null;
 
-  if (!isMounted) return null;
+
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +60,8 @@ export default function SuperAdminUsersPage() {
       streak: 0,
       semester: newSemester,
       role: newRole,
+      batch: newBatch,
+      password: newPassword,
     };
     
     // @ts-ignore - mengabaikan typescript sementara untuk role di mock data
@@ -54,6 +71,8 @@ export default function SuperAdminUsersPage() {
     // Reset form
     setNewName('');
     setNewEmail('');
+    setNewPassword('password123');
+    setNewBatch('2023');
     setNewRole('mahasiswa');
     setNewSemester(1);
   };
@@ -123,36 +142,42 @@ export default function SuperAdminUsersPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="p-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
+          <Card className="p-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
                 <Users className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Mahasiswa</div>
-                <div className="text-2xl font-bold text-zinc-900 dark:text-white">{users.length}</div>
+                <div className="text-2xl font-black text-zinc-900 dark:text-white">
+                  {users.filter(u => (u as any).role === 'mahasiswa' || !(u as any).role).length}
+                </div>
               </div>
             </div>
           </Card>
-          <Card className="p-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
+          <Card className="p-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="p-4 bg-purple-100 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
                 <UserCog className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Dosen</div>
-                <div className="text-2xl font-bold text-zinc-900 dark:text-white">5</div>
+                <div className="text-2xl font-black text-zinc-900 dark:text-white">
+                  {users.filter(u => (u as any).role === 'dosen').length}
+                </div>
               </div>
             </div>
           </Card>
-          <Card className="p-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
+          <Card className="p-6 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="p-4 bg-orange-100 dark:bg-orange-900/30 rounded-xl text-orange-600 dark:text-orange-400">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Asisten Dosen</div>
-                <div className="text-2xl font-bold text-zinc-900 dark:text-white">12</div>
+                <div className="text-2xl font-black text-zinc-900 dark:text-white">
+                  {users.filter(u => (u as any).role === 'asdos').length}
+                </div>
               </div>
             </div>
           </Card>
@@ -165,6 +190,8 @@ export default function SuperAdminUsersPage() {
               <thead>
                 <tr className="bg-zinc-100 dark:bg-zinc-900/80 border-b-2 border-zinc-200 dark:border-zinc-800">
                   <th className="p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">Nama Lengkap</th>
+                  <th className="p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">Angkatan</th>
+                  <th className="p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">Password</th>
                   <th className="p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">Role</th>
                   <th className="p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400">Akses</th>
                   <th className="p-4 font-bold text-sm text-zinc-600 dark:text-zinc-400 text-right">Aksi</th>
@@ -183,6 +210,16 @@ export default function SuperAdminUsersPage() {
                           <div className="text-xs text-zinc-500">{user.email}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        {(user as any).batch || '-'}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <code className="text-xs bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-zinc-500">
+                        {(user as any).password || '********'}
+                      </code>
                     </td>
                     <td className="p-4">
                       <select 
@@ -277,8 +314,19 @@ export default function SuperAdminUsersPage() {
                       className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Password</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                  </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Role</label>
                       <select 
@@ -300,6 +348,17 @@ export default function SuperAdminUsersPage() {
                         min="1" max="14"
                         value={newSemester}
                         onChange={(e) => setNewSemester(Number(e.target.value))}
+                        className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Angkatan</label>
+                      <input 
+                        type="text" 
+                        placeholder="2023"
+                        value={newBatch}
+                        onChange={(e) => setNewBatch(e.target.value)}
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       />
                     </div>
@@ -363,8 +422,19 @@ export default function SuperAdminUsersPage() {
                       className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Password</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={editingUser.password || 'password123'}
+                      onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                      className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                  </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Role</label>
                       <select 
@@ -386,6 +456,16 @@ export default function SuperAdminUsersPage() {
                         min="1" max="14"
                         value={editingUser.semester || 1}
                         onChange={(e) => setEditingUser({ ...editingUser, semester: Number(e.target.value) })}
+                        className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Angkatan</label>
+                      <input 
+                        type="text" 
+                        value={editingUser.batch || '2023'}
+                        onChange={(e) => setEditingUser({ ...editingUser, batch: e.target.value })}
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       />
                     </div>

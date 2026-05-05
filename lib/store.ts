@@ -9,7 +9,7 @@ export type DailyGoal = {
   title: string;
   target: number;
   current: number;
-  type: 'xp' | 'lesson' | 'streak';
+  type: 'xp' | 'lesson' | 'streak' | 'perfect';
   isCompleted: boolean;
   isClaimed: boolean; 
   rewardType: 'xp' | 'gem' | 'multiplier';
@@ -24,6 +24,10 @@ const INITIAL_GOALS: DailyGoal[] = [
   { 
     id: 'lesson-goal', title: 'Selesaikan 1 Pelajaran', target: 1, current: 0, type: 'lesson', 
     isCompleted: false, isClaimed: false, rewardType: 'multiplier', rewardValue: 15
+  },
+  { 
+    id: 'perfect-goal', title: 'Dapatkan 1 Perfect Lesson', target: 1, current: 0, type: 'perfect', 
+    isCompleted: false, isClaimed: false, rewardType: 'gem', rewardValue: 30 
   },
 ];
 
@@ -71,7 +75,7 @@ export interface UserState {
   multiplierEndTime: number | null;
   
   addXp: (amount: number) => void;
-  completeLesson: (lessonId?: string) => void;
+  completeLesson: (lessonId?: string, isPerfect?: boolean) => void;
   setActiveCourse: (courseId: string) => void;
   requestEnrollment: (courseId: string) => void;
   acceptEnrollment: (courseId: string) => void;
@@ -95,8 +99,10 @@ export interface UserState {
   lastActiveDate: string;
   lastDailyReset: string;
   weeklyRewardClaimed: boolean;
+  monthlyRewardClaimed: boolean; // NEW: Monthly challenge reward tracking
   checkDailyReset: () => void;
   claimWeeklyReward: () => void;
+  claimMonthlyReward: () => void; // NEW: Method to claim monthly reward
   claimGoalReward: (goalId: string) => void;
 
   // 5. UI State & Animations
@@ -156,6 +162,7 @@ export const useUserStore = create<UserState>()(
       lastActiveDate: formatLocalDate(new Date()),
       lastDailyReset: formatLocalDate(new Date()),
       weeklyRewardClaimed: false,
+      monthlyRewardClaimed: false,
 
       isLevelUpModalOpen: false,
       levelUpData: null,
@@ -228,12 +235,16 @@ export const useUserStore = create<UserState>()(
         get().triggerReward('xp', 5);
       },
 
-      completeLesson: (lessonId) => {
+      completeLesson: (lessonId, isPerfect) => {
         let earnedXp = 0;
         let earnedGems = 0;
         set((state) => {
           const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'lesson') {
+              const newCurrent = Math.min(goal.current + 1, goal.target);
+              return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
+            }
+            if (goal.type === 'perfect' && isPerfect) {
               const newCurrent = Math.min(goal.current + 1, goal.target);
               return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
             }
@@ -243,7 +254,7 @@ export const useUserStore = create<UserState>()(
           const isNew = lessonId && !state.completedLessonIds.includes(lessonId);
           const updatedLessonIds = isNew ? [...state.completedLessonIds, lessonId!] : state.completedLessonIds;
           earnedXp = isNew ? 50 : 0;
-          earnedGems = isNew ? (state.hasGemMiner ? 15 : 10) : 0;
+          earnedGems = isNew ? (state.hasGemMiner ? 20 : 10) : 0;
 
           let newHistory = [...state.activityHistory];
           let newStreak = state.streak;
@@ -388,9 +399,15 @@ export const useUserStore = create<UserState>()(
       checkDailyReset: () => set((state) => {
         const now = new Date();
         const today = formatLocalDate(now);
-        if (state.lastDailyReset !== today) {
+        if (state.lastDailyReset !== today || state.dailyGoals.length !== INITIAL_GOALS.length) {
           const updates: any = { dailyGoals: INITIAL_GOALS, lastDailyReset: today };
           if (now.getDay() === 1) updates.weeklyRewardClaimed = false;
+
+          // Reset monthly reward if the month has changed
+          const lastResetDate = new Date(state.lastDailyReset);
+          if (lastResetDate.getMonth() !== now.getMonth() || lastResetDate.getFullYear() !== now.getFullYear()) {
+            updates.monthlyRewardClaimed = false;
+          }
 
           const yesterday = new Date(now);
           yesterday.setDate(yesterday.getDate() - 1);
@@ -414,6 +431,12 @@ export const useUserStore = create<UserState>()(
         if (get().weeklyRewardClaimed) return;
         set((state) => ({ gems: state.gems + 100, weeklyRewardClaimed: true }));
         get().triggerReward('gem', 5);
+      },
+
+      claimMonthlyReward: () => {
+        if (get().monthlyRewardClaimed) return;
+        set((state) => ({ gems: state.gems + 500, monthlyRewardClaimed: true })); // Reward: 500 Gems
+        get().triggerReward('gem', 15);
       },
 
       claimGoalReward: (goalId) => {
@@ -441,7 +464,9 @@ export const useUserStore = create<UserState>()(
           return newState;
         });
         if (rewardType === 'gem') get().triggerReward('gem', 8);
-        if (rewardType === 'xp') get().addXp(rewardValue);
+        if (rewardType === 'xp') {
+          get().addXp(rewardValue);
+        }
       },
 
       // --- ACTIONS: UI ---

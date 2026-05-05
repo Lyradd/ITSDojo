@@ -46,23 +46,23 @@ const studentMenuItems = [
 
 // Menu untuk Dosen
 const dosenMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-  { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-  { icon: Users, label: "Students", href: "/admin/students" },
-  { icon: ClipboardCheck, label: "Evaluations", href: "/admin/evaluations" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
-  { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
-  { icon: Settings, label: "Settings", href: "/admin/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dosen" },
+  { icon: BookOpen, label: "Courses", href: "/dosen/courses" },
+  { icon: Users, label: "Students", href: "/dosen/students" },
+  { icon: ClipboardCheck, label: "Evaluations", href: "/dosen/evaluations" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/dosen/enrollments" },
+  { icon: BarChart3, label: "Analytics", href: "/dosen/analytics" },
+  { icon: Settings, label: "Settings", href: "/dosen/settings" },
 ];
 
 // Menu untuk Asisten Dosen (same as dosen but no Settings)
 const asdosMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-  { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-  { icon: Users, label: "Students", href: "/admin/students" },
-  { icon: ClipboardCheck, label: "Evaluations", href: "/admin/evaluations" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
-  { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/asdos" },
+  { icon: BookOpen, label: "Courses", href: "/asdos/courses" },
+  { icon: Users, label: "Students", href: "/asdos/students" },
+  { icon: ClipboardCheck, label: "Evaluations", href: "/asdos/evaluations" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/asdos/enrollments" },
+  { icon: BarChart3, label: "Analytics", href: "/asdos/analytics" },
 ];
 
 // Menu untuk Super Admin

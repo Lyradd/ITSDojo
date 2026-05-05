@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, LogIn, GraduationCap, Users } from "lucide-react";
+import { Loader2, LogIn, GraduationCap, Users, Shield } from "lucide-react";
 import dynamic from "next/dynamic";
 
 // Lazy-load the Three.js scene (SSR disabled — Three needs browser/WebGL context)
@@ -62,9 +62,9 @@ export default function LoginPage() {
       // Delay routing to let the full screen wipe finish and show the animation
       setTimeout(() => {
         if (selectedRole === 'dosen') {
-          router.push('/admin');
+          router.push('/dosen');
         } else if (selectedRole === 'asdos') {
-          router.push('/admin'); // Asdos goes to admin but with read-only access
+          router.push('/asdos');
         } else {
           router.push('/learn');
         }
@@ -231,6 +231,22 @@ export default function LoginPage() {
                     </div>
                   </div>
                 </button>
+
+                {/* Developer Shortcut */}
+                <div className="pt-4 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRole('admin');
+                      login();
+                      router.push('/admin');
+                    }}
+                    className="text-[10px] font-bold text-zinc-400 hover:text-blue-500 uppercase tracking-widest transition-colors flex items-center gap-1.5 opacity-50 hover:opacity-100"
+                  >
+                    <Shield className="w-3 h-3" />
+                    Bypass to Super Admin (Dev Only)
+                  </button>
+                </div>
               </motion.div>
             ) : (
               // Login Form

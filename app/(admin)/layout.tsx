@@ -15,18 +15,23 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { role } = useUserStore();
+  const { role, isLoggedIn } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
+    // Redirect if not logged in
+    if (!isLoggedIn) {
+      router.push('/login');
+      return;
+    }
     // Redirect if not dosen, asdos, or admin
     if (role !== 'dosen' && role !== 'asdos' && role !== 'admin') {
       router.push('/learn');
     }
-  }, [role, router]);
+  }, [role, isLoggedIn, router]);
 
   // Don't render if not allowed
-  if (role !== 'dosen' && role !== 'asdos' && role !== 'admin') {
+  if (!isLoggedIn || (role !== 'dosen' && role !== 'asdos' && role !== 'admin')) {
     return null;
   }
 

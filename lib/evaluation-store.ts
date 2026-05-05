@@ -52,6 +52,8 @@ export interface LeaderboardEntry {
   previousRank?: number;
   lastUpdate: number;
   isCurrentUser?: boolean;
+  batch?: string;
+  coursesTaken?: number;
   // Group fields
   groupId?: string;
   groupName?: string;

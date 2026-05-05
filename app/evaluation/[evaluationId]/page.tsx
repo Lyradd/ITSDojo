@@ -52,26 +52,41 @@ const FUN_FACTS = [
   "C++ awalnya dinamai 'C with Classes' sebelum akhirnya diganti pada tahun 1983."
 ];
 
-function CountdownOverlay({
+function WaitingRoomOverlay({
   evaluationTitle,
-  onComplete,
+  onStart,
 }: {
   evaluationTitle: string;
-  onComplete: () => void;
+  onStart: () => void;
 }) {
-  const [timeLeft, setTimeLeft] = useState(10);
+  const { role } = useUserStore();
   const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
+  const [showParticipants, setShowParticipants] = useState(false);
+  
+  // Simulated joined users list
+  const [participants, setParticipants] = useState<{name: string, avatar: string}[]>([
+    { name: 'Ahmad Rizki', avatar: 'bg-blue-200 text-blue-700' },
+    { name: 'Sarah Kusuma', avatar: 'bg-pink-200 text-pink-700' },
+    { name: 'Budi Santoso', avatar: 'bg-green-200 text-green-700' },
+    { name: 'Dinda Pratiwi', avatar: 'bg-purple-200 text-purple-700' },
+    { name: 'Eko Prasetyo', avatar: 'bg-indigo-200 text-indigo-700' },
+  ]);
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onComplete();
-      return;
-    }
-    const t = setTimeout(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-    return () => clearTimeout(t);
-  }, [timeLeft, onComplete]);
+    // Simulate users joining over time
+    const interval = setInterval(() => {
+      const names = ['Gilang', 'Fitri', 'Hana', 'Irfan', 'Joko', 'Kartika', 'Lestari', 'Fajar', 'Nadia', 'Omar'];
+      const bgColors = ['bg-red-200 text-red-700', 'bg-teal-200 text-teal-700', 'bg-orange-200 text-orange-700', 'bg-cyan-200 text-cyan-700'];
+      
+      setParticipants(prev => {
+        if (prev.length >= 25) return prev;
+        const newName = names[Math.floor(Math.random() * names.length)] + ' ' + (prev.length + 1);
+        const newColor = bgColors[Math.floor(Math.random() * bgColors.length)];
+        return [...prev, { name: newName, avatar: newColor }];
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const nextFact = () => setCurrentFactIndex((p) => (p + 1) % FUN_FACTS.length);
   const prevFact = () => setCurrentFactIndex((p) => (p - 1 + FUN_FACTS.length) % FUN_FACTS.length);
@@ -86,16 +101,17 @@ function CountdownOverlay({
     >
       <div className="absolute inset-0 bg-radial-gradient from-blue-900/20 to-transparent pointer-events-none" />
       
-      <motion.p
-        className="text-blue-400 text-lg font-bold mb-12 tracking-wide"
+      <motion.div 
+        className="text-center mb-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        Mempersiapkan: {evaluationTitle}
-      </motion.p>
+        <div className="text-blue-400 font-bold tracking-widest uppercase text-sm mb-2">Ruang Tunggu Evaluasi</div>
+        <h1 className="text-3xl md:text-4xl font-black text-white">{evaluationTitle}</h1>
+      </motion.div>
 
       {/* Fun Fact Carousel */}
-      <div className="flex items-center gap-6 max-w-2xl w-full px-4">
+      <div className="flex items-center gap-6 max-w-2xl w-full px-4 mb-12">
         <Button variant="ghost" size="icon" onClick={prevFact} className="text-white hover:bg-white/10 shrink-0">
           <ChevronLeft className="w-8 h-8" />
         </Button>
@@ -123,19 +139,62 @@ function CountdownOverlay({
         </Button>
       </div>
 
-      {/* Timer Bar */}
-      <div className="absolute bottom-20 w-full max-w-md px-6 flex flex-col items-center gap-4">
-        <div className="text-sm font-bold text-zinc-400 flex items-center gap-2">
-          Kuis dimulai dalam <span className="text-2xl text-white font-black">{timeLeft}</span> detik
-        </div>
-        <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-          <motion.div 
-            className="h-full bg-blue-500 rounded-full"
-            initial={{ width: '100%' }}
-            animate={{ width: `${(timeLeft / 10) * 100}%` }}
-            transition={{ duration: 1, ease: "linear" }}
-          />
-        </div>
+      {/* Status & Actions */}
+      <div className="absolute bottom-16 w-full max-w-md px-6 flex flex-col items-center gap-6">
+        <button 
+          onClick={() => setShowParticipants(!showParticipants)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full border transition-all cursor-pointer",
+            showParticipants 
+              ? "bg-blue-600 border-blue-500 text-white" 
+              : "bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10"
+          )}
+        >
+          <div className={cn("w-2 h-2 rounded-full bg-green-500", !showParticipants && "animate-pulse")} />
+          <span className="font-bold">{participants.length} Peserta telah bergabung</span>
+          <ChevronRight className={cn("w-4 h-4 transition-transform", showParticipants ? "rotate-90" : "")} />
+        </button>
+
+        <AnimatePresence>
+          {showParticipants && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden"
+            >
+              <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Daftar Peserta</div>
+              <div className="grid grid-cols-4 gap-3 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                {participants.map((user, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0", user.avatar)}>
+                      {user.name.charAt(0)}
+                    </div>
+                    <div className="text-[10px] text-zinc-400 truncate w-full text-center">{user.name.split(' ')[0]}</div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {(role === 'dosen' || role === 'admin') ? (
+          <Button 
+            onClick={onStart}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-14 rounded-2xl text-lg shadow-lg shadow-blue-500/25"
+          >
+            Mulai Sesi Sekarang
+          </Button>
+        ) : (
+          <div className="w-full h-14 rounded-2xl border-2 border-dashed border-zinc-700 flex items-center justify-center text-zinc-400 font-bold bg-zinc-900/50">
+            Menunggu Dosen memulai sesi...
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -171,7 +230,7 @@ export default function EvaluationFullscreenPage() {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isCountdownActive, setIsCountdownActive] = useState(true);
+  const [isWaitingRoomActive, setIsWaitingRoomActive] = useState(true);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
@@ -278,9 +337,9 @@ export default function EvaluationFullscreenPage() {
     updateLeaderboard(updatedLeaderboard);
   }, [score]);
 
-  // Countdown finished → start the real timer
-  const handleCountdownComplete = useCallback(() => {
-    setIsCountdownActive(false);
+  // Waiting Room finished → start the real timer
+  const handleStartQuiz = useCallback(() => {
+    setIsWaitingRoomActive(false);
     setStartTime(Date.now());
   }, [setStartTime]);
 
@@ -318,12 +377,12 @@ export default function EvaluationFullscreenPage() {
 
   return (
     <div className="h-screen flex flex-col bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
-      {/* ── Countdown Overlay ── */}
+      {/* ── Waiting Room Overlay ── */}
       <AnimatePresence>
-        {isCountdownActive && (
-          <CountdownOverlay
+        {isWaitingRoomActive && (
+          <WaitingRoomOverlay
             evaluationTitle={currentEvaluation.title}
-            onComplete={handleCountdownComplete}
+            onStart={handleStartQuiz}
           />
         )}
       </AnimatePresence>

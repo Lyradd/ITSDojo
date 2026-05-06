@@ -47,6 +47,7 @@ export default function LearnPage() {
     name,
     level,
     xp,
+    weeklyXp,
     activeCourseId,
     streak,
     dailyGoals,
@@ -75,7 +76,7 @@ export default function LearnPage() {
   // Hitung Peringkat & Leaderboard
   const computedLeaderboard = [
     ...INITIAL_LEADERBOARD,
-    { userId: 'current', name: `${name} (You)`, score: xp, avatar: "bg-blue-200 text-blue-700", rank: 0, totalQuestions: 0, answeredQuestions: 0, accuracy: 0, lastUpdate: 0 }
+    { userId: 'current', name: `${name} (You)`, score: weeklyXp, avatar: "bg-blue-200 text-blue-700", rank: 0, totalQuestions: 0, answeredQuestions: 0, accuracy: 0, lastUpdate: 0 }
   ];
   computedLeaderboard.sort((a, b) => b.score - a.score);
   const userRank = computedLeaderboard.findIndex(u => u.userId === 'current') + 1;
@@ -85,7 +86,7 @@ export default function LearnPage() {
     const activeNode = currentContent.nodes.find((n: any) => !completedLessonIds.includes(n.id));
 
     if (activeNode) {
-      completeLesson(activeNode.id, true);
+      completeLesson(activeNode.id, true, activeNode.xpReward, activeNode.gemReward);
       triggerConfetti();
       playSuccessSound();
     } else {
@@ -253,7 +254,9 @@ export default function LearnPage() {
                   const node: ComputedLessonNode = {
                     ...origNode,
                     type: computedType as ComputedLessonNode['type'],
-                    duration: origNode.duration
+                    duration: origNode.duration,
+                    xpReward: origNode.xpReward,
+                    gemReward: origNode.gemReward
                   };
 
                   return (
@@ -311,7 +314,7 @@ export default function LearnPage() {
             topUsers={computedLeaderboard}
             currentUserId="current"
             currentUserName={name}
-            currentUserXp={xp}
+            currentUserXp={weeklyXp}
             currentUserRank={userRank}
           />
         </div>

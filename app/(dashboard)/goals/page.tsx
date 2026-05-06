@@ -21,6 +21,7 @@ import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
 import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
 import { StreakCalendarModal } from "@/components/shared/streak-calendar-modal";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { ChevronRight as ChevronRightIcon } from "lucide-react";
 
 // --- Helper Functions for Goal Styling ---
@@ -65,13 +66,17 @@ export default function GoalsPage() {
     monthlyRewardClaimed,
     claimMonthlyReward,
     streakFreezeCount,
-    level
+    level,
+    weeklyTarget,
+    isWeeklyTargetLocked,
+    setWeeklyTarget
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const timeLeft = useMultiplierTimer();
   const [resetTimeLeft, setResetTimeLeft] = useState<string | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [targetToConfirm, setTargetToConfirm] = useState<number | null>(null);
 
   // 1. Cek Mounted 
   useEffect(() => { setIsMounted(true); }, []);
@@ -109,9 +114,8 @@ export default function GoalsPage() {
     return { day, active: hasActivity, isToday: index === todayIndex };
   });
 
-  // Hitung Weekly Target (Statis: 3 Hari seminggu)
+  // Hitung Weekly Target (User Adjustable)
   const activeDaysThisWeek = streakHistory.filter(h => h.active).length;
-  const weeklyTarget = 3;
   const weeklyProgress = Math.min((activeDaysThisWeek / weeklyTarget) * 100, 100);
 
   // Hitung Monthly Challenge (XP asli bulan ini dari activityHistory)
@@ -329,43 +333,98 @@ export default function GoalsPage() {
               </div>
             </div>
 
-            {/* Weekly Reward Box */}
-            <div
-              className={`text-center p-4 rounded-xl transition-all duration-300 relative overflow-hidden ${activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed
-                  ? 'bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-400 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/40 shadow-lg shadow-orange-200 dark:shadow-none'
-                  : 'bg-zinc-50 dark:bg-zinc-900 border-2 border-transparent'
-                }`}
-              onClick={() => {
-                if (activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed) {
-                  claimWeeklyReward();
-                  triggerConfetti();
-                  playCoinSound();
-                }
-              }}
-            >
-              <h4 className={`font-bold ${activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed ? 'text-orange-700 dark:text-orange-400' : 'text-zinc-700 dark:text-zinc-300'}`}>Target Mingguan</h4>
-              <p className="text-xs text-zinc-500 mb-3">Aktif {weeklyTarget} hari dalam minggu ini ({activeDaysThisWeek}/{weeklyTarget})</p>
-              <div className="flex flex-col gap-3 items-center justify-center">
-                <div className="flex items-center gap-2 w-full justify-center">
-                  <div className="h-10 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden flex shadow-inner">
-                    <div className="bg-orange-400 h-full transition-all duration-1000 relative" style={{ width: `${weeklyProgress}%` }}>
-                      {activeDaysThisWeek >= weeklyTarget && <div className="absolute inset-0 bg-white/30 animate-[shimmer_2s_infinite]" />}
-                    </div>
+            {/* Weekly Reward Box Container */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 relative">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Set Target:</span>
+                    {isWeeklyTargetLocked && (
+                      <span className="text-[9px] text-orange-500 font-bold uppercase">Terkunci Minggu Ini</span>
+                    )}
                   </div>
-                  <Gift className={`w-8 h-8 shrink-0 transition-all duration-300 ${weeklyRewardClaimed ? 'text-zinc-300' :
-                      activeDaysThisWeek >= weeklyTarget ? 'text-orange-500 animate-bounce drop-shadow-md' : 'text-zinc-400'
-                    }`} />
+                  <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+                    {[3, 5, 7].map((t) => (
+                      <button
+                        key={t}
+                        disabled={isWeeklyTargetLocked}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isWeeklyTargetLocked) setTargetToConfirm(t);
+                        }}
+                        className={`px-3 py-1 rounded-md text-[10px] font-extrabold transition-all ${
+                          weeklyTarget === t 
+                            ? "bg-white dark:bg-zinc-700 text-orange-600 shadow-sm" 
+                            : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                        } ${isWeeklyTargetLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        {t} HARI
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed && (
-                  <div className="mt-1" />
+                {/* Peringatan Teks Kecil */}
+                {!isWeeklyTargetLocked && (
+                  <p className="text-[10px] text-zinc-400 italic">
+                    *Pilih target dengan bijak, tidak bisa diubah minggu ini.
+                  </p>
                 )}
+              </div>
 
-                {weeklyRewardClaimed && (
-                  <div className="text-xs font-bold text-green-600 uppercase tracking-wider flex items-center gap-1 mt-1">
-                    <CheckCircle className="w-4 h-4" /> Hadiah Mingguan Terklaim
+              <ConfirmModal
+                isOpen={targetToConfirm !== null}
+                onClose={() => setTargetToConfirm(null)}
+                onConfirm={() => {
+                  if (targetToConfirm) setWeeklyTarget(targetToConfirm);
+                }}
+                title="Konfirmasi Target"
+                message={`Apakah Anda yakin ingin menetapkan target ${targetToConfirm} hari untuk minggu ini? Setelah dikonfirmasi, target tidak dapat diubah lagi.`}
+                confirmText="Ya, Saya Yakin"
+                cancelText="Pikirkan Lagi"
+                variant="warning"
+              />
+
+              <div
+                className={`text-center p-4 rounded-xl transition-all duration-300 relative overflow-hidden ${activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-400 cursor-pointer hover:bg-orange-100 dark:hover:hover:bg-orange-900/40 shadow-lg shadow-orange-200 dark:shadow-none'
+                    : 'bg-zinc-50 dark:bg-zinc-900 border-2 border-transparent'
+                  }`}
+                onClick={() => {
+                  if (activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed) {
+                    claimWeeklyReward();
+                    triggerConfetti();
+                    playCoinSound();
+                  }
+                }}
+              >
+                <h4 className={`font-bold ${activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed ? 'text-orange-700 dark:text-orange-400' : 'text-zinc-700 dark:text-zinc-300'}`}>Target Mingguan</h4>
+                <p className="text-xs text-zinc-500 mb-1">Aktif {weeklyTarget} hari dalam minggu ini ({activeDaysThisWeek}/{weeklyTarget})</p>
+                <div className="flex items-center justify-center gap-1.5 mb-3">
+                  <Gem className="w-3 h-3 text-blue-500" />
+                  <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                    Hadiah: {weeklyTarget === 3 ? '100' : weeklyTarget === 5 ? '250' : '500'} Gems
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3 items-center justify-center">
+                  <div className="flex items-center gap-2 w-full justify-center">
+                    <div className="h-10 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden flex shadow-inner">
+                      <div className="bg-orange-400 h-full transition-all duration-1000 relative" style={{ width: `${weeklyProgress}%` }}>
+                        {activeDaysThisWeek >= weeklyTarget && <div className="absolute inset-0 bg-white/30 animate-[shimmer_2s_infinite]" />}
+                      </div>
+                    </div>
+                    <Gift className={`w-8 h-8 shrink-0 transition-all duration-300 ${weeklyRewardClaimed ? 'text-zinc-300' :
+                        activeDaysThisWeek >= weeklyTarget ? 'text-orange-500 animate-bounce drop-shadow-md' : 'text-zinc-400'
+                      }`} />
                   </div>
-                )}
+
+                  {weeklyRewardClaimed && (
+                    <div className="text-xs font-bold text-green-600 uppercase tracking-wider flex items-center gap-1 mt-1">
+                      <CheckCircle className="w-4 h-4" /> Hadiah Mingguan Terklaim
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
@@ -433,6 +492,36 @@ export default function GoalsPage() {
         activityHistory={activityHistory}
         streak={streak}
       />
+
+      {/* --- DEBUG TOOL (Dev Only) --- */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 left-4 z-[100] flex flex-col gap-2 scale-75 origin-bottom-left opacity-20 hover:opacity-100 transition-opacity">
+          <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-3xl shadow-2xl">
+            <p className="text-[10px] font-bold text-zinc-400 mb-3 uppercase tracking-widest text-center">Animation Tester</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" variant="outline" className="text-[10px] h-8" onClick={() => useUserStore.getState().triggerReward('xp', 15)}>
+                Test XP Anim
+              </Button>
+              <Button size="sm" variant="outline" className="text-[10px] h-8" onClick={() => useUserStore.getState().triggerReward('gem', 15)}>
+                Test Gem Anim
+              </Button>
+              <Button size="sm" variant="outline" className="text-[10px] h-8 text-orange-600 border-orange-200" onClick={() => {
+                useUserStore.setState({ isWeeklyTargetLocked: false });
+                window.location.reload();
+              }}>
+                Force Unlock Target
+              </Button>
+              <Button size="sm" variant="ghost" className="text-[10px] h-8 text-red-500" onClick={() => {
+                // Re-lock target for testing modal (only works if not already locked in store)
+                // Just for testing UI state
+                window.location.reload();
+              }}>
+                Reload State
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

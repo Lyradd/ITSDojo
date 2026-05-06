@@ -41,14 +41,15 @@ export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null);
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [imageErrorIds, setImageErrorIds] = useState<string[]>([]);
 
   // Data Processing (Mapping, Filtering, Sorting combined)
   const sortedCourses = useMemo(() => {
     // 1. Map status and progress
     let data = RAW_COURSES.map((course) => {
       const completedCount = completedLessonIds.filter(id => id.startsWith(course.id)).length;
-      const targetLessons = COURSE_CONTENT[course.id]?.nodes?.length || 4;
-      const progress = Math.min(Math.floor((completedCount / targetLessons) * 100), 100);
+      const lessonsCount = COURSE_CONTENT[course.id]?.nodes?.length || 0;
+      const progress = Math.min(Math.floor((completedCount / (lessonsCount || 1)) * 100), 100);
 
       const accessDateStr = courseAccessHistory?.[course.id];
       const lastAccessed = accessDateStr ? new Date(accessDateStr) : new Date(0);
@@ -71,6 +72,7 @@ export default function CoursesPage() {
         status,
         semesterRequired,
         isSemesterMet,
+        lessonsCount,
         lastAccessed,
       };
     });
@@ -223,7 +225,19 @@ export default function CoursesPage() {
               {/* Header Gambar */}
               <div className={`h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300 group-hover:h-24 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
                 <div className={`absolute inset-0 ${course.color} opacity-20`} />
-                <Image src={course.image} alt={course.title} fill className="object-cover" />
+                {!imageErrorIds.includes(course.id) ? (
+                  <Image 
+                    src={course.image} 
+                    alt={course.title} 
+                    fill 
+                    className="object-cover" 
+                    onError={() => setImageErrorIds(prev => [...prev, course.id])}
+                  />
+                ) : (
+                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40`}>
+                    <BookOpen className="w-12 h-12 text-white/50" />
+                  </div>
+                )}
                 {(course.status === 'locked' || course.status === 'semester-locked') && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
                     <Lock className="w-8 h-8 text-white/70" />
@@ -336,7 +350,19 @@ export default function CoursesPage() {
               {/* Icon Box */}
               <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
                 <div className={`absolute inset-0 ${course.color} opacity-20`} />
-                <Image src={course.image} alt={course.title} fill className="object-cover" />
+                {!imageErrorIds.includes(course.id) ? (
+                  <Image 
+                    src={course.image} 
+                    alt={course.title} 
+                    fill 
+                    className="object-cover" 
+                    onError={() => setImageErrorIds(prev => [...prev, course.id])}
+                  />
+                ) : (
+                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40`}>
+                    <BookOpen className="w-8 h-8 text-white/50" />
+                  </div>
+                )}
                 {(course.status === 'locked' || course.status === 'semester-locked') && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
                     <Lock className="w-5 h-5 text-white/70" />

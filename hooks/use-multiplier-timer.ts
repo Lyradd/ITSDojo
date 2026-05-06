@@ -18,9 +18,15 @@ export function useMultiplierTimer() {
       if (diff <= 0) {
         setTimeLeft(null);
       } else {
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
         const seconds = Math.floor((diff / 1000) % 60);
-        setTimeLeft(`${minutes}m ${seconds}s`);
+        
+        if (hours > 0) {
+          setTimeLeft(`${hours}j ${minutes}m ${seconds}s`);
+        } else {
+          setTimeLeft(`${minutes}m ${seconds}s`);
+        }
       }
     }, 1000);
 

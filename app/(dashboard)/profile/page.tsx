@@ -39,7 +39,7 @@ export default function ProfilePage() {
     name, xp, streak, completedLessonIds = [], unlockedAchievements = [],
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
     activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
-    createdAt
+    createdAt, followingCount, followersCount
   } = useUserStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,10 +182,10 @@ export default function ProfilePage() {
                   <Calendar className="w-4 h-4" /> Bergabung {joinDate}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <User className="w-4 h-4" /> 120 Mengikuti
+                  <User className="w-4 h-4" /> {followingCount} Mengikuti
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4" /> 85 Pengikut
+                  <Users className="w-4 h-4" /> {followersCount} Pengikut
                 </div>
               </div>
             </div>

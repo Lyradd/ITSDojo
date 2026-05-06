@@ -28,6 +28,8 @@ export type LessonNode = {
   title: string;
   desc: string;
   duration?: string;
+  xpReward?: number;
+  gemReward?: number;
 };
 
 export type CourseUnit = {
@@ -42,27 +44,27 @@ export const COURSE_CONTENT: Record<string, CourseUnit> = {
     unitTitle: "Unit 1: HTML & CSS Basics",
     unitDesc: "Fondasi halaman web modern",
     nodes: [
-      { id: "fe-basic-1", title: "HTML Structure", desc: "Tag & Element Dasar", duration: "~10 menit" },
-      { id: "fe-basic-2", title: "CSS Styling", desc: "Warna & Layout", duration: "~15 menit" },
-      { id: "fe-basic-3", title: "Flexbox", desc: "Layout Responsif", duration: "~20 menit" },
-      { id: "fe-basic-4", title: "Grid System", desc: "Layout 2 Dimensi", duration: "~25 menit" },
+      { id: "fe-basic-1", title: "HTML Structure", desc: "Tag & Element Dasar", duration: "~10 menit", xpReward: 30, gemReward: 5 },
+      { id: "fe-basic-2", title: "CSS Styling", desc: "Warna & Layout", duration: "~15 menit", xpReward: 50, gemReward: 10 },
+      { id: "fe-basic-3", title: "Flexbox", desc: "Layout Responsif", duration: "~20 menit", xpReward: 70, gemReward: 15 },
+      { id: "fe-basic-4", title: "Grid System", desc: "Layout 2 Dimensi", duration: "~25 menit", xpReward: 100, gemReward: 20 },
     ]
   },
   "react-mastery": {
     unitTitle: "Unit 1: React Components",
     unitDesc: "Membuat UI interaktif",
     nodes: [
-      { id: "react-mastery-1", title: "JSX Syntax", desc: "Javascript + XML", duration: "~15 menit" },
-      { id: "react-mastery-2", title: "Props & State", desc: "Data Flow", duration: "~30 menit" },
+      { id: "react-mastery-1", title: "JSX Syntax", desc: "Javascript + XML", duration: "~15 menit", xpReward: 40, gemReward: 8 },
+      { id: "react-mastery-2", title: "Props & State", desc: "Data Flow", duration: "~30 menit", xpReward: 80, gemReward: 18 },
     ]
   },
   "backend-ninja": {
     unitTitle: "Unit 1: Intro to API",
     unitDesc: "Dasar komunikasi server",
     nodes: [
-      { id: "backend-ninja-1", title: "HTTP Methods", desc: "GET, POST, PUT", duration: "~15 menit" },
-      { id: "backend-ninja-2", title: "Express JS", desc: "Routing Dasar", duration: "~20 menit" },
-      { id: "backend-ninja-3", title: "Database", desc: "SQL Basics", duration: "~45 menit" },
+      { id: "backend-ninja-1", title: "HTTP Methods", desc: "GET, POST, PUT", duration: "~15 menit", xpReward: 45, gemReward: 10 },
+      { id: "backend-ninja-2", title: "Express JS", desc: "Routing Dasar", duration: "~20 menit", xpReward: 65, gemReward: 15 },
+      { id: "backend-ninja-3", title: "Database", desc: "SQL Basics", duration: "~45 menit", xpReward: 120, gemReward: 25 },
     ]
   }
 };

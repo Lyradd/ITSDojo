@@ -195,7 +195,13 @@ export default function LessonIDEPage() {
 
         // Tandai lesson selesai setelah delay singkat agar user bisa lihat hasil
         setTimeout(() => {
-          completeLesson(params?.id as string, true);
+          // Cari node ini untuk mendapatkan reward dinamisnya
+          const courseEntry = Object.entries(COURSE_CONTENT).find(([, content]) =>
+            content.nodes.some(n => n.id === lessonId)
+          );
+          const node = courseEntry?.[1].nodes.find(n => n.id === lessonId);
+
+          completeLesson(params?.id as string, true, node?.xpReward, node?.gemReward);
           triggerConfetti();
           playSuccessSound();
           setTimeout(() => {

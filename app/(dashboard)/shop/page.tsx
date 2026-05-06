@@ -114,12 +114,13 @@ export default function ShopPage() {
       cost: SHOP_PRICES.XP_BOOSTER,
       type: 'multiplier',
       color: 'from-purple-100 to-purple-50 dark:from-purple-950/40 dark:to-purple-900/10',
-      isActive: isMultiplierActive
+      isActive: false, // Allow stacking duration by not blocking purchase
+      activeText: isMultiplierActive ? `Aktif (${timeLeft})` : null
     },
     {
       id: 'gem-miner',
       title: 'Gem Miner',
-      description: 'Investasi jangka panjang! Dapatkan bonus +100% Gems (+10 extra) secara permanen setiap kali menyelesaikan pelajaran.',
+      description: 'Investasi jangka panjang! Dapatkan 2x lipat (+100%) Gems secara permanen setiap kali menyelesaikan pelajaran.',
       icon: <Gem className="w-10 h-10 text-blue-500" fill="currentColor" />,
       badge: <Crown className="w-5 h-5 text-yellow-500 absolute -bottom-1 -right-1 drop-shadow-md" />,
       cost: SHOP_PRICES.GEM_MINER,
@@ -181,8 +182,8 @@ export default function ShopPage() {
         
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
            {/* Slot Streak Freeze */}
-           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-orange-500/50 transition-all ${streakFreezeCount > 0 ? 'ring-2 ring-orange-500/20' : ''}`}>
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative transition-all ${streakFreezeCount > 0 ? 'bg-orange-500 text-white scale-105 shadow-lg shadow-orange-500/20' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'}`}>
+           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-orange-500/50 transition-all ${streakFreezeCount > 0 ? 'border-orange-500/50 ring-2 ring-orange-500/10' : ''}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative transition-all ${streakFreezeCount > 0 ? 'bg-linear-to-br from-orange-400 to-orange-600 text-white scale-105 shadow-lg shadow-orange-500/30' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'}`}>
                  <Flame className={`w-8 h-8 ${streakFreezeCount > 0 ? 'animate-pulse' : ''}`} />
                  {streakFreezeCount > 0 && (
                     <div className="absolute -top-2 -right-2 w-7 h-7 bg-white dark:bg-zinc-800 text-orange-600 rounded-full flex items-center justify-center text-sm font-bold border-2 border-orange-500 shadow-md">
@@ -197,8 +198,8 @@ export default function ShopPage() {
            </div>
 
            {/* Slot XP Multiplier */}
-           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-purple-500/50 transition-all ${isMultiplierActive ? 'ring-2 ring-purple-500/20 shadow-purple-500/10' : ''}`}>
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative overflow-hidden transition-all ${isMultiplierActive ? 'bg-purple-600 text-white scale-105 shadow-lg shadow-purple-500/30' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-500'}`}>
+           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-purple-500/50 transition-all ${isMultiplierActive ? 'border-purple-500/50 ring-2 ring-purple-500/10 shadow-purple-500/5' : ''}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative overflow-hidden transition-all ${isMultiplierActive ? 'bg-linear-to-br from-purple-500 to-purple-700 text-white scale-105 shadow-lg shadow-purple-500/40' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-500'}`}>
                  <Zap className={`w-8 h-8 ${isMultiplierActive ? 'animate-pulse' : ''}`} />
                  {isMultiplierActive && (
                     <div className="absolute inset-0 bg-white/10 animate-pulse" />
@@ -212,8 +213,8 @@ export default function ShopPage() {
 
            {/* Slot 3: Shield Slot — Unlockable with Gems */}
            {unlockedInventorySlotIds.includes('slot-3') ? (
-             <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group transition-all ${hasShieldPack ? 'border-green-500/50 ring-2 ring-green-500/20' : 'hover:border-green-500/50'}`}>
-               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${hasShieldPack ? 'bg-green-600 text-white scale-105 shadow-md shadow-green-500/20' : 'bg-green-100 dark:bg-green-900/30 text-green-500 opacity-40'}`}>
+             <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group transition-all ${hasShieldPack ? 'border-green-500/50 ring-2 ring-green-500/10' : 'hover:border-green-500/50'}`}>
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${hasShieldPack ? 'bg-linear-to-br from-green-500 to-green-700 text-white scale-105 shadow-lg shadow-green-500/30' : 'bg-green-100 dark:bg-green-900/30 text-green-500 opacity-40'}`}>
                   <ShieldCheck className={`w-8 h-8 ${hasShieldPack ? 'animate-bounce' : ''}`} />
                </div>
                <div className="text-center">
@@ -280,8 +281,8 @@ export default function ShopPage() {
 
            {/* Slot 4: Special Slot — Displays Gem Miner status if owned */}
            {unlockedInventorySlotIds.includes('slot-4') ? (
-             <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group transition-all ${hasGemMiner ? 'border-blue-500/50 ring-2 ring-blue-500/20 shadow-blue-500/10' : 'hover:border-blue-500/50'}`}>
-               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${hasGemMiner ? 'bg-blue-600 text-white scale-105 shadow-md shadow-blue-500/20' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-500 opacity-40'}`}>
+             <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group transition-all ${hasGemMiner ? 'border-blue-500/50 ring-2 ring-blue-500/10' : 'hover:border-blue-500/50'}`}>
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${hasGemMiner ? 'bg-linear-to-br from-blue-500 to-indigo-700 text-white scale-105 shadow-lg shadow-blue-500/40' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-500 opacity-40'}`}>
                   {hasGemMiner ? <Crown className="w-8 h-8 animate-pulse" /> : <Package className="w-8 h-8" />}
                </div>
                <div className="text-center">

@@ -54,6 +54,7 @@ export interface UserState {
 
   // 2. Progress & Learning
   xp: number; 
+  weeklyXp: number; // NEW: Weekly XP for competitive leaderboard
   xpToNextLevel: number;
   streak: number;
   activeCourseId: string;
@@ -75,7 +76,7 @@ export interface UserState {
   multiplierEndTime: number | null;
   
   addXp: (amount: number) => void;
-  completeLesson: (lessonId?: string, isPerfect?: boolean) => void;
+  completeLesson: (lessonId?: string, isPerfect?: boolean, xpReward?: number, gemReward?: number) => void;
   setActiveCourse: (courseId: string) => void;
   requestEnrollment: (courseId: string) => void;
   acceptEnrollment: (courseId: string) => void;
@@ -99,11 +100,16 @@ export interface UserState {
   lastActiveDate: string;
   lastDailyReset: string;
   weeklyRewardClaimed: boolean;
+  isWeeklyTargetLocked: boolean; // NEW: Lock target after selection
   monthlyRewardClaimed: boolean; // NEW: Monthly challenge reward tracking
+  weeklyTarget: number; // NEW: User adjustable weekly target
+  followingCount: number; // NEW: Social stats
+  followersCount: number; // NEW: Social stats
   checkDailyReset: () => void;
   claimWeeklyReward: () => void;
   claimMonthlyReward: () => void; // NEW: Method to claim monthly reward
   claimGoalReward: (goalId: string) => void;
+  setWeeklyTarget: (target: number) => void; // NEW: Method to set weekly target
 
   // 5. UI State & Animations
   isLevelUpModalOpen: boolean;
@@ -130,8 +136,11 @@ export const useUserStore = create<UserState>()(
       role: 'admin', 
       semester: 5,
       createdAt: new Date().toISOString(),
+      followingCount: 120,
+      followersCount: 85,
       
       xp: 0,
+      weeklyXp: 0,
       xpToNextLevel: 100,
       streak: 3,
       activeCourseId: "fe-basic",
@@ -146,6 +155,8 @@ export const useUserStore = create<UserState>()(
       longestStreak: 3,
       mostXpInDay: 0,
       totalPerfectLessons: 0,
+      weeklyTarget: 3,
+      isWeeklyTargetLocked: false,
       league: "Silver",
       top3Finishes: 0,
       bookmarkedCourseIds: [],
@@ -184,6 +195,7 @@ export const useUserStore = create<UserState>()(
           const currentMultiplier = isMultiplierActive ? state.xpMultiplier : 1;
           const finalXpAmount = amount * currentMultiplier;
           const newTotalXp = state.xp + finalXpAmount;
+          const newWeeklyXp = (state.weeklyXp || 0) + finalXpAmount;
           
           const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'xp') {
@@ -227,7 +239,7 @@ export const useUserStore = create<UserState>()(
           const newMostXpInDay = Math.max(state.mostXpInDay || 0, todayEntry ? todayEntry.xpEarned : 0);
 
           return {
-            xp: newTotalXp, level: currentLevel, xpToNextLevel: currentTarget,
+            xp: newTotalXp, weeklyXp: newWeeklyXp, level: currentLevel, xpToNextLevel: currentTarget,
             dailyGoals: updatedGoals, gems: finalGems, isLevelUpModalOpen: isModalOpen,
             levelUpData: levelUpInfo, activityHistory: updatedHistory, mostXpInDay: newMostXpInDay
           };
@@ -235,7 +247,7 @@ export const useUserStore = create<UserState>()(
         get().triggerReward('xp', 5);
       },
 
-      completeLesson: (lessonId, isPerfect) => {
+      completeLesson: (lessonId, isPerfect, xpReward, gemReward) => {
         let earnedXp = 0;
         let earnedGems = 0;
         set((state) => {
@@ -253,8 +265,11 @@ export const useUserStore = create<UserState>()(
 
           const isNew = lessonId && !state.completedLessonIds.includes(lessonId);
           const updatedLessonIds = isNew ? [...state.completedLessonIds, lessonId!] : state.completedLessonIds;
-          earnedXp = isNew ? 50 : 0;
-          earnedGems = isNew ? (state.hasGemMiner ? 20 : 10) : 0;
+          
+          // Use provided rewards or default to 50 XP / 10 Gems
+          earnedXp = isNew ? (xpReward || 50) : 0;
+          const baseGems = gemReward || 10;
+          earnedGems = isNew ? (state.hasGemMiner ? baseGems * 2 : baseGems) : 0;
 
           let newHistory = [...state.activityHistory];
           let newStreak = state.streak;
@@ -401,7 +416,11 @@ export const useUserStore = create<UserState>()(
         const today = formatLocalDate(now);
         if (state.lastDailyReset !== today || state.dailyGoals.length !== INITIAL_GOALS.length) {
           const updates: any = { dailyGoals: INITIAL_GOALS, lastDailyReset: today };
-          if (now.getDay() === 1) updates.weeklyRewardClaimed = false;
+          if (now.getDay() === 1) {
+            updates.weeklyRewardClaimed = false;
+            updates.isWeeklyTargetLocked = false; // Reset lock on Monday
+            updates.weeklyXp = 0; // Reset weekly XP on Monday
+          }
 
           // Reset monthly reward if the month has changed
           const lastResetDate = new Date(state.lastDailyReset);
@@ -429,8 +448,13 @@ export const useUserStore = create<UserState>()(
 
       claimWeeklyReward: () => {
         if (get().weeklyRewardClaimed) return;
-        set((state) => ({ gems: state.gems + 100, weeklyRewardClaimed: true }));
-        get().triggerReward('gem', 5);
+        const target = get().weeklyTarget;
+        let reward = 100;
+        if (target === 5) reward = 250;
+        else if (target === 7) reward = 500;
+
+        set((state) => ({ gems: state.gems + reward, weeklyRewardClaimed: true }));
+        get().triggerReward('gem', Math.min(reward / 20, 25)); // Visual feedback
       },
 
       claimMonthlyReward: () => {
@@ -467,6 +491,10 @@ export const useUserStore = create<UserState>()(
         if (rewardType === 'xp') {
           get().addXp(rewardValue);
         }
+      },
+
+      setWeeklyTarget: (target: number) => {
+        set({ weeklyTarget: target, isWeeklyTargetLocked: true });
       },
 
       // --- ACTIONS: UI ---

@@ -8,6 +8,8 @@ export interface ComputedLessonNode {
   desc: string;
   type: 'completed' | 'active' | 'next_locked' | 'far_locked';
   duration?: string;
+  xpReward?: number;
+  gemReward?: number;
 }
 
 interface RoadmapNodeProps {
@@ -94,13 +96,13 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
             {/* INFO OVERVIEW ON HOVER */}
             <div className="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-3 transition-all duration-300 ease-in-out overflow-hidden">
               <p className="text-xs text-zinc-500 font-normal mb-3 whitespace-normal min-w-[160px] text-center sm:text-left">{node.desc}</p>
-              
+
               <div className={`flex flex-wrap items-center gap-2 ${!isEven && 'sm:justify-end'}`}>
                 <div className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded text-[10px] text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">
-                  <Zap className="w-3 h-3" /> +50 XP
+                  <Zap className="w-3 h-3" /> +{node.xpReward || 50} XP
                 </div>
                 <div className="flex items-center gap-1.5 bg-cyan-100 dark:bg-cyan-900/40 px-2 py-1 rounded text-[10px] text-cyan-700 dark:text-cyan-300 font-bold border border-cyan-200 dark:border-cyan-800">
-                  <Gem className="w-3 h-3" /> +10 Gems
+                  <Gem className="w-3 h-3" /> +{node.gemReward || 10} Gems
                 </div>
                 {node.duration && (
                   <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-[10px] text-zinc-500 dark:text-zinc-400 font-bold border border-zinc-200 dark:border-zinc-700">
@@ -121,7 +123,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
 
       {/* --- NODE: NEXT LOCKED (Clear but locked) --- */}
       {node.type === 'next_locked' && (
-        <motion.div 
+        <motion.div
           layoutId={`node-root-${node.id}`}
           initial={{ opacity: 0.4, filter: "blur(5px)", scale: 0.9 }}
           animate={{ opacity: 0.8, filter: "blur(0px)", scale: 1 }}

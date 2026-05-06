@@ -1,5 +1,5 @@
 import { pgTable, serial, text, integer, boolean, timestamp, pgEnum } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { desc, relations } from 'drizzle-orm';
 
 // ==========================================
 // ENUMS (Tipe Data Khusus)
@@ -124,6 +124,36 @@ export const activityLogs = pgTable('activity_logs', {
   action: text('action').notNull(), // Contoh: 'started_course', 'completed_evaluation'
   details: text('details').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Duel Quiz Getting the topics
+export const duelSubject = pgTable('duelsubject', {
+  id: serial('id').primaryKey(),
+  subjectName: text('subjectname').notNull(),
+  description: text('description').notNull(),
+});
+
+export const duelRoomStatusEnum = pgEnum('duel_room_status', [
+  'waiting',
+  'joined',
+  'started',
+  'cancelled',
+]);
+
+export const duelRooms = pgTable('duel_rooms', {
+  id: serial('id').primaryKey(), // UUID or invite token
+  topicId: integer('topic_id')
+    .references(() => duelSubject.id, { onDelete: 'cascade' })
+    .notNull(),
+  hostId: text('host_id').notNull(),
+  guestId: text('guest_id')
+    .references(() => users.id, { onDelete: 'cascade' }),
+  status: duelRoomStatusEnum('status').default('waiting').notNull(),
+  inviteCode: text('invite_code').unique().notNull(),
+  startedAt: timestamp('started_at'),
+  endedAt: timestamp('ended_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // ==========================================

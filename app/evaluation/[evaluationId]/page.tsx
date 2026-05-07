@@ -232,6 +232,7 @@ export default function EvaluationFullscreenPage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const { isWaitingRoomActive, startWaitingRoomSession } = useEvaluationStore();
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
+  const [leaderboardWidth, setLeaderboardWidth] = useState(380);
 
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
@@ -359,6 +360,31 @@ export default function EvaluationFullscreenPage() {
   const handleExitQuiz = () => {
     router.push('/evaluation');
   };
+
+  // Drag to resize handler
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = leaderboardWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = startX - moveEvent.clientX;
+      const newWidth = Math.max(300, Math.min(600, startWidth + deltaX));
+      setLeaderboardWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+  }, [leaderboardWidth]);
 
   if (!isMounted || !isLoggedIn || !isInitialized || !currentEvaluation) {
     return null;
@@ -641,17 +667,24 @@ export default function EvaluationFullscreenPage() {
           </div>
         </div>
 
-        {/* Leaderboard Sidebar - Collapsible */}
+        {/* Leaderboard Sidebar - Collapsible & Resizable */}
         <AnimatePresence initial={false}>
           {isLeaderboardOpen && (
             <motion.div 
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 380, opacity: 1 }}
+              animate={{ width: leaderboardWidth, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="shrink-0 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 overflow-hidden"
+              className="shrink-0 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 overflow-hidden relative"
             >
-              <div className="w-[348px]">
+              {/* Resizer Handle */}
+              <div 
+                className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500/20 active:bg-blue-500/40 z-50 transition-colors"
+                onMouseDown={handleMouseDown}
+                title="Tarik untuk mengubah ukuran"
+              />
+              
+              <div style={{ width: leaderboardWidth - 32 }}>
                 <LiveLeaderboard 
                   maxEntries={15} 
                   onClose={() => setIsLeaderboardOpen(false)}

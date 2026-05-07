@@ -9,9 +9,10 @@ import { motion } from 'framer-motion';
 interface LeaderboardEntryProps {
   entry: LeaderboardEntry;
   index: number;
+  onProfileClick?: (entry: LeaderboardEntry) => void;
 }
 
-export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProps) {
+export function LeaderboardEntryComponent({ entry, index, onProfileClick }: LeaderboardEntryProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [rankChange, setRankChange] = useState<'up' | 'down' | 'same'>('same');
 
@@ -56,14 +57,16 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
           : "0 0 0px rgba(0,0,0,0)",
         borderColor: isAnimating && rankChange === 'up' ? "rgba(234, 179, 8, 1)" : undefined
       }}
+      onClick={() => onProfileClick && onProfileClick(entry)}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-xl transition-all duration-300",
+        "group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer",
         entry.isCurrentUser 
           ? "bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-100 dark:shadow-blue-900/20" 
           : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800",
         isAnimating && rankChange === 'down' && "scale-95 opacity-50",
         isAnimating && rankChange === 'up' && "scale-[1.02] bg-yellow-50 dark:bg-yellow-900/20 z-10 relative",
-        entry.isCurrentUser && !isAnimating && "animate-pulse-glow"
+        entry.isCurrentUser && !isAnimating && "animate-pulse-glow",
+        "hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md"
       )}
     >
       {/* Rank Number */}
@@ -89,59 +92,62 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
         {entry.name.charAt(0).toUpperCase()}
       </div>
 
-      {/* Name & Stats */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
+      {/* Name & Stats Section */}
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
           <div className={cn(
-            "font-black text-base truncate",
+            "font-black text-sm md:text-base truncate",
             entry.isCurrentUser ? "text-blue-600 dark:text-blue-400" : "text-zinc-800 dark:text-zinc-100"
           )}>
             {entry.name}
           </div>
           {entry.isCurrentUser && (
-            <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-black rounded-full shadow-sm">
+            <span className="px-1.5 py-0.5 bg-blue-500 text-white text-[9px] font-black rounded-full shadow-sm shrink-0">
               YOU
             </span>
           )}
+        </div>
+
+        {/* Dynamic Stats Row */}
+        <div className="flex items-center gap-2 flex-wrap">
           {entry.batch && (
-            <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-bold rounded-md border border-zinc-200 dark:border-zinc-700">
+            <span className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[9px] font-bold rounded border border-zinc-200 dark:border-zinc-700 shrink-0">
               {entry.batch}
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 rounded-lg border border-green-100 dark:border-green-900/50">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span className="text-xs font-black">{entry.accuracy}% Akurasi</span>
+          <div 
+            className="relative flex items-center justify-center px-2 py-0.5 bg-green-50 group-hover:bg-blue-50 dark:bg-green-950/30 dark:group-hover:bg-blue-950/30 text-green-600 group-hover:text-blue-600 dark:text-green-400 dark:group-hover:text-blue-400 rounded-md border border-green-100 group-hover:border-blue-200 dark:border-green-900/50 dark:group-hover:border-blue-800/50 transition-all shrink-0 overflow-hidden min-h-[22px] z-10"
+          >
+            {/* Default View (Akurasi) */}
+            <div className="flex items-center gap-1 transition-all duration-300 group-hover:opacity-0 group-hover:-translate-y-full absolute">
+              <TrendingUp className="w-3 h-3" />
+              <span className="text-[10px] font-black">{entry.accuracy}% <span className="hidden sm:inline">Akurasi</span></span>
+            </div>
+            
+            {/* Hover View (Klik Info) */}
+            <div className="flex items-center gap-1 transition-all duration-300 opacity-0 translate-y-full group-hover:opacity-100 group-hover:translate-y-0 relative">
+              <span className="text-[9px] font-bold whitespace-nowrap">Lihat Profil Radar</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Score & Courses */}
-      <div className="flex items-center gap-4 shrink-0 ml-2">
-        {/* Courses Taken */}
-        <div className="hidden sm:flex flex-col items-center">
-          <div className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Courses</div>
-          <div className="font-black text-sm text-zinc-600 dark:text-zinc-300">
-            {entry.coursesTaken || 0}
-          </div>
-        </div>
-
-        {/* XP Score */}
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-950/30 px-3 py-1.5 rounded-xl border border-yellow-200 dark:border-yellow-900/50 shadow-sm">
-            <Zap className="w-4 h-4 text-yellow-500" fill="currentColor" />
-            <span className="font-black text-xl text-yellow-700 dark:text-yellow-400 leading-none">{entry.score}</span>
+      {/* Action/Score Section */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* XP Score Badge */}
+        <div className="flex flex-col items-end justify-center min-w-[70px]">
+          <div className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-950/30 px-3 py-2 rounded-xl border-2 border-yellow-200/50 dark:border-yellow-900/50 shadow-sm group-hover:scale-105 transition-transform">
+            <Zap className="w-4 h-4 text-yellow-500 animate-pulse" fill="currentColor" />
+            <span className="font-black text-lg text-yellow-700 dark:text-yellow-400 leading-none">{entry.score}</span>
           </div>
           
           {entry.previousRank && entry.previousRank !== entry.rank && (
-            <div className="flex items-center gap-1 px-1">
+            <div className="flex items-center gap-1 px-1 mt-0.5">
               {getRankChangeIcon()}
               <span className={cn(
-                "font-black text-xs",
+                "font-black text-[10px]",
                 rankChange === 'up' && "text-green-600",
-                rankChange === 'down' && "text-red-600",
-                rankChange === 'same' && "text-gray-500"
+                rankChange === 'down' && "text-red-600"
               )}>
                 {rankChange === 'up' && `+${entry.previousRank - entry.rank}`}
                 {rankChange === 'down' && `-${entry.rank - entry.previousRank}`}

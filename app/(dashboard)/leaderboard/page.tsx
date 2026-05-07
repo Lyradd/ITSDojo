@@ -10,6 +10,7 @@ import { wsClient } from '@/lib/websocket-client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntryComponent } from '@/components/leaderboard/leaderboard-entry';
+import { ProfileRadarModal } from '@/components/leaderboard/profile-radar-modal';
 import { 
   Trophy, 
   TrendingUp, 
@@ -32,6 +33,7 @@ export default function LeaderboardPage() {
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course' | 'evaluation'>('angkatan');
   const [subScope, setSubScope] = useState<string>('2023');
   const [isConnected, setIsConnected] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<LeaderboardEntry | null>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -386,6 +388,7 @@ export default function LeaderboardPage() {
                   key={entry.userId} 
                   entry={entry} 
                   index={index}
+                  onProfileClick={setSelectedProfile}
                 />
               ))}
             </div>
@@ -467,6 +470,12 @@ export default function LeaderboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Profile Radar Modal Overlay */}
+      <ProfileRadarModal 
+        profile={selectedProfile} 
+        onClose={() => setSelectedProfile(null)} 
+      />
     </div>
   );
 }

@@ -449,12 +449,12 @@ export const useUserStore = create<UserState>()(
       claimWeeklyReward: () => {
         if (get().weeklyRewardClaimed) return;
         const target = get().weeklyTarget;
-        let reward = 100;
-        if (target === 5) reward = 250;
-        else if (target === 7) reward = 500;
+        let reward = 50;
+        if (target === 5) reward = 100;
+        else if (target === 7) reward = 200;
 
         set((state) => ({ gems: state.gems + reward, weeklyRewardClaimed: true }));
-        get().triggerReward('gem', Math.min(reward / 20, 25)); // Visual feedback
+        get().triggerReward('gem', Math.min(reward / 10, 25)); // Visual feedback
       },
 
       claimMonthlyReward: () => {

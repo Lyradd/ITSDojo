@@ -15,7 +15,8 @@ import {
   Trophy,
   Gem,
   Clock,
-  Snowflake
+  Snowflake,
+  Check
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
@@ -126,6 +127,10 @@ export default function GoalsPage() {
     .reduce((sum: number, h: any) => sum + (h.xpEarned || 0), 0); // XP aktual yang didapat
   
   const monthlyProgress = Math.min((currentMonthlyXp / monthlyTarget) * 100, 100);
+
+  // Hitung sisa hari di bulan ini
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = daysInMonth - now.getDate();
 
   // 4. Wrapper Fungsi Klaim Hadiah
   const handleClaim = (goalId: string) => {
@@ -403,7 +408,7 @@ export default function GoalsPage() {
                 <div className="flex items-center justify-center gap-1.5 mb-3">
                   <Gem className="w-3 h-3 text-blue-500" />
                   <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                    Hadiah: {weeklyTarget === 3 ? '100' : weeklyTarget === 5 ? '250' : '500'} Gems
+                    Hadiah: {weeklyTarget === 3 ? '50' : weeklyTarget === 5 ? '100' : '200'} Gems
                   </span>
                 </div>
 
@@ -429,12 +434,12 @@ export default function GoalsPage() {
             </div>
           </Card>
 
-           {/* Monthly Challenge Badge */}
+           {/* Monthly Challenge Badge - Enhanced UI */}
           <Card 
-            className={`p-0 rounded-2xl border-2 overflow-hidden flex flex-row transition-all duration-300 ${
+            className={`group relative p-0 rounded-3xl border-2 overflow-hidden transition-all duration-500 ${
               monthlyProgress >= 100 && !monthlyRewardClaimed
-                ? 'border-purple-400 cursor-pointer hover:shadow-lg hover:shadow-purple-200 dark:hover:shadow-none'
-                : 'border-zinc-100 dark:border-zinc-800'
+                ? 'border-purple-400 shadow-xl shadow-purple-500/20 scale-[1.02]'
+                : 'border-zinc-200 dark:border-zinc-800'
             }`}
             onClick={() => {
               if (monthlyProgress >= 100 && !monthlyRewardClaimed) {
@@ -444,42 +449,107 @@ export default function GoalsPage() {
               }
             }}
           >
-            <div className={`w-24 flex items-center justify-center transition-colors duration-500 ${
-              monthlyRewardClaimed ? 'bg-zinc-100 text-zinc-400' : 
-              monthlyProgress >= 100 ? 'bg-purple-500 text-white' : 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
-            }`}>
-              {monthlyRewardClaimed ? <CheckCircle className="w-10 h-10" /> : <Trophy className="w-10 h-10" />}
-            </div>
-            <div className="p-4 flex-1">
-              <div className="flex justify-between items-start">
-                <h4 className={`font-bold text-sm ${monthlyRewardClaimed ? 'text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}`}>
-                  Tantangan Bulanan
-                </h4>
-                {monthlyRewardClaimed && (
-                  <span className="text-[10px] font-bold text-green-600 uppercase tracking-tighter">Selesai</span>
-                )}
-              </div>
-              <p className="text-xs text-zinc-500 mb-2">
-                {monthlyRewardClaimed ? "Target tercapai!" : `Kumpulkan ${monthlyTarget} XP (${currentMonthlyXp}/${monthlyTarget})`}
-              </p>
-              <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
-                <div 
-                  className={`h-full transition-all duration-1000 relative ${
-                    monthlyRewardClaimed ? 'bg-zinc-400' : 'bg-purple-500'
-                  }`} 
-                  style={{ width: `${monthlyProgress}%` }} 
-                >
+            {/* Background Pattern/Gradient */}
+            <div className={`absolute inset-0 opacity-10 pointer-events-none ${
+              monthlyRewardClaimed ? 'bg-zinc-500' : 'bg-linear-to-br from-purple-600 via-indigo-600 to-pink-600'
+            }`} />
+            
+            <div className="flex flex-col relative z-10">
+              {/* Top Row: Icon and Progress Info */}
+              <div className="flex items-center gap-4 p-5">
+                <div className={`relative w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 ${
+                  monthlyRewardClaimed 
+                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400' 
+                    : monthlyProgress >= 100 
+                      ? 'bg-linear-to-br from-purple-500 to-indigo-600 text-white shadow-lg' 
+                      : 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
+                }`}>
+                  {monthlyRewardClaimed ? <CheckCircle className="w-10 h-10" /> : <Trophy className="w-10 h-10" />}
                   {monthlyProgress >= 100 && !monthlyRewardClaimed && (
-                    <div className="absolute inset-0 bg-white/30 animate-[shimmer_2s_infinite]" />
+                    <motion.div 
+                      animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 p-1.5 rounded-full shadow-md"
+                    >
+                      <Zap className="w-4 h-4 fill-current" />
+                    </motion.div>
                   )}
                 </div>
-              </div>
-              
-              {monthlyProgress >= 100 && !monthlyRewardClaimed && (
-                <div className="mt-2 text-[10px] font-bold text-purple-600 animate-pulse flex items-center gap-1">
-                  <Gift className="w-3 h-3" /> Tap untuk klaim 500 Gems!
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col mb-1">
+                    <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-widest">Tantangan Bulanan</span>
+                    <h4 className={`font-black text-xl leading-tight ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-zinc-800 dark:text-white'}`}>
+                      {now.toLocaleString('id-ID', { month: 'long' })} Elite
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-[10px] font-bold text-zinc-500">
+                      <Clock className="w-3 h-3" />
+                      {daysLeft} Hari Lagi
+                    </div>
+                    {monthlyRewardClaimed && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-[10px] font-bold">
+                        <Check className="w-3 h-3" /> SELESAI
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Progress Bar Area */}
+              <div className="px-5 pb-2">
+                <div className="flex justify-between items-end mb-2">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase">Progres XP</span>
+                      <span className="text-sm font-black text-zinc-700 dark:text-zinc-200">{currentMonthlyXp.toLocaleString()} <span className="text-zinc-400 font-bold">/ {monthlyTarget.toLocaleString()}</span></span>
+                   </div>
+                   <span className={`text-sm font-black ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-purple-600'}`}>{Math.floor(monthlyProgress)}%</span>
+                </div>
+                <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-50 dark:border-zinc-800 shadow-inner p-0.5">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${monthlyProgress}%` }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className={`h-full rounded-full relative ${
+                      monthlyRewardClaimed ? 'bg-zinc-400' : 'bg-linear-to-r from-purple-500 via-indigo-500 to-purple-600'
+                    }`} 
+                  >
+                    {!monthlyRewardClaimed && (
+                      <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
+                    )}
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Reward Preview Footer */}
+              <div className={`mt-4 p-4 flex items-center justify-between border-t transition-colors ${
+                monthlyRewardClaimed 
+                  ? 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800' 
+                  : monthlyProgress >= 100 
+                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800' 
+                    : 'bg-zinc-50/50 dark:bg-zinc-900/30 border-zinc-100 dark:border-zinc-800'
+              }`}>
+                <div className="flex items-center gap-3">
+                   <div className={`p-2 rounded-xl ${monthlyRewardClaimed ? 'bg-zinc-200 dark:bg-zinc-800' : 'bg-white dark:bg-zinc-800 shadow-sm'}`}>
+                      <Gem className={`w-5 h-5 ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-blue-500 fill-current'}`} />
+                   </div>
+                   <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">Hadiah Spesial</span>
+                      <span className={`text-sm font-black ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-zinc-800 dark:text-zinc-200'}`}>500 Gems</span>
+                   </div>
+                </div>
+                
+                {monthlyProgress >= 100 && !monthlyRewardClaimed ? (
+                  <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl animate-bounce shadow-lg shadow-purple-200 dark:shadow-none">
+                    Klaim Sekarang
+                  </Button>
+                ) : (
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase italic">
+                    {monthlyRewardClaimed ? 'Hadiah Terambil' : 'Belum Memenuhi Syarat'}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
 

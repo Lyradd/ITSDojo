@@ -122,7 +122,7 @@ export default function LearnPage() {
           <div className="flex lg:hidden items-center justify-between gap-2">
             <StatWidget icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" />
             <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Rank" value={`#${userRank}`} />
+            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={`#${userRank}`} />
           </div>
 
           {/* 0. CONTINUE BANNER or COMPLETION STATE */}
@@ -204,7 +204,7 @@ export default function LearnPage() {
             {/* Progress Bar Unit */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="opacity-80">PROGRESS UNIT</span>
+                <span className="opacity-80">PROGRES UNIT</span>
                 <span>{progressPercent}% ({completedCount}/{totalCount})</span>
               </div>
               <div className="h-3 bg-black/20 rounded-full overflow-hidden p-0.5">
@@ -296,7 +296,7 @@ export default function LearnPage() {
           <div className="hidden lg:flex items-center justify-between gap-2">
             <StatWidget icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" />
             <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Rank" value={`#${userRank}`} />
+            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={`#${userRank}`} />
           </div>
 
           <DailyGoalWidget dailyGoals={dailyGoals} />

@@ -73,7 +73,7 @@ export default function EvaluationPage() {
             <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
             <p className="text-zinc-500 dark:text-zinc-400">
               {enrolledCourseIds.length === 0
-                ? "Kamu belum terdaftar di kelas manapun. Silakan minta akses kelas terlebih dahulu di menu Course."
+                ? "Kamu belum terdaftar di kelas manapun. Silakan minta akses kelas terlebih dahulu di menu Daftar Kelas."
                 : "Tidak ada evaluasi untuk kursus ini"}
             </p>
           </div>

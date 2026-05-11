@@ -207,10 +207,10 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Statistik</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatWidget icon={Flame} value={streak} label="Current Streak" color="text-orange-500" />
+              <StatWidget icon={Flame} value={streak} label="Streak Saat Ini" color="text-orange-500" />
               <StatWidget icon={Zap} value={xp.toLocaleString('id-ID')} label="Total XP" color="text-blue-500" />
-              <StatWidget icon={Medal} value={league} label="League" color="text-yellow-500" />
-              <StatWidget icon={Trophy} value={top3Finishes} label="Top 3 Finishes" color="text-purple-500" />
+              <StatWidget icon={Medal} value={league} label="Liga" color="text-yellow-500" />
+              <StatWidget icon={Trophy} value={top3Finishes} label="Masuk 3 Besar" color="text-purple-500" />
             </div>
           </div>
 
@@ -341,7 +341,7 @@ export default function ProfilePage() {
                     <div className="text-xs text-zinc-400">1.2k XP • Lv. 5</div>
                   </div>
                   <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-blue-500 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20">
-                    Follow
+                    Ikuti
                   </Button>
                 </div>
               ))}
@@ -369,7 +369,7 @@ export default function ProfilePage() {
               <div>
                 <h2 className="text-2xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
-                  Trophy Room & Badges
+                  Ruang Piala & Lencana
                 </h2>
                 <p className="text-sm text-zinc-500 mt-1">Koleksi seluruh pencapaian dan lencana rahasia Anda.</p>
               </div>
@@ -393,21 +393,21 @@ export default function ProfilePage() {
                   <div className="p-4 border-2 rounded-xl flex items-center gap-4 bg-white dark:bg-zinc-950 shadow-sm">
                     <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-xl"><Flame className="w-6 h-6" /></div>
                     <div>
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Longest Streak</p>
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Rekor Streak</p>
                       <p className="text-xl font-black">{Math.max(longestStreak, streak)} <span className="text-sm text-zinc-500 font-bold">Hari</span></p>
                     </div>
                   </div>
                   <div className="p-4 border-2 rounded-xl flex items-center gap-4 bg-white dark:bg-zinc-950 shadow-sm">
                     <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-500 rounded-xl"><Zap className="w-6 h-6" /></div>
                     <div>
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Most XP / Day</p>
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">XP Terbanyak / Hari</p>
                       <p className="text-xl font-black">{mostXpInDay.toLocaleString('id-ID')} <span className="text-sm text-zinc-500 font-bold">XP</span></p>
                     </div>
                   </div>
                   <div className="p-4 border-2 rounded-xl flex items-center gap-4 bg-white dark:bg-zinc-950 shadow-sm">
                     <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-xl"><CheckCircle2 className="w-6 h-6" /></div>
                     <div>
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Perfect Lessons</p>
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Materi Sempurna</p>
                       <p className="text-xl font-black">{totalPerfectLessons} <span className="text-sm text-zinc-500 font-bold">Unit</span></p>
                     </div>
                   </div>

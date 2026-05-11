@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 
 const mobileNavItems = [
-  { icon: Home, label: "Home", href: "/learn" },
-  { icon: BookOpen, label: "Courses", href: "/courses" },
-  { icon: Trophy, label: "Rank", href: "/leaderboard" },
+  { icon: Home, label: "Belajar", href: "/learn" },
+  { icon: BookOpen, label: "Kelas", href: "/courses" },
+  { icon: Trophy, label: "Peringkat", href: "/leaderboard" },
   { icon: Swords, label: "Duel", href: "/duel" },
-  { icon: MoreHorizontal, label: "More", href: "/more" },
+  { icon: MoreHorizontal, label: "Lainnya", href: "/more" },
 ];
 
 export function MobileNav() {

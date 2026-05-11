@@ -121,7 +121,7 @@ export default function CoursesPage() {
       {/* --- HEADER SECTION --- */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Course Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Ikhtisar Kelas</h1>
           <p className="text-zinc-500 mt-1">Pilih kursus untuk menjadikannya materi belajar aktifmu.</p>
         </div>
 
@@ -155,9 +155,9 @@ export default function CoursesPage() {
                 <div className="flex items-center gap-2">
                   <ListFilter className="w-4 h-4 text-zinc-500" />
                   <span>{
-                    sortOption === "name-asc" ? "Name (A-Z)" : 
-                    sortOption === "progress-desc" ? "Highest Progress" : 
-                    "Last Accessed"
+                    sortOption === "name-asc" ? "Nama Kelas (A-Z)" : 
+                    sortOption === "progress-desc" ? "Progres Tertinggi" : 
+                    "Terakhir Diakses"
                   }</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`} />
@@ -168,15 +168,15 @@ export default function CoursesPage() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setSortOption("name-asc")} className="flex items-center gap-2 cursor-pointer">
                 {sortOption === "name-asc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
-                Course Name (A-Z)
+                Nama Kelas (A-Z)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption("last-accessed")} className="flex items-center gap-2 cursor-pointer">
                 {sortOption === "last-accessed" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
-                Last Accessed
+                Terakhir Diakses
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption("progress-desc")} className="flex items-center gap-2 cursor-pointer">
                 {sortOption === "progress-desc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
-                Highest Progress
+                Progres Tertinggi
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -188,7 +188,7 @@ export default function CoursesPage() {
             onClick={() => setShowSavedOnly(!showSavedOnly)}
           >
             {showSavedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-            <span>Saved {bookmarkedCourseIds.length > 0 && `(${bookmarkedCourseIds.length})`}</span>
+            <span>Tersimpan {bookmarkedCourseIds.length > 0 && `(${bookmarkedCourseIds.length})`}</span>
           </Button>
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function CoursesPage() {
                 </h3>
 
                 <p className="text-xs text-zinc-400 mb-2">
-                  Last activity: {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
+                  Aktivitas terakhir: {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
                 </p>
 
                 {/* Status & Progress */}
@@ -321,7 +321,7 @@ export default function CoursesPage() {
                 <div className="mt-auto pt-4 border-t flex items-center justify-between">
                   <div className="text-xs text-zinc-500 flex items-center gap-1">
                     <BookOpen className="w-3 h-3" />
-                    {course.lessonsCount} Modules
+                    {course.lessonsCount} Modul
                   </div>
 
                   {course.status === 'unlocked' ? (

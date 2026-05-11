@@ -35,45 +35,45 @@ import {
 
 
 const studentMenuItems = [
-  { icon: Home, label: "Learn", href: "/learn" },
-  { icon: BookOpen, label: "Course List", href: "/courses" },
+  { icon: Home, label: "Belajar", href: "/learn" },
+  { icon: BookOpen, label: "Daftar Kelas", href: "/courses" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/evaluation" },
   { icon: Target, label: "Misi", href: "/goals" },
-  { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },
+  { icon: Trophy, label: "Papan Peringkat", href: "/leaderboard" },
   { icon: Swords, label: "Brain Duel", href: "/duel" },
-  { icon: ShoppingBag, label: "Shop", href: "/shop" },
+  { icon: ShoppingBag, label: "Toko", href: "/shop" },
 ];
 
 // Menu untuk Dosen
 const dosenMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dosen" },
-  { icon: BookOpen, label: "Courses", href: "/dosen/courses" },
-  { icon: Users, label: "Students", href: "/dosen/students" },
-  { icon: ClipboardCheck, label: "Evaluations", href: "/dosen/evaluations" },
+  { icon: LayoutDashboard, label: "Dasbor", href: "/dosen" },
+  { icon: BookOpen, label: "Daftar Kelas", href: "/dosen/courses" },
+  { icon: Users, label: "Mahasiswa", href: "/dosen/students" },
+  { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
   { icon: UserCheck, label: "Permintaan Kelas", href: "/dosen/enrollments" },
-  { icon: BarChart3, label: "Analytics", href: "/dosen/analytics" },
-  { icon: Settings, label: "Settings", href: "/dosen/settings" },
+  { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
+  { icon: Settings, label: "Pengaturan", href: "/dosen/settings" },
 ];
 
 // Menu untuk Asisten Dosen (same as dosen but no Settings)
 const asdosMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/asdos" },
-  { icon: BookOpen, label: "Courses", href: "/asdos/courses" },
-  { icon: Users, label: "Students", href: "/asdos/students" },
-  { icon: ClipboardCheck, label: "Evaluations", href: "/asdos/evaluations" },
+  { icon: LayoutDashboard, label: "Dasbor", href: "/asdos" },
+  { icon: BookOpen, label: "Daftar Kelas", href: "/asdos/courses" },
+  { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
+  { icon: ClipboardCheck, label: "Evaluasi", href: "/asdos/evaluations" },
   { icon: UserCheck, label: "Permintaan Kelas", href: "/asdos/enrollments" },
-  { icon: BarChart3, label: "Analytics", href: "/asdos/analytics" },
+  { icon: BarChart3, label: "Analitik", href: "/asdos/analytics" },
 ];
 
 // Menu untuk Super Admin
 const superAdminMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-  { icon: Users, label: "Manage Users", href: "/admin/users" },
-  { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-  { icon: ClipboardCheck, label: "Evaluations", href: "/admin/evaluations" },
+  { icon: LayoutDashboard, label: "Dasbor", href: "/admin" },
+  { icon: Users, label: "Kelola Pengguna", href: "/admin/users" },
+  { icon: BookOpen, label: "Daftar Kelas", href: "/admin/courses" },
+  { icon: ClipboardCheck, label: "Evaluasi", href: "/admin/evaluations" },
   { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
-  { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
-  { icon: Settings, label: "System Settings", href: "/admin/settings" },
+  { icon: BarChart3, label: "Analitik", href: "/admin/analytics" },
+  { icon: Settings, label: "Pengaturan Sistem", href: "/admin/settings" },
 ];
 
 export function Sidebar({ onToggle }: { onToggle?: () => void }) {
@@ -229,7 +229,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
           className="w-full justify-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-400 dark:hover:border-red-800 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Logout
+          Keluar
         </Button>
       </div>
     </div>

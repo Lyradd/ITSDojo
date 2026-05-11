@@ -22,10 +22,10 @@ export function Navbar() {
         {/* Navigasi Menu */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link href="/courses" className="transition-colors hover:text-foreground/80">
-            Courses
+            Daftar Kelas
           </Link>
           <Link href="/leaderboard" className="transition-colors hover:text-foreground/80">
-            Leaderboard
+            Papan Peringkat
           </Link>
         </nav>
 

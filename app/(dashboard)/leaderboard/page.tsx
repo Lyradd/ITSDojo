@@ -161,7 +161,7 @@ export default function LeaderboardPage() {
             </div>
             <div>
               <h1 className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
-                Leaderboard
+                Papan Peringkat
               </h1>
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-bold text-sm">
                 <span>ITSDojo Community</span>
@@ -221,7 +221,7 @@ export default function LeaderboardPage() {
             {currentUserEntry?.accuracy || 0}%
           </div>
           <div className="text-xs text-green-600 font-black mt-2 uppercase tracking-widest">
-            Top 10% Batch
+            Top 10% Angkatan
           </div>
         </Card>
 
@@ -247,7 +247,7 @@ export default function LeaderboardPage() {
           <Card className="p-6 rounded-2xl border-2 bg-linear-to-br from-yellow-50 via-white to-purple-50 dark:from-yellow-950/20 dark:via-zinc-900 dark:to-purple-950/20">
             <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6 flex items-center gap-2">
               <Medal className="w-6 h-6 text-yellow-600" />
-              Top 3 Performers
+              3 Peserta Terbaik
             </h3>
             
             <div className="flex items-end justify-center gap-4">
@@ -354,9 +354,9 @@ export default function LeaderboardPage() {
                       >
                         {scopeFilter === 'angkatan' && (
                           <>
-                            <option value="2023">Batch 2023 (Active)</option>
-                            <option value="2022">Batch 2022</option>
-                            <option value="2021">Batch 2021</option>
+                            <option value="2023">Angkatan 2023 (Aktif)</option>
+                            <option value="2022">Angkatan 2022</option>
+                            <option value="2021">Angkatan 2021</option>
                           </>
                         )}
                         {scopeFilter === 'course' && (
@@ -400,7 +400,7 @@ export default function LeaderboardPage() {
           {/* Your Progress */}
           <Card className="p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
             <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-4">
-              Progress Kamu
+              Progres Kamu
             </h3>
             
             <div className="space-y-4">
@@ -446,7 +446,7 @@ export default function LeaderboardPage() {
           {/* Quick Actions */}
           <Card className="p-6 rounded-2xl border-2">
             <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-4">
-              Quick Actions
+              Tindakan Cepat
             </h3>
             
             <div className="space-y-3">

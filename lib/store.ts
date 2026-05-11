@@ -62,7 +62,8 @@ export interface UserState {
   pendingCourseIds: string[];
   courseAccessHistory: Record<string, string>;
   completedLessonIds: string[]; 
-  activityHistory: { date: string, count: number, xpEarned: number }[];
+  activityHistory: { date: string, count: number, xpEarned: number, freezeUsed?: boolean }[];
+  earnedBadges: { id: string, name: string, date: string, tier: string }[];
   unlockedAchievements: string[];
   nocturnalCount: number;
   earlyBirdCount: number;
@@ -99,17 +100,16 @@ export interface UserState {
   dailyGoals: DailyGoal[];
   lastActiveDate: string;
   lastDailyReset: string;
-  weeklyRewardClaimed: boolean;
-  isWeeklyTargetLocked: boolean; // NEW: Lock target after selection
-  monthlyRewardClaimed: boolean; // NEW: Monthly challenge reward tracking
-  weeklyTarget: number; // NEW: User adjustable weekly target
+  monthlyCompletedGoals: number; // NEW: Progressive monthly goals
+  claimedMonthlyMilestones: number[]; // NEW: Monthly challenge reward tracking
+  weeklyActiveDays: number; // NEW: Progressive weekly active days
+  claimedWeeklyMilestones: number[]; // NEW: Claimed milestones (e.g. [3, 5, 7])
   followingCount: number; // NEW: Social stats
   followersCount: number; // NEW: Social stats
   checkDailyReset: () => void;
-  claimWeeklyReward: () => void;
-  claimMonthlyReward: () => void; // NEW: Method to claim monthly reward
+  claimWeeklyMilestone: (milestone: number) => void;
+  claimMonthlyMilestone: (milestone: number, reward: number, tier: string) => void; // NEW: Method to claim monthly reward
   claimGoalReward: (goalId: string) => void;
-  setWeeklyTarget: (target: number) => void; // NEW: Method to set weekly target
 
   // 5. UI State & Animations
   isLevelUpModalOpen: boolean;
@@ -149,14 +149,15 @@ export const useUserStore = create<UserState>()(
       courseAccessHistory: { 'fe-basic': new Date().toISOString() },
       completedLessonIds: ['fe-basic-1'],
       activityHistory: [],
+      earnedBadges: [],
       unlockedAchievements: [],
       nocturnalCount: 0,
       earlyBirdCount: 0,
       longestStreak: 3,
       mostXpInDay: 0,
       totalPerfectLessons: 0,
-      weeklyTarget: 3,
-      isWeeklyTargetLocked: false,
+      weeklyActiveDays: 0,
+      claimedWeeklyMilestones: [],
       league: "Silver",
       top3Finishes: 0,
       bookmarkedCourseIds: [],
@@ -172,8 +173,8 @@ export const useUserStore = create<UserState>()(
       dailyGoals: INITIAL_GOALS,
       lastActiveDate: formatLocalDate(new Date()),
       lastDailyReset: formatLocalDate(new Date()),
-      weeklyRewardClaimed: false,
-      monthlyRewardClaimed: false,
+      monthlyCompletedGoals: 0,
+      claimedMonthlyMilestones: [],
 
       isLevelUpModalOpen: false,
       levelUpData: null,
@@ -294,6 +295,9 @@ export const useUserStore = create<UserState>()(
                 newStreak = 1;
               }
               newLastActiveDate = today;
+              
+              // Increment weekly active days
+              set((s) => ({ weeklyActiveDays: s.weeklyActiveDays + 1 }));
             }
           }
 
@@ -416,51 +420,119 @@ export const useUserStore = create<UserState>()(
         const today = formatLocalDate(now);
         if (state.lastDailyReset !== today || state.dailyGoals.length !== INITIAL_GOALS.length) {
           const updates: any = { dailyGoals: INITIAL_GOALS, lastDailyReset: today };
-          if (now.getDay() === 1) {
-            updates.weeklyRewardClaimed = false;
-            updates.isWeeklyTargetLocked = false; // Reset lock on Monday
-            updates.weeklyXp = 0; // Reset weekly XP on Monday
+          
+          // Robust weekly reset check
+          const lastResetDate = new Date(state.lastDailyReset);
+          const diffDays = Math.floor((now.getTime() - lastResetDate.getTime()) / (1000 * 60 * 60 * 24));
+          const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+          const lastResetDayOfWeek = lastResetDate.getDay() === 0 ? 7 : lastResetDate.getDay();
+          
+          if (diffDays >= 7 || currentDayOfWeek < lastResetDayOfWeek) {
+            updates.weeklyActiveDays = 0;
+            updates.claimedWeeklyMilestones = [];
+            updates.weeklyXp = 0;
           }
 
           // Reset monthly reward if the month has changed
-          const lastResetDate = new Date(state.lastDailyReset);
-          if (lastResetDate.getMonth() !== now.getMonth() || lastResetDate.getFullYear() !== now.getFullYear()) {
-            updates.monthlyRewardClaimed = false;
+          const lastResetDateObj = new Date(state.lastDailyReset);
+          if (lastResetDateObj.getMonth() !== now.getMonth() || lastResetDateObj.getFullYear() !== now.getFullYear()) {
+            updates.monthlyCompletedGoals = 0;
+            updates.claimedMonthlyMilestones = [];
           }
 
-          const yesterday = new Date(now);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = formatLocalDate(yesterday);
-          const wasActiveYesterday = state.lastActiveDate === yesterdayStr;
-          const wasActiveToday = state.lastActiveDate === today;
+          let newStreakFreezeCount = state.streakFreezeCount;
+          let newStreak = state.streak;
+          let newActivityHistory = [...state.activityHistory];
+          let updatedStreakOrFreeze = false;
 
-          if (!(wasActiveYesterday || wasActiveToday)) {
-            if (state.streakFreezeCount > 0) {
-              updates.streakFreezeCount = state.streakFreezeCount - 1;
-            } else {
-              updates.streak = 0;
-            }
+          if (state.lastActiveDate) {
+             const lastActiveObj = new Date(state.lastActiveDate);
+             lastActiveObj.setHours(0,0,0,0);
+             const todayObj = new Date(now);
+             todayObj.setHours(0,0,0,0);
+             
+             const diffTime = todayObj.getTime() - lastActiveObj.getTime();
+             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+             const missedDays = Math.max(0, diffDays - 1);
+
+             if (missedDays > 0 && newStreak > 0) {
+               updatedStreakOrFreeze = true;
+               for (let i = 1; i <= missedDays; i++) {
+                 if (newStreakFreezeCount > 0) {
+                   newStreakFreezeCount--;
+                   const missedDate = new Date(state.lastActiveDate);
+                   missedDate.setDate(missedDate.getDate() + i);
+                   newActivityHistory.push({
+                     date: formatLocalDate(missedDate),
+                     count: 0,
+                     xpEarned: 0,
+                     freezeUsed: true
+                   });
+                 } else {
+                   newStreak = 0;
+                   break;
+                 }
+               }
+               // Jika freeze berhasil menutupi semua hari bolong, update lastActiveDate ke kemarin
+               // agar saat mengerjakan hari ini streak dilanjutkan, bukan direset.
+               if (newStreak > 0) {
+                 const yesterday = new Date(now);
+                 yesterday.setDate(yesterday.getDate() - 1);
+                 updates.lastActiveDate = formatLocalDate(yesterday);
+               }
+             }
           }
+          
+          if (updatedStreakOrFreeze) {
+             updates.streakFreezeCount = newStreakFreezeCount;
+             updates.streak = newStreak;
+             updates.activityHistory = newActivityHistory;
+          }
+
           return updates;
         }
         return state;
       }),
 
-      claimWeeklyReward: () => {
-        if (get().weeklyRewardClaimed) return;
-        const target = get().weeklyTarget;
-        let reward = 50;
-        if (target === 5) reward = 100;
-        else if (target === 7) reward = 200;
+      claimWeeklyMilestone: (milestone: number) => {
+        const state = get();
+        if (state.claimedWeeklyMilestones.includes(milestone)) return;
+        if (state.weeklyActiveDays < milestone) return;
 
-        set((state) => ({ gems: state.gems + reward, weeklyRewardClaimed: true }));
+        let reward = 50;
+        if (milestone === 5) reward = 100;
+        else if (milestone === 7) reward = 200;
+
+        set((s) => ({ 
+          gems: s.gems + reward, 
+          claimedWeeklyMilestones: [...s.claimedWeeklyMilestones, milestone] 
+        }));
         get().triggerReward('gem', Math.min(reward / 10, 25)); // Visual feedback
       },
 
-      claimMonthlyReward: () => {
-        if (get().monthlyRewardClaimed) return;
-        set((state) => ({ gems: state.gems + 500, monthlyRewardClaimed: true })); // Reward: 500 Gems
-        get().triggerReward('gem', 15);
+      claimMonthlyMilestone: (milestone, reward, tier) => {
+        const state = get();
+        if (state.claimedMonthlyMilestones.includes(milestone)) return;
+        if (state.monthlyCompletedGoals < milestone) return;
+
+        let newEarnedBadges = [...state.earnedBadges];
+        // Hanya dapat badge jika menyelesaikan milestone terakhir (45)
+        if (milestone === 45) {
+          const newBadge = {
+             id: `badge-${tier}-${Date.now()}`,
+             name: `Pejuang ${new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`,
+             date: new Date().toISOString(),
+             tier: tier
+          };
+          newEarnedBadges.push(newBadge);
+        }
+
+        set((s) => ({ 
+          gems: s.gems + reward, 
+          claimedMonthlyMilestones: [...s.claimedMonthlyMilestones, milestone],
+          earnedBadges: newEarnedBadges
+        }));
+        get().triggerReward('gem', Math.min(reward / 10, 25));
       },
 
       claimGoalReward: (goalId) => {
@@ -477,7 +549,10 @@ export const useUserStore = create<UserState>()(
           const updatedGoals = [...state.dailyGoals];
           updatedGoals[goalIndex] = { ...goal, isClaimed: true };
 
-          const newState: any = { dailyGoals: updatedGoals };
+          const newState: any = { 
+            dailyGoals: updatedGoals,
+            monthlyCompletedGoals: state.monthlyCompletedGoals + 1
+          };
           if (goal.rewardType === 'gem') newState.gems = state.gems + goal.rewardValue;
           else if (goal.rewardType === 'multiplier') {
             const durationMs = goal.rewardValue * 60 * 1000; 
@@ -493,11 +568,6 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      setWeeklyTarget: (target: number) => {
-        set({ weeklyTarget: target, isWeeklyTargetLocked: true });
-      },
-
-      // --- ACTIONS: UI ---
       closeLevelUpModal: () => set({ isLevelUpModalOpen: false, levelUpData: null }),
       triggerReward: (type, count) => set((state) => ({ 
         rewardAnimationQueue: [...state.rewardAnimationQueue, { id: Math.random().toString(36).substring(7) + Date.now(), type, count }]

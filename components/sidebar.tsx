@@ -38,7 +38,7 @@ const studentMenuItems = [
   { icon: Home, label: "Learn", href: "/learn" },
   { icon: BookOpen, label: "Course List", href: "/courses" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/evaluation" },
-  { icon: Target, label: "Daily Goals", href: "/goals" },
+  { icon: Target, label: "Misi", href: "/goals" },
   { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },
   { icon: Swords, label: "Brain Duel", href: "/duel" },
   { icon: ShoppingBag, label: "Shop", href: "/shop" },

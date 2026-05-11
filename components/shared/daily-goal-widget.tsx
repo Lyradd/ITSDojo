@@ -11,7 +11,7 @@ export const DailyGoalWidget = ({ dailyGoals }: DailyGoalWidgetProps) => {
   return (
     <Card className="hidden lg:block p-4 rounded-2xl border-2">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Daily Goals</h3>
+        <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Misi Harian</h3>
         <Link href="/goals" className="text-blue-500 font-bold text-xs uppercase hover:underline">Lihat Semua</Link>
       </div>
       <div className="space-y-4">

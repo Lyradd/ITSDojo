@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Flame, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { X, Flame, ChevronLeft, ChevronRight, Check, Snowflake } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -40,6 +40,12 @@ export function StreakCalendarModal({ isOpen, onClose, activityHistory, streak }
   const hasActivity = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return activityHistory.some(h => h.date === dateStr && (h.count > 0 || h.xpEarned > 0));
+  };
+
+  const isFreezeUsed = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    // @ts-ignore - freezeUsed might not exist on older history objects
+    return activityHistory.some(h => h.date === dateStr && h.freezeUsed);
   };
 
   const getDayXp = (day: number) => {
@@ -93,6 +99,7 @@ export function StreakCalendarModal({ isOpen, onClose, activityHistory, streak }
                 {emptyDays.map(i => <div key={`empty-${i}`} className="aspect-square" />)}
                 {days.map(day => {
                   const active = hasActivity(day);
+                  const freeze = isFreezeUsed(day);
                   const today = isToday(day);
                   const xp = getDayXp(day);
                   
@@ -102,17 +109,20 @@ export function StreakCalendarModal({ isOpen, onClose, activityHistory, streak }
                       className={`aspect-square rounded-lg flex flex-col items-center justify-center relative group transition-all ${
                         active 
                           ? 'bg-orange-500 text-white shadow-sm' 
-                          : today 
-                            ? 'border-2 border-orange-500 text-orange-500' 
-                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                          : freeze
+                            ? 'bg-blue-50 border-2 border-blue-200 text-blue-500 dark:bg-blue-900/20 dark:border-blue-800'
+                            : today 
+                              ? 'border-2 border-orange-500 text-orange-500' 
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                       }`}
                     >
                       <span className="text-xs font-bold">{day}</span>
                       {active && <Check className="w-2 h-2 absolute bottom-1" />}
+                      {freeze && <Snowflake className="w-2.5 h-2.5 absolute bottom-1 text-blue-500" />}
                       
                       {/* Tooltip on hover */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl">
-                        {active ? `Berhasil! +${xp} XP` : 'Belum ada aktivitas'}
+                        {active ? `Berhasil! +${xp} XP` : freeze ? 'Streak Freeze Terpakai' : 'Belum ada aktivitas'}
                       </div>
                     </div>
                   );

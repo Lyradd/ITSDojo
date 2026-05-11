@@ -62,22 +62,20 @@ export default function GoalsPage() {
     xpMultiplier,
     activityHistory,
     xp,
-    weeklyRewardClaimed,
-    claimWeeklyReward,
-    monthlyRewardClaimed,
-    claimMonthlyReward,
+    weeklyActiveDays,
+    claimedWeeklyMilestones,
+    claimWeeklyMilestone,
+    monthlyCompletedGoals,
+    claimedMonthlyMilestones,
+    claimMonthlyMilestone,
     streakFreezeCount,
-    level,
-    weeklyTarget,
-    isWeeklyTargetLocked,
-    setWeeklyTarget
+    level
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const timeLeft = useMultiplierTimer();
   const [resetTimeLeft, setResetTimeLeft] = useState<string | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const [targetToConfirm, setTargetToConfirm] = useState<number | null>(null);
 
   // 1. Cek Mounted 
   useEffect(() => { setIsMounted(true); }, []);
@@ -115,22 +113,6 @@ export default function GoalsPage() {
     return { day, active: hasActivity, isToday: index === todayIndex };
   });
 
-  // Hitung Weekly Target (User Adjustable)
-  const activeDaysThisWeek = streakHistory.filter(h => h.active).length;
-  const weeklyProgress = Math.min((activeDaysThisWeek / weeklyTarget) * 100, 100);
-
-  // Hitung Monthly Challenge (XP asli bulan ini dari activityHistory)
-  const monthlyTarget = 1000;
-  const currentMonthPrefix = now.toISOString().slice(0, 7); // "YYYY-MM"
-  const currentMonthlyXp = activityHistory
-    .filter((h: any) => h.date.startsWith(currentMonthPrefix))
-    .reduce((sum: number, h: any) => sum + (h.xpEarned || 0), 0); // XP aktual yang didapat
-  
-  const monthlyProgress = Math.min((currentMonthlyXp / monthlyTarget) * 100, 100);
-
-  // Hitung sisa hari di bulan ini
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const daysLeft = daysInMonth - now.getDate();
 
   // 4. Wrapper Fungsi Klaim Hadiah
   const handleClaim = (goalId: string) => {
@@ -152,7 +134,7 @@ export default function GoalsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-2xl font-extrabold text-zinc-800 dark:text-white">
-                Misi Harian
+                Misi
               </h1>
               {resetTimeLeft && (
                 <p className="text-sm font-medium text-zinc-500 flex items-center gap-1">
@@ -202,7 +184,7 @@ export default function GoalsPage() {
               <div className="flex-1 space-y-2 text-center md:text-left">
                 <h2 className="text-xl font-bold flex items-center justify-center md:justify-start gap-2">
                   <Gift className="w-6 h-6 animate-bounce" />
-                  Hadiah Harian
+                  Hadiah Misi
                 </h2>
                 <p className="text-blue-100 text-sm">
                   Selesaikan misi untuk mendapatkan Gems dan XP Booster!
@@ -313,7 +295,7 @@ export default function GoalsPage() {
             </div>
 
             {/* Row Hari Senin-Minggu - Clickable Preview */}
-            <div 
+            <div
               className="flex justify-between items-center mb-6 cursor-pointer group/cal p-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
               onClick={() => setIsCalendarModalOpen(true)}
             >
@@ -324,8 +306,8 @@ export default function GoalsPage() {
                       {item.day}
                     </span>
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${item.active
-                        ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
-                        : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
+                      ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
+                      : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
                       }`}>
                       <CheckCircle className="w-5 h-5" />
                     </div>
@@ -338,217 +320,178 @@ export default function GoalsPage() {
               </div>
             </div>
 
-            {/* Weekly Reward Box Container */}
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2 relative">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Set Target:</span>
-                    {isWeeklyTargetLocked && (
-                      <span className="text-[9px] text-orange-500 font-bold uppercase">Terkunci Minggu Ini</span>
-                    )}
-                  </div>
-                  <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
-                    {[3, 5, 7].map((t) => (
-                      <button
-                        key={t}
-                        disabled={isWeeklyTargetLocked}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isWeeklyTargetLocked) setTargetToConfirm(t);
-                        }}
-                        className={`px-3 py-1 rounded-md text-[10px] font-extrabold transition-all ${
-                          weeklyTarget === t 
-                            ? "bg-white dark:bg-zinc-700 text-orange-600 shadow-sm" 
-                            : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                        } ${isWeeklyTargetLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                      >
-                        {t} HARI
-                      </button>
-                    ))}
-                  </div>
+            {/* Progressive Weekly Milestones */}
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-end mb-2">
+                <div className="flex flex-col">
+                  <h4 className="font-bold text-zinc-700 dark:text-zinc-300">Misi Mingguan</h4>
+                  <p className="text-xs text-zinc-500">Aktif {weeklyActiveDays} dari 7 hari minggu ini</p>
                 </div>
-
-                {/* Peringatan Teks Kecil */}
-                {!isWeeklyTargetLocked && (
-                  <p className="text-[10px] text-zinc-400 italic">
-                    *Pilih target dengan bijak, tidak bisa diubah minggu ini.
-                  </p>
-                )}
               </div>
 
-              <ConfirmModal
-                isOpen={targetToConfirm !== null}
-                onClose={() => setTargetToConfirm(null)}
-                onConfirm={() => {
-                  if (targetToConfirm) setWeeklyTarget(targetToConfirm);
-                }}
-                title="Konfirmasi Target"
-                message={`Apakah Anda yakin ingin menetapkan target ${targetToConfirm} hari untuk minggu ini? Setelah dikonfirmasi, target tidak dapat diubah lagi.`}
-                confirmText="Ya, Saya Yakin"
-                cancelText="Pikirkan Lagi"
-                variant="warning"
-              />
-
-              <div
-                className={`text-center p-4 rounded-xl transition-all duration-300 relative overflow-hidden ${activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-400 cursor-pointer hover:bg-orange-100 dark:hover:hover:bg-orange-900/40 shadow-lg shadow-orange-200 dark:shadow-none'
-                    : 'bg-zinc-50 dark:bg-zinc-900 border-2 border-transparent'
-                  }`}
-                onClick={() => {
-                  if (activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed) {
-                    claimWeeklyReward();
-                    triggerConfetti();
-                    playCoinSound();
-                  }
-                }}
-              >
-                <h4 className={`font-bold ${activeDaysThisWeek >= weeklyTarget && !weeklyRewardClaimed ? 'text-orange-700 dark:text-orange-400' : 'text-zinc-700 dark:text-zinc-300'}`}>Target Mingguan</h4>
-                <p className="text-xs text-zinc-500 mb-1">Aktif {weeklyTarget} hari dalam minggu ini ({activeDaysThisWeek}/{weeklyTarget})</p>
-                <div className="flex items-center justify-center gap-1.5 mb-3">
-                  <Gem className="w-3 h-3 text-blue-500" />
-                  <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                    Hadiah: {weeklyTarget === 3 ? '50' : weeklyTarget === 5 ? '100' : '200'} Gems
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-3 items-center justify-center">
-                  <div className="flex items-center gap-2 w-full justify-center">
-                    <div className="h-10 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden flex shadow-inner">
-                      <div className="bg-orange-400 h-full transition-all duration-1000 relative" style={{ width: `${weeklyProgress}%` }}>
-                        {activeDaysThisWeek >= weeklyTarget && <div className="absolute inset-0 bg-white/30 animate-[shimmer_2s_infinite]" />}
-                      </div>
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-2 border-zinc-100 dark:border-zinc-800 rounded-3xl pb-10">
+                <div className="mx-4 relative h-8 mt-4">
+                  {/* The Background Track & Filled Part */}
+                  <div className="absolute inset-0 bg-zinc-200/50 dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-linear-to-r from-orange-400 to-orange-500 transition-all duration-1000 ease-out"
+                      style={{ width: `${Math.min((weeklyActiveDays / 7) * 100, 100)}%` }}
+                    >
+                       <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
                     </div>
-                    <Gift className={`w-8 h-8 shrink-0 transition-all duration-300 ${weeklyRewardClaimed ? 'text-zinc-300' :
-                        activeDaysThisWeek >= weeklyTarget ? 'text-orange-500 animate-bounce drop-shadow-md' : 'text-zinc-400'
-                      }`} />
                   </div>
 
-                  {weeklyRewardClaimed && (
-                    <div className="text-xs font-bold text-green-600 uppercase tracking-wider flex items-center gap-1 mt-1">
-                      <CheckCircle className="w-4 h-4" /> Hadiah Mingguan Terklaim
-                    </div>
-                  )}
+                  {/* Milestones / Checkpoints */}
+                  {[
+                    { days: 3, reward: 50 },
+                    { days: 5, reward: 100 },
+                    { days: 7, reward: 200 }
+                  ].map((milestone) => {
+                    const isClaimed = claimedWeeklyMilestones.includes(milestone.days);
+                    const isReached = weeklyActiveDays >= milestone.days;
+                    const isAvailable = isReached && !isClaimed;
+                    const positionPercent = (milestone.days / 7) * 100;
+
+                    return (
+                      <div 
+                        key={milestone.days}
+                        className="absolute top-1/2 flex flex-col items-center z-10"
+                        style={{ left: `${positionPercent}%`, transform: 'translate(-50%, -50%)' }}
+                      >
+                         {/* Node */}
+                         <div 
+                           onClick={() => {
+                             if (isAvailable) {
+                               claimWeeklyMilestone(milestone.days);
+                               triggerConfetti();
+                               playCoinSound();
+                             }
+                           }}
+                           className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all ${
+                             isClaimed 
+                               ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
+                               : isAvailable
+                                 ? 'bg-yellow-400 border-white dark:border-zinc-950 text-yellow-900 shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                                 : isReached
+                                    ? 'bg-orange-500 border-white dark:border-zinc-950 text-white' 
+                                    : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
+                           }`}
+                         >
+                           {isClaimed ? <CheckCircle className="w-5 h-5" /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />}
+                         </div>
+                         {/* Labels */}
+                         <div className="absolute top-11 flex flex-col items-center w-20">
+                           <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                             {milestone.days} Hari
+                           </span>
+                           <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>
+                             <Gem className="w-2.5 h-2.5" /> {milestone.reward}
+                           </span>
+                         </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </Card>
 
-           {/* Monthly Challenge Badge - Enhanced UI */}
-          <Card 
-            className={`group relative p-0 rounded-3xl border-2 overflow-hidden transition-all duration-500 ${
-              monthlyProgress >= 100 && !monthlyRewardClaimed
-                ? 'border-purple-400 shadow-xl shadow-purple-500/20 scale-[1.02]'
-                : 'border-zinc-200 dark:border-zinc-800'
-            }`}
-            onClick={() => {
-              if (monthlyProgress >= 100 && !monthlyRewardClaimed) {
-                claimMonthlyReward();
-                triggerConfetti();
-                playCoinSound();
-              }
-            }}
-          >
+          {/* Monthly Challenge Badge - Enhanced UI */}
+          <Card className="group relative p-0 rounded-3xl border-2 overflow-hidden border-purple-200 dark:border-purple-900/30">
             {/* Background Pattern/Gradient */}
-            <div className={`absolute inset-0 opacity-10 pointer-events-none ${
-              monthlyRewardClaimed ? 'bg-zinc-500' : 'bg-linear-to-br from-purple-600 via-indigo-600 to-pink-600'
-            }`} />
-            
-            <div className="flex flex-col relative z-10">
-              {/* Top Row: Icon and Progress Info */}
-              <div className="flex items-center gap-4 p-5">
-                <div className={`relative w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 ${
-                  monthlyRewardClaimed 
-                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400' 
-                    : monthlyProgress >= 100 
-                      ? 'bg-linear-to-br from-purple-500 to-indigo-600 text-white shadow-lg' 
-                      : 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
-                }`}>
-                  {monthlyRewardClaimed ? <CheckCircle className="w-10 h-10" /> : <Trophy className="w-10 h-10" />}
-                  {monthlyProgress >= 100 && !monthlyRewardClaimed && (
-                    <motion.div 
-                      animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                      className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 p-1.5 rounded-full shadow-md"
-                    >
-                      <Zap className="w-4 h-4 fill-current" />
-                    </motion.div>
-                  )}
-                </div>
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-linear-to-br from-purple-600 via-indigo-600 to-pink-600" />
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col mb-1">
-                    <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-widest">Tantangan Bulanan</span>
-                    <h4 className={`font-black text-xl leading-tight ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-zinc-800 dark:text-white'}`}>
-                      {now.toLocaleString('id-ID', { month: 'long' })} Elite
+            <div className="flex flex-col relative z-10 p-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-purple-500 to-indigo-600 text-white shadow-lg flex items-center justify-center shrink-0">
+                    <Trophy className="w-7 h-7" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-widest truncate">Misi Bulanan</span>
+                    <h4 className="font-black text-xl leading-tight text-zinc-800 dark:text-white truncate">
+                      Misi {now.toLocaleString('id-ID', { month: 'long' })}
                     </h4>
+                    <p className="text-xs text-zinc-500 font-medium mt-0.5 truncate">Selesaikan Misi Harian</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-[10px] font-bold text-zinc-500">
-                      <Clock className="w-3 h-3" />
-                      {daysLeft} Hari Lagi
+                </div>
+              </div>
+
+              {/* Progressive Milestones - Horizontal Layout */}
+              <div className="mt-4 p-4 bg-white/50 dark:bg-zinc-950/30 rounded-3xl border border-purple-100 dark:border-purple-900/30 pb-16">
+                <div className="flex justify-between items-end mb-4 px-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Progres Misi</span>
+                    <span className="text-sm font-black text-zinc-700 dark:text-zinc-200">{monthlyCompletedGoals} <span className="text-zinc-400 font-bold">/ 45 Misi</span></span>
+                  </div>
+                  <span className="text-sm font-black text-purple-600">{Math.floor(Math.min((monthlyCompletedGoals / 45) * 100, 100))}%</span>
+                </div>
+
+                <div className="mx-4 relative h-8 mt-6">
+                  {/* The Background Track & Filled Part */}
+                  <div className="absolute inset-0 bg-zinc-200/50 dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-linear-to-r from-purple-400 to-purple-600 transition-all duration-1000 ease-out"
+                      style={{ width: `${Math.min((monthlyCompletedGoals / 45) * 100, 100)}%` }}
+                    >
+                       <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
                     </div>
-                    {monthlyRewardClaimed && (
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-[10px] font-bold">
-                        <Check className="w-3 h-3" /> SELESAI
+                  </div>
+
+                  {/* Milestones / Checkpoints */}
+                  {[
+                    { target: 15, reward: 150, tier: 'bronze' },
+                    { target: 30, reward: 300, tier: 'silver' },
+                    { target: 45, reward: 500, tier: 'elite' }
+                  ].map((milestone) => {
+                    const isClaimed = claimedMonthlyMilestones.includes(milestone.target);
+                    const isReached = monthlyCompletedGoals >= milestone.target;
+                    const isAvailable = isReached && !isClaimed;
+                    const positionPercent = (milestone.target / 45) * 100;
+
+                    return (
+                      <div 
+                        key={milestone.target}
+                        className="absolute top-1/2 flex flex-col items-center z-10"
+                        style={{ left: `${positionPercent}%`, transform: 'translate(-50%, -50%)' }}
+                      >
+                         {/* Node */}
+                         <div 
+                           onClick={() => {
+                             if (isAvailable) {
+                               claimMonthlyMilestone(milestone.target, milestone.reward, milestone.tier);
+                               triggerConfetti();
+                               playCoinSound();
+                             }
+                           }}
+                           className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 transition-all ${
+                             isClaimed 
+                               ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
+                               : isAvailable
+                                 ? 'bg-purple-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                                 : isReached
+                                    ? 'bg-purple-600 border-white dark:border-zinc-950 text-white' 
+                                    : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
+                           }`}
+                         >
+                           {isClaimed ? <CheckCircle className="w-6 h-6" /> : (
+                             milestone.target === 45 ? <Trophy className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />
+                           )}
+                         </div>
+                         {/* Labels */}
+                         <div className="absolute top-14 flex flex-col items-center w-24">
+                           <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-purple-600 dark:text-purple-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                             {milestone.target} Misi
+                           </span>
+                           <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>
+                             <Gem className="w-2.5 h-2.5" /> {milestone.reward}
+                           </span>
+                         </div>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
-
-              {/* Progress Bar Area */}
-              <div className="px-5 pb-2">
-                <div className="flex justify-between items-end mb-2">
-                   <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase">Progres XP</span>
-                      <span className="text-sm font-black text-zinc-700 dark:text-zinc-200">{currentMonthlyXp.toLocaleString()} <span className="text-zinc-400 font-bold">/ {monthlyTarget.toLocaleString()}</span></span>
-                   </div>
-                   <span className={`text-sm font-black ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-purple-600'}`}>{Math.floor(monthlyProgress)}%</span>
-                </div>
-                <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-50 dark:border-zinc-800 shadow-inner p-0.5">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${monthlyProgress}%` }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    className={`h-full rounded-full relative ${
-                      monthlyRewardClaimed ? 'bg-zinc-400' : 'bg-linear-to-r from-purple-500 via-indigo-500 to-purple-600'
-                    }`} 
-                  >
-                    {!monthlyRewardClaimed && (
-                      <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
-                    )}
-                  </motion.div>
-                </div>
-              </div>
-
-              {/* Reward Preview Footer */}
-              <div className={`mt-4 p-4 flex items-center justify-between border-t transition-colors ${
-                monthlyRewardClaimed 
-                  ? 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800' 
-                  : monthlyProgress >= 100 
-                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800' 
-                    : 'bg-zinc-50/50 dark:bg-zinc-900/30 border-zinc-100 dark:border-zinc-800'
-              }`}>
-                <div className="flex items-center gap-3">
-                   <div className={`p-2 rounded-xl ${monthlyRewardClaimed ? 'bg-zinc-200 dark:bg-zinc-800' : 'bg-white dark:bg-zinc-800 shadow-sm'}`}>
-                      <Gem className={`w-5 h-5 ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-blue-500 fill-current'}`} />
-                   </div>
-                   <div className="flex flex-col">
-                      <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">Hadiah Spesial</span>
-                      <span className={`text-sm font-black ${monthlyRewardClaimed ? 'text-zinc-400' : 'text-zinc-800 dark:text-zinc-200'}`}>500 Gems</span>
-                   </div>
-                </div>
-                
-                {monthlyProgress >= 100 && !monthlyRewardClaimed ? (
-                  <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl animate-bounce shadow-lg shadow-purple-200 dark:shadow-none">
-                    Klaim Sekarang
-                  </Button>
-                ) : (
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase italic">
-                    {monthlyRewardClaimed ? 'Hadiah Terambil' : 'Belum Memenuhi Syarat'}
-                  </div>
-                )}
               </div>
             </div>
           </Card>
@@ -556,7 +499,7 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      <StreakCalendarModal 
+      <StreakCalendarModal
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
         activityHistory={activityHistory}
@@ -575,15 +518,7 @@ export default function GoalsPage() {
               <Button size="sm" variant="outline" className="text-[10px] h-8" onClick={() => useUserStore.getState().triggerReward('gem', 15)}>
                 Test Gem Anim
               </Button>
-              <Button size="sm" variant="outline" className="text-[10px] h-8 text-orange-600 border-orange-200" onClick={() => {
-                useUserStore.setState({ isWeeklyTargetLocked: false });
-                window.location.reload();
-              }}>
-                Force Unlock Target
-              </Button>
               <Button size="sm" variant="ghost" className="text-[10px] h-8 text-red-500" onClick={() => {
-                // Re-lock target for testing modal (only works if not already locked in store)
-                // Just for testing UI state
                 window.location.reload();
               }}>
                 Reload State

@@ -16,8 +16,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ITSDojo",
-  description: "Platform gamifikasi pembelajaran",
+  title: {
+    default: "ITSDojo - Platform Belajar Coding & Gamifikasi",
+    template: "%s | ITSDojo",
+  },
+  description: "ITSDojo menggabungkan pembelajaran coding intensif dengan elemen game yang adiktif. Tingkatkan level, raih lencana, dan taklukkan dunia pemrograman dengan cara yang menyenangkan.",
+  keywords: ["Belajar Coding", "Gamifikasi", "ITSDojo", "Pemrograman", "Course Online", "React", "Next.js"],
+  authors: [{ name: "ITSDojo Team" }],
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "https://itsdojo.com",
+    title: "ITSDojo - Platform Belajar Coding & Gamifikasi",
+    description: "Belajar pemrograman terasa seperti bermain game RPG. Tingkatkan level, raih badge, dan pelajari materi dengan mudah di ITSDojo.",
+    siteName: "ITSDojo",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ITSDojo Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ITSDojo - Platform Belajar Coding & Gamifikasi",
+    description: "Belajar pemrograman terasa seperti bermain game RPG. Tingkatkan level, raih badge, dan pelajari materi dengan mudah di ITSDojo.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

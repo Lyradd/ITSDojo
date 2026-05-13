@@ -108,9 +108,10 @@ export default function GoalsPage() {
     d.setDate(now.getDate() + diff);
     const dateString = formatLocalDate(d);
 
-    // Aktif jika ada activity pada tanggal tersebut
-    const hasActivity = activityHistory.some((h: { date: string, count: number }) => h.date === dateString && h.count > 0);
-    return { day, active: hasActivity, isToday: index === todayIndex };
+    const historyEntry = activityHistory.find((h: any) => h.date === dateString);
+    const hasActivity = historyEntry ? historyEntry.count > 0 : false;
+    const isFreeze = historyEntry ? historyEntry.freezeUsed === true : false;
+    return { day, active: hasActivity, isFreeze, isToday: index === todayIndex };
   });
 
 
@@ -305,11 +306,14 @@ export default function GoalsPage() {
                     <span className={`text-xs font-bold uppercase ${item.isToday ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
                       {item.day}
                     </span>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${item.active
-                      ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
-                      : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
+                      item.active
+                        ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
+                        : item.isFreeze
+                          ? 'bg-blue-100 border-blue-200 text-blue-500 dark:bg-blue-900/40 dark:border-blue-800 shadow-sm'
+                          : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
                       }`}>
-                      <CheckCircle className="w-5 h-5" />
+                      {item.isFreeze ? <Snowflake className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
                     </div>
                   </div>
                 ))}
@@ -506,27 +510,6 @@ export default function GoalsPage() {
         streak={streak}
       />
 
-      {/* --- DEBUG TOOL (Dev Only) --- */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 left-4 z-[100] flex flex-col gap-2 scale-75 origin-bottom-left opacity-20 hover:opacity-100 transition-opacity">
-          <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-3xl shadow-2xl">
-            <p className="text-[10px] font-bold text-zinc-400 mb-3 uppercase tracking-widest text-center">Animation Tester</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button size="sm" variant="outline" className="text-[10px] h-8" onClick={() => useUserStore.getState().triggerReward('xp', 15)}>
-                Test XP Anim
-              </Button>
-              <Button size="sm" variant="outline" className="text-[10px] h-8" onClick={() => useUserStore.getState().triggerReward('gem', 15)}>
-                Test Gem Anim
-              </Button>
-              <Button size="sm" variant="ghost" className="text-[10px] h-8 text-red-500" onClick={() => {
-                window.location.reload();
-              }}>
-                Reload State
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -20,7 +20,9 @@ import {
   Clock,
   ArrowRight,
   Play,
-  PartyPopper
+  PartyPopper,
+  CheckCircle,
+  AlertTriangle
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
@@ -28,6 +30,7 @@ import { StatWidget } from "@/components/shared/stat-widget";
 import { DailyGoalWidget } from "@/components/shared/daily-goal-widget";
 import { LeaderboardWidget } from "@/components/shared/leaderboard-widget";
 import { RoadmapNode, ComputedLessonNode } from "@/components/learn/roadmap-node";
+import { AlertModal } from "@/components/shared/alert-modal";
 
 // Helper: Warna tema berdasarkan kursus aktif
 const getCourseTheme = (courseId: string) => {
@@ -57,6 +60,8 @@ export default function LearnPage() {
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
+  
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", icon: <CheckCircle className="w-8 h-8" /> });
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -90,7 +95,12 @@ export default function LearnPage() {
       triggerConfetti();
       playSuccessSound();
     } else {
-      alert("Semua materi di unit ini sudah diselesaikan!");
+      setAlertConfig({
+        isOpen: true,
+        title: "Unit Selesai",
+        message: "Semua materi di unit ini sudah Anda selesaikan!",
+        icon: <CheckCircle className="w-10 h-10" />
+      });
     }
   };
 
@@ -318,8 +328,16 @@ export default function LearnPage() {
             currentUserRank={userRank}
           />
         </div>
-
       </div>
+      
+      <AlertModal 
+        isOpen={alertConfig.isOpen} 
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))} 
+        title={alertConfig.title} 
+        message={alertConfig.message} 
+        icon={alertConfig.icon} 
+      />
+      
     </div>
   );
 }

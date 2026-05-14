@@ -15,12 +15,14 @@ import {
   Users,
   PlayCircle,
   CheckCircle2,
+  Swords,
+  Trophy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function EvaluationPage() {
   const router = useRouter();
-  const { isLoggedIn, enrolledCourseIds } = useUserStore();
+  const { isLoggedIn, enrolledCourseIds, name } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
 
@@ -38,43 +40,62 @@ export default function EvaluationPage() {
     : enrolledEvaluations.filter(e => e.courseId === selectedCourse);
 
   const getCourseName = (courseId: string) => COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
-  const getCourseColor = (courseId: string) => COURSES.find(c => c.id === courseId)?.color || 'bg-gray-100 text-gray-600';
-
+  
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <ClipboardCheck className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Evaluasi & Quiz</h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-950 rounded-2xl shadow-lg border border-indigo-900/50">
+              <Swords className="w-8 h-8 text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Arena Evaluasi</h1>
+              <p className="text-zinc-600 dark:text-zinc-400">Adu kemampuan, raih posisi teratas</p>
+            </div>
+          </div>
+          <div className="px-4 py-2 rounded-full bg-orange-950/50 border border-orange-900/50 text-orange-400 font-bold text-sm flex items-center shadow-md">
+            <Trophy className="w-4 h-4 mr-2" />
+            Rank kamu #3 dari 12
+          </div>
         </div>
-        <p className="text-zinc-600 dark:text-zinc-400">Uji pemahamanmu dan lihat posisimu di leaderboard real-time</p>
       </div>
 
       {/* Course Filter */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Filter:</span>
-          <Button size="sm" variant={selectedCourse === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCourse('all')} className={cn("font-bold", selectedCourse === 'all' && "bg-blue-600 hover:bg-blue-700")}>
+      <div className="mb-8">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => setSelectedCourse('all')} 
+            className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800", selectedCourse === 'all' && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
+          >
             Semua Kursus
           </Button>
           {COURSES.filter(c => enrolledCourseIds.includes(c.id)).map(course => (
-            <Button key={course.id} size="sm" variant={selectedCourse === course.id ? 'default' : 'outline'} onClick={() => setSelectedCourse(course.id)} className={cn("font-bold", selectedCourse === course.id && "bg-blue-600 hover:bg-blue-700")}>
+            <Button 
+              key={course.id} 
+              size="sm" 
+              variant="outline"
+              onClick={() => setSelectedCourse(course.id)} 
+              className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800", selectedCourse === course.id && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
+            >
               {course.title}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Evaluations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Evaluations List */}
+      <div className="flex flex-col gap-6">
         {filteredEvaluations.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <ClipboardCheck className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
+          <div className="col-span-full text-center py-12 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800">
+            <Swords className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
             <p className="text-zinc-500 dark:text-zinc-400">
               {enrolledCourseIds.length === 0
                 ? "Kamu belum terdaftar di kelas manapun. Silakan minta akses kelas terlebih dahulu di menu Daftar Kelas."
-                : "Tidak ada evaluasi untuk kursus ini"}
+                : "Belum ada tantangan di arena ini"}
             </p>
           </div>
         ) : (
@@ -83,7 +104,7 @@ export default function EvaluationPage() {
               key={evaluation.id}
               evaluation={evaluation}
               getCourseName={getCourseName}
-              getCourseColor={getCourseColor}
+              name={name}
               onStart={() => router.push(`/evaluation/${evaluation.id}`)}
             />
           ))
@@ -94,62 +115,159 @@ export default function EvaluationPage() {
 }
 
 // ─── Card Component with Warning Modal ──────────────────────────────────────
-function EvaluationCard({ evaluation, getCourseName, getCourseColor, onStart }: {
+function EvaluationCard({ evaluation, getCourseName, onStart, name }: {
   evaluation: typeof SAMPLE_EVALUATIONS[0];
   getCourseName: (id: string) => string;
-  getCourseColor: (id: string) => string;
   onStart: () => void;
+  name: string;
 }) {
   const [showWarning, setShowWarning] = useState(false);
 
-  return (
-    <>
-      <Card className="p-6 rounded-2xl border-2 hover:border-blue-300 hover:shadow-lg transition-all duration-300">
-        {/* Course Badge */}
-        <div className="mb-4">
-          <span className={cn("px-3 py-1 rounded-full text-xs font-bold", getCourseColor(evaluation.courseId))}>
+  // Styling based on status
+  const isCompleted = !evaluation.isActive;
+  
+  if (isCompleted) {
+    return (
+      <Card className="rounded-2xl border-2 border-emerald-900/40 bg-slate-950/80 shadow-2xl overflow-hidden">
+        {/* Top bar */}
+        <div className="px-6 py-4 flex items-center justify-between border-b border-emerald-900/30">
+          <span className="px-3 py-1 rounded-full text-xs font-bold border border-emerald-800 text-emerald-400">
             {getCourseName(evaluation.courseId)}
           </span>
-        </div>
-
-        <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-2">{evaluation.title}</h3>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{evaluation.description}</p>
-
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <Target className="w-4 h-4" /><span>{evaluation.questions.length} soal</span><span>•</span><span>{evaluation.totalPoints} poin</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <Clock className="w-4 h-4" /><span>{evaluation.duration} menit</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <Users className="w-4 h-4" /><span>12 peserta aktif</span>
+          <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold">
+            <CheckCircle2 className="w-4 h-4" />
+            Selesai
           </div>
         </div>
 
-        {evaluation.isActive ? (
-          <Button onClick={() => setShowWarning(true)} className="w-full bg-blue-600 hover:bg-blue-700 font-bold">
-            <PlayCircle className="w-4 h-4 mr-2" />Mulai Evaluasi
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-white mb-2">{evaluation.title}</h3>
+          <p className="text-sm text-emerald-100/60 mb-6">{evaluation.description}</p>
+
+          {/* Results block */}
+          <div className="flex flex-col md:flex-row bg-slate-900/50 rounded-xl border border-emerald-900/30 overflow-hidden mb-6">
+            <div className="flex-[1.5] p-5 md:border-r border-emerald-900/30">
+              <p className="text-xs text-emerald-400/80 font-medium mb-2 uppercase tracking-widest">Skor kamu</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-emerald-400">95 / 110</span>
+              </div>
+              <p className="text-sm text-emerald-600 font-bold mt-1">poin</p>
+            </div>
+            
+            <div className="flex-1 p-5 border-t md:border-t-0 md:border-r border-emerald-900/30 flex flex-col justify-center">
+              <p className="text-xs text-emerald-400/80 font-medium mb-2 uppercase tracking-widest">Posisi akhir</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-bold text-orange-400">#2</span>
+              </div>
+              <p className="text-xs text-orange-500/80 mt-1 font-medium">dari 12 peserta</p>
+            </div>
+
+            <div className="flex-[1.2] p-5 border-t md:border-t-0 border-emerald-900/30 flex flex-col justify-center">
+              <p className="text-xs text-emerald-400/80 font-medium mb-2 uppercase tracking-widest">Peringkat 1</p>
+              <p className="text-base font-bold text-orange-400 truncate">Aldi R.</p>
+              <p className="text-sm text-orange-500/80 mt-1 font-medium">110 / 110</p>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-6">
+            <div className="flex items-center gap-2 text-emerald-100/80">
+              <ClipboardCheck className="w-5 h-5 text-emerald-500" />
+              <div className="flex flex-col leading-none">
+                <span className="font-bold text-sm">10</span>
+                <span className="text-[10px] uppercase tracking-wider text-emerald-500/80">soal</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-emerald-100/80">
+              <Target className="w-5 h-5 text-yellow-500" />
+              <div className="flex flex-col leading-none">
+                <span className="font-bold text-sm">110</span>
+                <span className="text-[10px] uppercase tracking-wider text-yellow-500/80">poin</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-emerald-100/80">
+              <Clock className="w-5 h-5 text-indigo-400" />
+              <div className="flex flex-col leading-none">
+                <span className="font-bold text-sm">30</span>
+                <span className="text-[10px] uppercase tracking-wider text-indigo-400/80">menit</span>
+              </div>
+            </div>
+          </div>
+
+          <Link href={`/evaluation/${evaluation.id}/results`} className="block">
+            <Button className="w-full bg-slate-950 hover:bg-slate-900 border border-emerald-900/50 text-white font-bold h-12 rounded-xl transition-all shadow-lg">
+              <PlayCircle className="w-4 h-4 mr-2" /> Lihat Hasil Lengkap
+            </Button>
+          </Link>
+        </div>
+      </Card>
+    );
+  }
+
+  // Active state
+  return (
+    <>
+      <Card className="rounded-2xl border-2 border-indigo-900/60 bg-slate-950 shadow-2xl overflow-hidden">
+        {/* Top bar */}
+        <div className="px-6 py-4 flex items-center justify-between border-b border-indigo-900/40">
+          <span className="px-3 py-1 rounded-full text-xs font-bold border border-indigo-800 text-indigo-400">
+            {getCourseName(evaluation.courseId)}
+          </span>
+          <div className="flex items-center gap-2 text-xs text-indigo-400 font-bold">
+            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+            Berlangsung sekarang
+          </div>
+        </div>
+
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-white mb-2">{evaluation.title}</h3>
+          <p className="text-sm text-indigo-100/60 mb-6">{evaluation.description}</p>
+
+          {/* Versus block */}
+          <div className="flex flex-col md:flex-row bg-slate-900/80 rounded-xl border border-indigo-900/40 overflow-hidden mb-6">
+            <div className="flex-1 p-5 md:border-r border-indigo-900/40">
+              <p className="text-xs text-indigo-400/80 font-medium mb-1 uppercase tracking-widest">Kamu</p>
+              <p className="text-lg font-bold text-white truncate">{name}</p>
+              <p className="text-sm text-indigo-300/60 mt-1 font-medium">Belum mulai</p>
+            </div>
+            <div className="flex-1 p-5 border-t md:border-t-0 border-indigo-900/40 bg-slate-900/40">
+              <p className="text-xs text-indigo-400/80 font-medium mb-1 uppercase tracking-widest">Lawan terkuat</p>
+              <p className="text-lg font-bold text-white truncate">Aldi R.</p>
+              <p className="text-sm text-indigo-400 mt-1 font-medium">#1 minggu ini</p>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4 mb-6">
+            <div className="flex items-center gap-2 text-indigo-100/80 text-sm font-bold">
+              <ClipboardCheck className="w-5 h-5 text-emerald-400" />
+              <span>{evaluation.questions.length} soal</span>
+            </div>
+            <div className="flex items-center gap-2 text-indigo-100/80 text-sm font-bold">
+              <Target className="w-5 h-5 text-yellow-500" />
+              <span>{evaluation.totalPoints} poin</span>
+            </div>
+            <div className="flex items-center gap-2 text-indigo-100/80 text-sm font-bold">
+              <Clock className="w-5 h-5 text-indigo-400" />
+              <span>{evaluation.duration} menit</span>
+            </div>
+          </div>
+
+          {/* Participants */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex -space-x-3">
+              <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-40">AR</div>
+              <div className="w-8 h-8 rounded-full bg-emerald-600 border-2 border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-30">BK</div>
+              <div className="w-8 h-8 rounded-full bg-orange-600 border-2 border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-20">CL</div>
+              <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-10">DM</div>
+            </div>
+            <span className="text-xs font-medium text-indigo-300/80">+8 peserta aktif</span>
+          </div>
+
+          <Button onClick={() => setShowWarning(true)} className="w-full bg-slate-950 hover:bg-slate-900 border border-indigo-800 text-white font-bold h-12 rounded-xl transition-all shadow-lg">
+            <Swords className="w-4 h-4 mr-2" /> Masuk Arena
           </Button>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-bold">
-              <CheckCircle2 className="w-4 h-4" /><span>Sudah Selesai</span>
-            </div>
-            <Link href={`/evaluation/${evaluation.id}/results`}>
-              <Button variant="outline" className="w-full font-bold">Lihat Hasil</Button>
-            </Link>
-          </div>
-        )}
-
-        {evaluation.isActive && (
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-bold">Evaluasi Aktif</span>
-            </div>
-          </div>
-        )}
+        </div>
       </Card>
 
       {/* Pre-Quiz Warning Modal */}
@@ -164,7 +282,7 @@ function EvaluationCard({ evaluation, getCourseName, getCourseColor, onStart }: 
             </div>
 
             <h3 className="text-2xl font-black text-center text-zinc-900 dark:text-white mb-3">
-              Sebelum Mulai...
+              Sebelum Masuk Arena...
             </h3>
 
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
@@ -179,7 +297,7 @@ function EvaluationCard({ evaluation, getCourseName, getCourseColor, onStart }: 
               </Button>
               <Button
                 onClick={() => { setShowWarning(false); onStart(); }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 font-bold rounded-2xl h-12 text-base shadow-lg shadow-blue-500/25"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 font-bold rounded-2xl h-12 text-base shadow-lg shadow-indigo-500/25 text-white"
               >
                 🔥 Gas Sekarang!
               </Button>

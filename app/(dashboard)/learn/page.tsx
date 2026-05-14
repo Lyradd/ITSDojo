@@ -60,7 +60,7 @@ export default function LearnPage() {
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
-  
+
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", icon: <CheckCircle className="w-8 h-8" /> });
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -329,15 +329,15 @@ export default function LearnPage() {
           />
         </div>
       </div>
-      
-      <AlertModal 
-        isOpen={alertConfig.isOpen} 
-        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))} 
-        title={alertConfig.title} 
-        message={alertConfig.message} 
-        icon={alertConfig.icon} 
+
+      <AlertModal
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        icon={alertConfig.icon}
       />
-      
+
     </div>
   );
 }

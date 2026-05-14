@@ -243,12 +243,25 @@ export default function LessonIDEPage() {
 
           <div className="lg:col-span-2 flex flex-col gap-6">
             <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
-              {/* VIDEO PLACEHOLDER - Hanya muncul di step Video */}
+              {/* VIDEO PLAYER - Hanya muncul di step Video */}
               {isVideo && (
-                <div className="w-full aspect-video bg-zinc-800 flex flex-col items-center justify-center relative group cursor-pointer border-b-2 border-zinc-200 dark:border-zinc-800">
-                  <PlayCircle className="w-20 h-20 text-white/50 group-hover:text-white/90 group-hover:scale-110 transition-all z-10" />
-                  <p className="text-white/40 mt-4 font-medium z-10 uppercase tracking-widest text-sm">Preview Video Player</p>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                <div className="w-full aspect-video bg-zinc-800 relative group border-b-2 border-zinc-200 dark:border-zinc-800">
+                  {problem?.videoUrl ? (
+                    <iframe 
+                      className="w-full h-full"
+                      src={problem.videoUrl} 
+                      title="YouTube video player" 
+                      frameBorder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                      allowFullScreen
+                    ></iframe>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center w-full h-full">
+                      <PlayCircle className="w-20 h-20 text-white/50 group-hover:text-white/90 group-hover:scale-110 transition-all z-10" />
+                      <p className="text-white/40 mt-4 font-medium z-10 uppercase tracking-widest text-sm">No Video Available</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -263,19 +276,16 @@ export default function LessonIDEPage() {
                   {problem?.title || 'Memahami Konsep Dasar'}
                 </h1>
 
-                {/* DUMMY DESCRIPTION UNTUK SUMMARY */}
+                {/* DYNAMIC SUMMARY CONTENT */}
                 {!isVideo && (
                   <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
-                    <h3 className="font-bold text-xl text-zinc-800 dark:text-zinc-200 mb-3">1. Pengantar</h3>
-                    <p className="leading-relaxed mb-4">Secara umum, file C akan membutuhkan beberapa kerangka awal seperti header library, layaknya baris <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-sm text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">#include &lt;stdio.h&gt;</code> untuk memanggil utilitas antarmuka *input-output* standar.</p>
-                    <div className="bg-zinc-50 dark:bg-zinc-950 p-5 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 my-6 font-mono text-sm text-zinc-700 dark:text-zinc-300 shadow-inner">
-                      <span className="text-blue-600 dark:text-blue-400">int</span> main() {'{\n'}
-                      &nbsp;&nbsp;<span className="text-green-600 dark:text-green-500">{"// Tempat mengetik kode"}</span>{'\n'}
-                      &nbsp;&nbsp;<span className="text-blue-600 dark:text-blue-400">printf</span>(<span className="text-green-600 dark:text-green-400">"Semangat Belajar!"</span>);{'\n'}
-                      &nbsp;&nbsp;<span className="text-pink-600 dark:text-pink-400">return</span> <span className="text-orange-500">0</span>;{'\n'}
-                      {'}'}
-                    </div>
-                    <p className="leading-relaxed mb-4">Fungsi utama dideklarasikan di dalam <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-sm text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">int main()</code>. Sistem (*compiler*) akan otomatis mengeksekusi urutan baris di dalamnya langkah demi langkah ketika diaplikasikan.</p>
+                    {problem?.summaryContent ? (
+                      <div dangerouslySetInnerHTML={{ __html: problem.summaryContent }} />
+                    ) : (
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center">
+                        <p>Rangkuman belum tersedia untuk materi ini.</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {isVideo && (
@@ -348,13 +358,23 @@ export default function LessonIDEPage() {
                   Lanjut ke Rangkuman <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                 </Button>
               ) : (
-                <Button
-                  size="lg"
-                  className="w-full font-extrabold text-md h-14 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xl shadow-blue-900/40 transition-all hover:scale-[1.02] active:scale-[0.98] border-none"
-                  onClick={() => setStep('practice')}
-                >
-                  Lanjut Latihan Coding <Code className="w-4 h-4 ml-2" />
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    size="lg"
+                    className="w-full font-extrabold text-md h-14 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xl shadow-blue-900/40 transition-all hover:scale-[1.02] active:scale-[0.98] border-none"
+                    onClick={() => setStep('practice')}
+                  >
+                    Lanjut Latihan Coding <Code className="w-4 h-4 ml-2" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full font-bold text-md h-14 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    onClick={() => setStep('video')}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Video
+                  </Button>
+                </div>
               )}
             </Card>
           </div>

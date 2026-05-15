@@ -50,6 +50,7 @@ const dosenMenuItems = [
   { icon: BookOpen, label: "Daftar Kelas", href: "/dosen/courses" },
   { icon: Users, label: "Mahasiswa", href: "/dosen/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
+  { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
   { icon: UserCheck, label: "Permintaan Kelas", href: "/dosen/enrollments" },
   { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
   { icon: Settings, label: "Pengaturan", href: "/dosen/settings" },
@@ -61,6 +62,7 @@ const asdosMenuItems = [
   { icon: BookOpen, label: "Daftar Kelas", href: "/asdos/courses" },
   { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/asdos/evaluations" },
+  { icon: Trophy, label: "Papan Peringkat", href: "/asdos/leaderboard" },
   { icon: UserCheck, label: "Permintaan Kelas", href: "/asdos/enrollments" },
   { icon: BarChart3, label: "Analitik", href: "/asdos/analytics" },
 ];

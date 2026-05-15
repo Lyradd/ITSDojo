@@ -92,7 +92,7 @@ export default function DosenDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Link href="/dosen/courses">
             <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
@@ -124,16 +124,31 @@ export default function DosenDashboardPage() {
           </Link>
 
           <Link href="/dosen/analytics">
-            <Card className="p-6 rounded-2xl border-2 hover:border-green-400 transition-all cursor-pointer group">
+            <Card className="p-6 rounded-2xl border-2 hover:border-green-400 transition-all cursor-pointer group h-full">
               <div className="flex items-center gap-4">
                 <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-xl group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Lihat Analytics</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Reports & insights</div>
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Analytics</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Reports</div>
                 </div>
                 <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-green-600 transition-all" />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dosen/leaderboard">
+            <Card className="p-6 rounded-2xl border-2 hover:border-yellow-400 transition-all cursor-pointer group h-full">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl group-hover:scale-110 transition-transform">
+                  <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Leaderboard</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Peringkat</div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-yellow-600 transition-all" />
               </div>
             </Card>
           </Link>

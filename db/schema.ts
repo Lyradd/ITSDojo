@@ -58,9 +58,26 @@ export const lessons = pgTable('lessons', {
   id: serial('id').primaryKey(),
   unitId: integer('unit_id').references(() => units.id, { onDelete: 'cascade' }).notNull(),
   title: text('title').notNull(),
-  content: text('content'), // Materi pelajaran
   order: integer('order').notNull(),
-  type: text('type').default('lesson').notNull(),
+
+  // Metadata (ditampilkan di roadmap node)
+  description: text('description'),              // Deskripsi singkat
+  duration: text('duration'),                     // Estimasi waktu (~15 menit)
+  xpReward: integer('xp_reward').default(50).notNull(),
+  gemReward: integer('gem_reward').default(10).notNull(),
+
+  // Konten Pembelajaran
+  videoUrl: text('video_url'),                    // YouTube embed URL
+  summaryContent: text('summary_content'),        // HTML content untuk rangkuman materi
+
+  // Soal Coding (Practice)
+  problemTitle: text('problem_title'),
+  problemDescription: text('problem_description'),
+  problemCategory: text('problem_category'),
+  starterCode: text('starter_code'),
+  defaultLanguage: text('default_language').default('c'),
+  sampleInput: text('sample_input'),
+  sampleOutput: text('sample_output'),
 });
 
 export const questions = pgTable('questions', {
@@ -70,6 +87,15 @@ export const questions = pgTable('questions', {
   options: text('options').array().notNull(),
   correctAnswer: text('correct_answer').notNull(),
   xpReward: integer('xp_reward').default(10).notNull(),
+});
+
+export const testCases = pgTable('test_cases', {
+  id: serial('id').primaryKey(),
+  lessonId: integer('lesson_id').references(() => lessons.id, { onDelete: 'cascade' }).notNull(),
+  stdin: text('stdin').notNull().default(''),
+  expected: text('expected').notNull(),
+  hidden: boolean('hidden').default(false).notNull(),
+  order: integer('order').default(1).notNull(),
 });
 
 // ==========================================
@@ -170,4 +196,18 @@ export const coursesRelations = relations(courses, ({ many }) => ({
   units: many(units),
   enrollments: many(enrollments),
   evaluations: many(evaluations),
+}));
+
+export const unitsRelations = relations(units, ({ one, many }) => ({
+  course: one(courses, { fields: [units.courseId], references: [courses.id] }),
+  lessons: many(lessons),
+}));
+
+export const lessonsRelations = relations(lessons, ({ one, many }) => ({
+  unit: one(units, { fields: [lessons.unitId], references: [units.id] }),
+  testCases: many(testCases),
+}));
+
+export const testCasesRelations = relations(testCases, ({ one }) => ({
+  lesson: one(lessons, { fields: [testCases.lessonId], references: [lessons.id] }),
 }));

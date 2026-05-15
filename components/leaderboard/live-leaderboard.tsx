@@ -8,7 +8,6 @@ import { Users, Activity, Clock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
-import { ProfileRadarModal } from './profile-radar-modal';
 
 interface LiveLeaderboardProps {
   className?: string;
@@ -25,7 +24,6 @@ export function LiveLeaderboard({
 }: LiveLeaderboardProps) {
   const { leaderboard, isLiveUpdateActive, userRank } = useEvaluationStore();
   const [isLive, setIsLive] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<LeaderboardEntry | null>(null);
 
   useEffect(() => {
     if (isLiveUpdateActive) {
@@ -139,7 +137,6 @@ export function LiveLeaderboard({
               key={entry.userId} 
               entry={entry} 
               index={index}
-              onProfileClick={setSelectedProfile}
             />
           ))
         )}
@@ -154,11 +151,6 @@ export function LiveLeaderboard({
         </div>
       )}
 
-      {/* Radar Chart Profile Modal using React Portal */}
-      <ProfileRadarModal 
-        profile={selectedProfile} 
-        onClose={() => setSelectedProfile(null)} 
-      />
     </Card>
   );
 }

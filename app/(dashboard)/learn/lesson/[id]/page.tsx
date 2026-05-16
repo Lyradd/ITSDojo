@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUserStore } from "@/lib/store";
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
-import { COURSE_CONTENT, getLessonProblem } from "@/lib/lesson-data";
 import {
   ArrowLeft,
   Settings,
@@ -37,53 +36,49 @@ export default function LessonIDEPage() {
   const router = useRouter();
   const params = useParams();
   const lessonId = params?.id as string;
-  const problem = useMemo(() => getLessonProblem(lessonId), [lessonId]);
 
   const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [code, setCode] = useState<string>(problem?.starterCode || '');
+  const [loading, setLoading] = useState(true);
+  const [lesson, setLesson] = useState<any>(null);
+  const [code, setCode] = useState<string>('');
   const [activeTab, setActiveTab] = useState('problem');
   const [step, setStep] = useState<LessonStep>('video');
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [executionResult, setExecutionResult] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
-  const [language, setLanguage] = useState(problem?.defaultLanguage || "c");
+  const [language, setLanguage] = useState("c");
 
-
-  // --- Route Protection: cek apakah lesson ini boleh diakses ---
-
-  const isLessonAccessible = useMemo(() => {
-    if (!lessonId) return false;
-
-    // Cari kursus yang memiliki lesson ini
-    const courseEntry = Object.entries(COURSE_CONTENT).find(([, content]) =>
-      content.nodes.some(n => n.id === lessonId)
-    );
-    if (!courseEntry) return false; // Lesson ID tidak dikenal
-
-    const [, courseContent] = courseEntry;
-    const nodes = courseContent.nodes;
-    const nodeIndex = nodes.findIndex(n => n.id === lessonId);
-    if (nodeIndex === -1) return false;
-
-    // Cek apakah lesson sudah completed
-    if (completedLessonIds.includes(lessonId)) return true;
-
-    // Cek apakah lesson ini adalah "active" (semua sebelumnya sudah selesai)
-    const activeNodeIndex = nodes.findIndex((n, idx) => {
-      const prevId = idx === 0 ? null : nodes[idx - 1].id;
-      const isPrevCompleted = prevId ? completedLessonIds.includes(prevId) : true;
-      const isCurrCompleted = completedLessonIds.includes(n.id);
-      return isPrevCompleted && !isCurrCompleted;
-    });
-
-    return nodeIndex === activeNodeIndex;
-  }, [lessonId, completedLessonIds]);
+  // Fetch lesson data from API
+  const fetchLesson = useCallback(async () => {
+    if (!lessonId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}`);
+      if (!res.ok) {
+        setLesson(null);
+        return;
+      }
+      const data = await res.json();
+      setLesson(data);
+      setCode(data.starterCode || '');
+      setLanguage(data.defaultLanguage || 'c');
+    } catch (err) {
+      console.error('Failed to fetch lesson:', err);
+      setLesson(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [lessonId]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isMounted && isLoggedIn) fetchLesson();
+  }, [isMounted, isLoggedIn, fetchLesson]);
 
   // Redirect jika belum login
   useEffect(() => {
@@ -92,14 +87,26 @@ export default function LessonIDEPage() {
     }
   }, [isMounted, isLoggedIn, router]);
 
-  // Redirect jika lesson terkunci (akses via URL langsung)
-  useEffect(() => {
-    if (isMounted && isLoggedIn && !isLessonAccessible) {
-      router.push("/learn");
-    }
-  }, [isMounted, isLoggedIn, isLessonAccessible, router]);
+  if (!isMounted || !isLoggedIn) return null;
 
-  if (!isMounted || !isLoggedIn || !isLessonAccessible) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!lesson) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-zinc-500">Lesson tidak ditemukan.</p>
+        <Link href="/learn">
+          <Button>Kembali ke Learn</Button>
+        </Link>
+      </div>
+    );
+  }
 
   // Helper: eksekusi kode via Piston API
   const executeCode = async (stdin?: string) => {
@@ -145,19 +152,19 @@ export default function LessonIDEPage() {
 
   // Submit & Selesai: jalankan terhadap semua test case, validasi output
   const handleSubmit = async () => {
-    if (!problem) return;
+    if (!lesson?.testCases || lesson.testCases.length === 0) return;
 
     setIsSubmitting(true);
     setExecutionResult(null);
     setIsError(false);
 
-    let resultLog = `⏳ Menjalankan ${problem.testCases.length} test cases...\n\n`;
+    let resultLog = `⏳ Menjalankan ${lesson.testCases.length} test cases...\n\n`;
     setExecutionResult(resultLog);
 
     let allPassed = true;
 
     try {
-      for (const tc of problem.testCases) {
+      for (const tc of lesson.testCases) {
         const data = await executeCode(tc.stdin);
 
         const actualOutput = (data.run?.output ?? "").replace(/\r\n/g, "\n").trimEnd();
@@ -167,7 +174,7 @@ export default function LessonIDEPage() {
         if (!data.run || data.run.code !== 0 || data.run.stderr) {
           allPassed = false;
           const errorMsg = data.run?.stderr || data.run?.output || data.message || "Unknown error";
-          resultLog += `❌ Test Case ${tc.id}: ERROR\n`;
+          resultLog += `❌ Test Case ${tc.order}: ERROR\n`;
           resultLog += `   Error: ${errorMsg.trim()}\n\n`;
           setExecutionResult(resultLog);
           setIsError(true);
@@ -176,10 +183,10 @@ export default function LessonIDEPage() {
 
         // Bandingkan output
         if (actualOutput === expectedOutput) {
-          resultLog += `✅ Test Case ${tc.id}: PASSED\n`;
+          resultLog += `✅ Test Case ${tc.order}: PASSED\n`;
         } else {
           allPassed = false;
-          resultLog += `❌ Test Case ${tc.id}: FAILED\n`;
+          resultLog += `❌ Test Case ${tc.order}: FAILED\n`;
           resultLog += `   Expected:\n${expectedOutput.split("\n").map((l: string) => `   │ ${l}`).join("\n")}\n`;
           resultLog += `   Got:\n${actualOutput.split("\n").map((l: string) => `   │ ${l}`).join("\n")}\n`;
         }
@@ -195,13 +202,7 @@ export default function LessonIDEPage() {
 
         // Tandai lesson selesai setelah delay singkat agar user bisa lihat hasil
         setTimeout(() => {
-          // Cari node ini untuk mendapatkan reward dinamisnya
-          const courseEntry = Object.entries(COURSE_CONTENT).find(([, content]) =>
-            content.nodes.some(n => n.id === lessonId)
-          );
-          const node = courseEntry?.[1].nodes.find(n => n.id === lessonId);
-
-          completeLesson(params?.id as string, true, node?.xpReward, node?.gemReward);
+          completeLesson(lessonId, true, lesson.xpReward, lesson.gemReward);
           triggerConfetti();
           playSuccessSound();
           setTimeout(() => {
@@ -223,9 +224,7 @@ export default function LessonIDEPage() {
     }
   };
 
-  const lessonIdStr = params?.id as string || "unknown";
-  const lastDashIndex = lessonIdStr.lastIndexOf("-");
-  const stageNumber = lastDashIndex > -1 ? lessonIdStr.substring(lastDashIndex + 1) : "1";
+  const stageNumber = lessonId;
 
   // ============================================
   // RENDER: VIDEO & SUMMARY LAYOUT (Langkah 1 & 2)
@@ -246,10 +245,10 @@ export default function LessonIDEPage() {
               {/* VIDEO PLAYER - Hanya muncul di step Video */}
               {isVideo && (
                 <div className="w-full aspect-video bg-zinc-800 relative group border-b-2 border-zinc-200 dark:border-zinc-800">
-                  {problem?.videoUrl ? (
+                  {lesson.videoUrl ? (
                     <iframe 
                       className="w-full h-full"
-                      src={problem.videoUrl} 
+                      src={lesson.videoUrl} 
                       title="YouTube video player" 
                       frameBorder="0" 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -268,19 +267,19 @@ export default function LessonIDEPage() {
               <div className="p-8">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 text-xs font-bold rounded-full uppercase tracking-wider">
-                    {problem?.category || 'Materi Dasar'}
+                    {lesson.problemCategory || 'Materi Dasar'}
                   </span>
                   <span className="text-sm font-bold text-zinc-400">Stage {stageNumber}</span>
                 </div>
                 <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-4">
-                  {problem?.title || 'Memahami Konsep Dasar'}
+                  {lesson.title || 'Memahami Konsep Dasar'}
                 </h1>
 
                 {/* DYNAMIC SUMMARY CONTENT */}
                 {!isVideo && (
                   <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
-                    {problem?.summaryContent ? (
-                      <div dangerouslySetInnerHTML={{ __html: problem.summaryContent }} />
+                    {lesson.summaryContent ? (
+                      <div dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
                     ) : (
                       <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center">
                         <p>Rangkuman belum tersedia untuk materi ini.</p>
@@ -396,9 +395,9 @@ export default function LessonIDEPage() {
             <ArrowLeft className="w-4 h-4" /> Kembali Rangkuman
           </Button>
           <div className="hidden sm:flex items-center gap-2 text-zinc-400">
-            <span>{problem?.category || 'Lesson'}</span>
+            <span>{lesson.problemCategory || 'Lesson'}</span>
             <span>/</span>
-            <span className="text-zinc-800 dark:text-zinc-100">{problem?.title || 'Unknown'}</span>
+            <span className="text-zinc-800 dark:text-zinc-100">{lesson.problemTitle || lesson.title || 'Unknown'}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -432,29 +431,29 @@ export default function LessonIDEPage() {
 
           {/* Content Area — Dynamic dari problem data */}
           <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
-            <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-6">{problem?.title || 'Problem'}</h1>
-            <p className="mb-6">{problem?.description}</p>
+            <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-6">{lesson.problemTitle || lesson.title || 'Problem'}</h1>
+            <p className="mb-6">{lesson.problemDescription}</p>
 
             <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Sample</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div>
                 <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Input</h2>
                 <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre shadow-inner">
-                  {problem?.sampleInput}
+                  {lesson.sampleInput}
                 </div>
               </div>
               <div>
                 <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Output</h2>
                 <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre shadow-inner">
-                  {problem?.sampleOutput}
+                  {lesson.sampleOutput}
                 </div>
               </div>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-4 text-sm text-blue-800 dark:text-blue-300 rounded-r-xl">
               <strong className="font-bold flex items-center gap-2 mb-1"><FileCode2 className="w-4 h-4" /> Info:</strong>
-              {problem?.testCases && (
-                <span>Kode Anda akan diuji terhadap {problem.testCases.length} test case ({problem.testCases.filter(tc => !tc.hidden).length} terlihat, {problem.testCases.filter(tc => tc.hidden).length} tersembunyi).</span>
+              {lesson.testCases && (
+                <span>Kode Anda akan diuji terhadap {lesson.testCases.length} test case ({lesson.testCases.filter((tc: any) => !tc.hidden).length} terlihat, {lesson.testCases.filter((tc: any) => tc.hidden).length} tersembunyi).</span>
               )}
             </div>
 

@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
-import { COURSES } from "@/lib/dummydata";
-import { COURSE_CONTENT, LessonNode } from "@/lib/lesson-data";
 import { INITIAL_LEADERBOARD } from "@/lib/evaluation-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -60,10 +58,45 @@ export default function LearnPage() {
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
-
+  const [loading, setLoading] = useState(true);
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: "", message: "", icon: <CheckCircle className="w-8 h-8" /> });
 
+  // Data dari API
+  const [activeCourse, setActiveCourse] = useState<any>(null);
+  const [currentUnit, setCurrentUnit] = useState<any>(null);
+  const [lessonNodes, setLessonNodes] = useState<any[]>([]);
+
+  const fetchCourseData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch course info
+      const coursesRes = await fetch('/api/courses');
+      const allCourses = await coursesRes.json();
+      const course = allCourses.find((c: any) => c.id === activeCourseId) || allCourses[0];
+      setActiveCourse(course);
+
+      // Fetch units + lessons
+      const courseIdToFetch = course?.id || activeCourseId;
+      const unitsRes = await fetch(`/api/courses/${courseIdToFetch}/units`);
+      const unitsData = await unitsRes.json();
+
+      // Gunakan unit pertama sebagai "current unit"
+      if (unitsData.length > 0) {
+        setCurrentUnit(unitsData[0]);
+        setLessonNodes(unitsData[0].lessons || []);
+      } else {
+        setCurrentUnit(null);
+        setLessonNodes([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch course data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeCourseId]);
+
   useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => { if (isMounted && isLoggedIn) fetchCourseData(); }, [isMounted, isLoggedIn, fetchCourseData]);
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
@@ -73,9 +106,6 @@ export default function LearnPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  // Logika Data Kursus
-  const activeCourse = COURSES.find(c => c.id === activeCourseId) || COURSES[0];
-  const currentContent = COURSE_CONTENT[activeCourseId] || COURSE_CONTENT["fe-basic"];
   const theme = getCourseTheme(activeCourseId);
 
   // Hitung Peringkat & Leaderboard
@@ -87,11 +117,9 @@ export default function LearnPage() {
   const userRank = computedLeaderboard.findIndex(u => u.userId === 'current') + 1;
 
   const handleSimulateLesson = () => {
-    // Cari node pertama yang belum diselesaikan dalam konten kursus saat ini
-    const activeNode = currentContent.nodes.find((n: any) => !completedLessonIds.includes(n.id));
-
-    if (activeNode) {
-      completeLesson(activeNode.id, true, activeNode.xpReward, activeNode.gemReward);
+    const activeNodeData = lessonNodes.find((n: any) => !completedLessonIds.includes(String(n.id)));
+    if (activeNodeData) {
+      completeLesson(String(activeNodeData.id), true, activeNodeData.xpReward, activeNodeData.gemReward);
       triggerConfetti();
       playSuccessSound();
     } else {
@@ -105,19 +133,42 @@ export default function LearnPage() {
   };
 
   // Hitung Progress Unit
-  const completedCount = currentContent.nodes.filter((n: LessonNode) => completedLessonIds.includes(n.id)).length;
-  const totalCount = currentContent.nodes.length;
-  const progressPercent = Math.round((completedCount / totalCount) * 100);
-  const isUnitComplete = progressPercent === 100;
+  const completedCount = lessonNodes.filter((n: any) => completedLessonIds.includes(String(n.id))).length;
+  const totalCount = lessonNodes.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isUnitComplete = totalCount > 0 && progressPercent === 100;
 
   // Cari Node Aktif untuk Banner
-  const activeNodeIndex = currentContent.nodes.findIndex((n: LessonNode, idx: number) => {
-    const prevId = idx === 0 ? null : currentContent.nodes[idx - 1].id;
+  const activeNodeIndex = lessonNodes.findIndex((n: any, idx: number) => {
+    const prevId = idx === 0 ? null : String(lessonNodes[idx - 1].id);
     const isPrevCompleted = prevId ? completedLessonIds.includes(prevId) : true;
-    const isCurrCompleted = completedLessonIds.includes(n.id);
+    const isCurrCompleted = completedLessonIds.includes(String(n.id));
     return isPrevCompleted && !isCurrCompleted;
   });
-  const activeNode = activeNodeIndex !== -1 ? currentContent.nodes[activeNodeIndex] : null;
+  const activeNode = activeNodeIndex !== -1 ? lessonNodes[activeNodeIndex] : null;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Empty state: belum ada kursus di database
+  if (!activeCourse) {
+    return (
+      <div className="container mx-auto max-w-6xl px-4 py-16 text-center">
+        <GraduationCap className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
+        <h2 className="text-xl font-bold text-zinc-600 dark:text-zinc-400 mb-2">Belum ada kursus tersedia</h2>
+        <p className="text-sm text-zinc-500 mb-4">Admin perlu menambahkan kursus dan lesson terlebih dahulu.</p>
+        <Link href="/courses">
+          <Button variant="outline">Lihat Halaman Kursus</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
@@ -148,7 +199,7 @@ export default function LearnPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">Selamat! Unit Selesai 🎉</h3>
-                  <p className="text-sm opacity-90">Anda telah menyelesaikan seluruh materi di {currentContent.unitTitle}.</p>
+                  <p className="text-sm opacity-90">Anda telah menyelesaikan seluruh materi di {currentUnit?.title || 'unit ini'}.</p>
                 </div>
               </div>
               <Link href="/courses">
@@ -234,10 +285,10 @@ export default function LearnPage() {
             {/* Header Unit (Floating Label) */}
             <div className="flex flex-col items-center relative mb-16 z-20">
               <span className={`px-6 py-2 text-white rounded-full text-sm font-bold shadow-lg border-2 ${theme.pill}`}>
-                {currentContent.unitTitle}
+                {currentUnit?.title || 'Unit 1'}
               </span>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm px-3 py-1 rounded-full border border-zinc-200/50 dark:border-zinc-800/50">
-                {currentContent.unitDesc}
+                {currentUnit?.description || ''}
               </p>
             </div>
 
@@ -245,40 +296,52 @@ export default function LearnPage() {
             <div className="w-full relative flex flex-col items-center">
 
               <div className="flex flex-col items-center gap-16 relative z-20 w-full max-w-md mx-auto">
-                {currentContent.nodes.map((origNode: LessonNode, index: number) => {
-                  const isEven = index % 2 === 0;
+                {loading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : lessonNodes.length === 0 ? (
+                  <div className="text-center py-16 text-zinc-500">
+                    <p className="font-bold">Belum ada lesson di unit ini.</p>
+                    <p className="text-sm mt-1">Admin perlu menambahkan lesson terlebih dahulu.</p>
+                  </div>
+                ) : (
+                  lessonNodes.map((origNode: any, index: number) => {
+                    const isEven = index % 2 === 0;
+                    const isCompleted = completedLessonIds.includes(String(origNode.id));
 
-                  const isCompleted = completedLessonIds.includes(origNode.id);
+                    let computedType = 'locked';
+                    if (isCompleted) {
+                      computedType = 'completed';
+                    } else if (index === activeNodeIndex) {
+                      computedType = 'active';
+                    } else if (index === activeNodeIndex + 1) {
+                      computedType = 'next_locked';
+                    } else {
+                      computedType = 'far_locked';
+                    }
 
-                  let computedType = 'locked';
-                  if (isCompleted) {
-                    computedType = 'completed';
-                  } else if (index === activeNodeIndex) {
-                    computedType = 'active';
-                  } else if (index === activeNodeIndex + 1) {
-                    computedType = 'next_locked';
-                  } else {
-                    computedType = 'far_locked';
-                  }
+                    const node: ComputedLessonNode = {
+                      id: String(origNode.id),
+                      title: origNode.title,
+                      desc: origNode.description || '',
+                      type: computedType as ComputedLessonNode['type'],
+                      duration: origNode.duration,
+                      xpReward: origNode.xpReward,
+                      gemReward: origNode.gemReward
+                    };
 
-                  const node: ComputedLessonNode = {
-                    ...origNode,
-                    type: computedType as ComputedLessonNode['type'],
-                    duration: origNode.duration,
-                    xpReward: origNode.xpReward,
-                    gemReward: origNode.gemReward
-                  };
-
-                  return (
-                    <RoadmapNode
-                      key={node.id}
-                      node={node}
-                      index={index}
-                      totalNodes={currentContent.nodes.length}
-                      isEven={isEven}
-                    />
-                  );
-                })}
+                    return (
+                      <RoadmapNode
+                        key={node.id}
+                        node={node}
+                        index={index}
+                        totalNodes={lessonNodes.length}
+                        isEven={isEven}
+                      />
+                    );
+                  })
+                )}
               </div>
 
               {/* Footer Section: Next Unit */}
@@ -291,7 +354,7 @@ export default function LearnPage() {
                     <Lock className="w-5 h-5 text-zinc-400" />
                   </div>
                   <h3 className="text-sm font-bold text-zinc-500">Unit Selanjutnya</h3>
-                  <p className="text-xs text-zinc-400 mt-1">Selesaikan {currentContent.unitTitle} untuk membuka.</p>
+                  <p className="text-xs text-zinc-400 mt-1">Selesaikan {currentUnit?.title || 'unit ini'} untuk membuka.</p>
                 </div>
               </div>
 

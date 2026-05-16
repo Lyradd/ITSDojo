@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { COURSES } from '@/lib/dummydata';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,29 +37,51 @@ export default function CoursesManagementPage() {
     icon: '💻'
   });
 
-  useEffect(() => { setIsMounted(true); }, []);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  if (!isMounted) return null;
+  const fetchCourses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/courses');
+      const data = await res.json();
+      setCourses(data);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }, []);
 
-  const filteredCourses = COURSES.filter(course =>
+  useEffect(() => { setIsMounted(true); fetchCourses(); }, [fetchCourses]);
+
+  if (!isMounted || loading) return null;
+
+  const filteredCourses = courses.filter((course: any) =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     course.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateCourse = (e: React.FormEvent) => {
+  const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock create - in real app would call API
-    alert('Kursus berhasil dibuat! (Mock action)');
-    setShowCreateForm(false);
-    setFormData({
-      title: '',
-      description: '',
-      difficulty: 'beginner',
-      xpReward: 100,
-      lessons: 0,
-      color: 'bg-blue-200 text-blue-700',
-      icon: '💻'
-    });
+    setSaving(true);
+    try {
+      const courseId = formData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: courseId,
+          title: formData.title,
+          description: formData.description,
+          difficulty: formData.difficulty === 'beginner' ? 'Beginner' : formData.difficulty === 'intermediate' ? 'Intermediate' : 'Advanced',
+          xpReward: formData.xpReward,
+          color: formData.color,
+        }),
+      });
+      setShowCreateForm(false);
+      setFormData({ title: '', description: '', difficulty: 'beginner', xpReward: 100, lessons: 0, color: 'bg-blue-200 text-blue-700', icon: '💻' });
+      await fetchCourses();
+    } catch (err) { console.error(err); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -156,7 +177,7 @@ export default function CoursesManagementPage() {
                     id="xp"
                     type="number"
                     value={formData.xpReward}
-                    onChange={(e) => setFormData({...formData, xpReward: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({...formData, xpReward: parseInt(e.target.value) || 0})}
                     min="0"
                     className="h-11"
                   />

@@ -63,7 +63,7 @@ export default function LearnPage() {
 
   // Data dari API
   const [activeCourse, setActiveCourse] = useState<any>(null);
-  const [currentUnit, setCurrentUnit] = useState<any>(null);
+  const [allUnits, setAllUnits] = useState<any[]>([]);
   const [lessonNodes, setLessonNodes] = useState<any[]>([]);
 
   const fetchCourseData = useCallback(async () => {
@@ -80,14 +80,21 @@ export default function LearnPage() {
       const unitsRes = await fetch(`/api/courses/${courseIdToFetch}/units`);
       const unitsData = await unitsRes.json();
 
-      // Gunakan unit pertama sebagai "current unit"
-      if (unitsData.length > 0) {
-        setCurrentUnit(unitsData[0]);
-        setLessonNodes(unitsData[0].lessons || []);
-      } else {
-        setCurrentUnit(null);
-        setLessonNodes([]);
+      setAllUnits(unitsData);
+
+      // Gabungkan semua lesson dari semua unit ke dalam satu array roadmap
+      const allLessons: any[] = [];
+      for (const unit of unitsData) {
+        for (const lesson of (unit.lessons || [])) {
+          allLessons.push({
+            ...lesson,
+            unitId: unit.id,
+            unitTitle: unit.title,
+            unitDescription: unit.description,
+          });
+        }
       }
+      setLessonNodes(allLessons);
     } catch (err) {
       console.error('Failed to fetch course data:', err);
     } finally {
@@ -198,8 +205,8 @@ export default function LearnPage() {
                   <PartyPopper className="w-7 h-7 text-yellow-300" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Selamat! Unit Selesai 🎉</h3>
-                  <p className="text-sm opacity-90">Anda telah menyelesaikan seluruh materi di {currentUnit?.title || 'unit ini'}.</p>
+                  <h3 className="font-bold text-lg">Selamat! Kursus Selesai 🎉</h3>
+                  <p className="text-sm opacity-90">Anda telah menyelesaikan seluruh materi di kursus {activeCourse?.title || 'ini'}.</p>
                 </div>
               </div>
               <Link href="/courses">
@@ -262,10 +269,10 @@ export default function LearnPage() {
               </div>
             </div>
 
-            {/* Progress Bar Unit */}
+            {/* Progress Bar Kursus Keseluruhan */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="opacity-80">PROGRES UNIT</span>
+                <span className="opacity-80">PROGRES KURSUS</span>
                 <span>{progressPercent}% ({completedCount}/{totalCount})</span>
               </div>
               <div className="h-3 bg-black/20 rounded-full overflow-hidden p-0.5">
@@ -279,87 +286,147 @@ export default function LearnPage() {
             </div>
           </div>
 
-          {/* 2. ROADMAP AREA (Seamless / Tanpa Kotak Border) */}
-          <div className="w-full relative min-h-[600px] flex flex-col items-center">
-
-            {/* Header Unit (Floating Label) */}
-            <div className="flex flex-col items-center relative mb-16 z-20">
-              <span className={`px-6 py-2 text-white rounded-full text-sm font-bold shadow-lg border-2 ${theme.pill}`}>
-                {currentUnit?.title || 'Unit 1'}
-              </span>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm px-3 py-1 rounded-full border border-zinc-200/50 dark:border-zinc-800/50">
-                {currentUnit?.description || ''}
-              </p>
+          {/* 2. UNIT-BASED ROADMAP — Setiap unit terpisah seperti Duolingo */}
+          {allUnits.length === 0 ? (
+            <div className="text-center py-16 text-zinc-500">
+              <p className="font-bold">Belum ada unit.</p>
+              <p className="text-sm mt-1">Admin perlu menambahkan unit dan lesson terlebih dahulu.</p>
             </div>
+          ) : (
+            allUnits.map((unit: any, unitIdx: number) => {
+              const unitLessons = unit.lessons || [];
+              const unitCompletedCount = unitLessons.filter((l: any) => completedLessonIds.includes(String(l.id))).length;
+              const unitTotalCount = unitLessons.length;
+              const unitProgress = unitTotalCount > 0 ? Math.round((unitCompletedCount / unitTotalCount) * 100) : 0;
+              const isUnitDone = unitTotalCount > 0 && unitProgress === 100;
 
-            {/* --- MAP NODES --- */}
-            <div className="w-full relative flex flex-col items-center">
+              // Hitung index global lesson pertama unit ini (untuk activeNodeIndex matching)
+              let globalStartIdx = 0;
+              for (let i = 0; i < unitIdx; i++) {
+                globalStartIdx += (allUnits[i].lessons || []).length;
+              }
 
-              <div className="flex flex-col items-center gap-16 relative z-20 w-full max-w-md mx-auto">
-                {loading ? (
-                  <div className="flex items-center justify-center py-16">
-                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              return (
+                <div key={unit.id} className="flex flex-col items-center gap-0">
+
+                  {/* ===== UNIT HEADER BANNER ===== */}
+                  <div className={`w-full rounded-2xl overflow-hidden shadow-lg mb-8 ${
+                    isUnitDone
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-500'
+                      : unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                        ? `${theme.bg}`
+                        : 'bg-zinc-300 dark:bg-zinc-800'
+                  }`}>
+                    <div className="p-5 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
+                          isUnitDone
+                            ? 'bg-white/20 text-white'
+                            : unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                              ? 'bg-white/20 text-white'
+                              : 'bg-zinc-400/30 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400'
+                        }`}>
+                          {isUnitDone ? <CheckCircle className="w-6 h-6" /> : unitIdx + 1}
+                        </div>
+                        <div>
+                          <h3 className={`font-bold text-base ${
+                            isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                              ? 'text-white'
+                              : 'text-zinc-500 dark:text-zinc-400'
+                          }`}>
+                            {unit.title}
+                          </h3>
+                          {unit.description && (
+                            <p className={`text-xs mt-0.5 ${
+                              isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                                ? 'text-white/70'
+                                : 'text-zinc-400 dark:text-zinc-500'
+                            }`}>
+                              {unit.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Mini progress */}
+                      <div className="text-right">
+                        <span className={`text-xs font-bold ${
+                          isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                            ? 'text-white/80'
+                            : 'text-zinc-400'
+                        }`}>
+                          {unitCompletedCount}/{unitTotalCount}
+                        </span>
+                        <div className={`h-2 w-24 rounded-full overflow-hidden mt-1 ${
+                          isUnitDone ? 'bg-white/20' : unitIdx === 0 || globalStartIdx <= activeNodeIndex ? 'bg-black/20' : 'bg-zinc-400/30 dark:bg-zinc-700'
+                        }`}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${unitProgress}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className={`h-full rounded-full ${isUnitDone ? 'bg-white' : 'bg-white/80'}`}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ) : lessonNodes.length === 0 ? (
-                  <div className="text-center py-16 text-zinc-500">
-                    <p className="font-bold">Belum ada lesson di unit ini.</p>
-                    <p className="text-sm mt-1">Admin perlu menambahkan lesson terlebih dahulu.</p>
+
+                  {/* ===== LESSON NODES DI DALAM UNIT ===== */}
+                  <div className="w-full relative flex flex-col items-center">
+                    <div className="flex flex-col items-center gap-16 relative z-20 w-full max-w-md mx-auto">
+                      {unitLessons.length === 0 ? (
+                        <div className="text-center py-8 text-zinc-400 text-sm">
+                          <p>Belum ada lesson di unit ini.</p>
+                        </div>
+                      ) : (
+                        unitLessons.map((origLesson: any, lessonIdx: number) => {
+                          const globalIdx = globalStartIdx + lessonIdx;
+                          const isEven = lessonIdx % 2 === 0;
+                          const isCompleted = completedLessonIds.includes(String(origLesson.id));
+
+                          let computedType = 'locked';
+                          if (isCompleted) {
+                            computedType = 'completed';
+                          } else if (globalIdx === activeNodeIndex) {
+                            computedType = 'active';
+                          } else if (globalIdx === activeNodeIndex + 1) {
+                            computedType = 'next_locked';
+                          } else {
+                            computedType = 'far_locked';
+                          }
+
+                          const node: ComputedLessonNode = {
+                            id: String(origLesson.id),
+                            title: origLesson.title,
+                            desc: origLesson.description || '',
+                            type: computedType as ComputedLessonNode['type'],
+                            duration: origLesson.duration,
+                            xpReward: origLesson.xpReward,
+                            gemReward: origLesson.gemReward
+                          };
+
+                          return (
+                            <RoadmapNode
+                              key={node.id}
+                              node={node}
+                              index={lessonIdx}
+                              totalNodes={unitLessons.length}
+                              isEven={isEven}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  lessonNodes.map((origNode: any, index: number) => {
-                    const isEven = index % 2 === 0;
-                    const isCompleted = completedLessonIds.includes(String(origNode.id));
 
-                    let computedType = 'locked';
-                    if (isCompleted) {
-                      computedType = 'completed';
-                    } else if (index === activeNodeIndex) {
-                      computedType = 'active';
-                    } else if (index === activeNodeIndex + 1) {
-                      computedType = 'next_locked';
-                    } else {
-                      computedType = 'far_locked';
-                    }
-
-                    const node: ComputedLessonNode = {
-                      id: String(origNode.id),
-                      title: origNode.title,
-                      desc: origNode.description || '',
-                      type: computedType as ComputedLessonNode['type'],
-                      duration: origNode.duration,
-                      xpReward: origNode.xpReward,
-                      gemReward: origNode.gemReward
-                    };
-
-                    return (
-                      <RoadmapNode
-                        key={node.id}
-                        node={node}
-                        index={index}
-                        totalNodes={lessonNodes.length}
-                        isEven={isEven}
-                      />
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Footer Section: Next Unit */}
-              <div className="mt-16 flex flex-col items-center gap-4 z-10 pb-10 relative">
-                <div className="absolute -top-11 left-1/2 -translate-x-1/2 w-2 h-11 z-0">
-                  <div className="w-0 h-full border-l-[4px] border-dashed border-zinc-300 dark:border-zinc-700 mx-auto" />
+                  {/* Jarak (Spacing) bersih antar unit */}
+                  {unitIdx < allUnits.length - 1 && (
+                    <div className="h-16 w-full" />
+                  )}
                 </div>
-                <div className="p-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-center w-64 grayscale opacity-70 relative z-20">
-                  <div className="w-12 h-12 bg-zinc-200 dark:bg-zinc-700 rounded-full mx-auto mb-2 flex items-center justify-center">
-                    <Lock className="w-5 h-5 text-zinc-400" />
-                  </div>
-                  <h3 className="text-sm font-bold text-zinc-500">Unit Selanjutnya</h3>
-                  <p className="text-xs text-zinc-400 mt-1">Selesaikan {currentUnit?.title || 'unit ini'} untuk membuka.</p>
-                </div>
-              </div>
-
-            </div>
-          </div>
+              );
+            })
+          )}
         </div>
 
         {/* =========================================

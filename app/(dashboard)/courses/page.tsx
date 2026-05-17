@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List, Search, Bookmark, BookmarkCheck
 } from "lucide-react";
-import { COURSES as RAW_COURSES } from "@/lib/dummydata";
-import { COURSE_CONTENT } from "@/lib/lesson-data";
 import { useUserStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -43,12 +41,59 @@ export default function CoursesPage() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [imageErrorIds, setImageErrorIds] = useState<string[]>([]);
 
-  // Data Processing (Mapping, Filtering, Sorting combined)
+  // === DATA DARI API (bukan dummy) ===
+  const [apiCourses, setApiCourses] = useState<any[]>([]);
+  const [courseLessonCounts, setCourseLessonCounts] = useState<Record<string, number>>({});
+  const [courseLessonIds, setCourseLessonIds] = useState<Record<string, string[]>>({});
+  const [loading, setLoading] = useState(true);
+
+  const fetchCourses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/courses');
+      const data = await res.json();
+      setApiCourses(data);
+
+      // Untuk setiap kursus, ambil jumlah lesson dan ID-nya dari units API
+      const counts: Record<string, number> = {};
+      const ids: Record<string, string[]> = {};
+      await Promise.all(
+        data.map(async (course: any) => {
+          try {
+            const unitsRes = await fetch(`/api/courses/${course.id}/units`);
+            const unitsData = await unitsRes.json();
+            const lessonIdList: string[] = [];
+            for (const unit of unitsData) {
+              for (const lesson of (unit.lessons || [])) {
+                lessonIdList.push(String(lesson.id));
+              }
+            }
+            counts[course.id] = lessonIdList.length;
+            ids[course.id] = lessonIdList;
+          } catch {
+            counts[course.id] = 0;
+            ids[course.id] = [];
+          }
+        })
+      );
+      setCourseLessonCounts(counts);
+      setCourseLessonIds(ids);
+    } catch (err) {
+      console.error('Failed to fetch courses:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCourses(); }, [fetchCourses]);
+
+  // Data Processing (Mapping, Filtering, Sorting)
   const sortedCourses = useMemo(() => {
     // 1. Map status and progress
-    let data = RAW_COURSES.map((course) => {
-      const completedCount = completedLessonIds.filter(id => id.startsWith(course.id)).length;
-      const lessonsCount = COURSE_CONTENT[course.id]?.nodes?.length || 0;
+    let data = apiCourses.map((course) => {
+      const lessonsCount = courseLessonCounts[course.id] || 0;
+      const lessonIdsForCourse = courseLessonIds[course.id] || [];
+      const completedCount = lessonIdsForCourse.filter(id => completedLessonIds.includes(id)).length;
       const progress = Math.min(Math.floor((completedCount / (lessonsCount || 1)) * 100), 100);
 
       const accessDateStr = courseAccessHistory?.[course.id];
@@ -68,6 +113,7 @@ export default function CoursesPage() {
 
       return {
         ...course,
+        image: course.imageSrc || `/images/courses/${course.id}.png`,
         progress,
         status,
         semesterRequired,
@@ -95,7 +141,7 @@ export default function CoursesPage() {
       else if (sortOption === "progress-desc") return b.progress - a.progress;
       return 0;
     });
-  }, [completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption, bookmarkedCourseIds, showSavedOnly]);
+  }, [apiCourses, courseLessonCounts, courseLessonIds, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption, bookmarkedCourseIds, showSavedOnly]);
 
   const formatDate = (date: Date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
 
@@ -115,13 +161,21 @@ export default function CoursesPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
 
       {/* --- HEADER SECTION --- */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Ikhtisar Kelas</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Daftar Kelas</h1>
           <p className="text-zinc-500 mt-1">Pilih kursus untuk menjadikannya materi belajar aktifmu.</p>
         </div>
 

@@ -117,6 +117,22 @@ export const userProgress = pgTable('user_progress', {
   completedAt: timestamp('completed_at').defaultNow().notNull(),
 });
 
+// Junction table: Menghubungkan Dosen ke kelas yang diampunya
+export const courseInstructors = pgTable('course_instructors', {
+  id: serial('id').primaryKey(),
+  courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  dosenId: text('dosen_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+});
+
+// Junction table: Menghubungkan Asdos ke kelas yang didampinginya
+export const courseAssistants = pgTable('course_assistants', {
+  id: serial('id').primaryKey(),
+  courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  asdosId: text('asdos_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+});
+
 // ==========================================
 // 4. TABEL EVALUATIONS (Kuis Real-time)
 // ==========================================

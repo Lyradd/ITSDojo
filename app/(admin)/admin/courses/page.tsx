@@ -17,22 +17,26 @@ import {
   Search,
   ArrowLeft,
   Save,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 
 export default function CoursesManagementPage() {
   const { role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const isAsdos = role === 'asdos';
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Create / Edit Form State
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     difficulty: 'beginner',
     xpReward: 100,
-    lessons: 0,
     color: 'bg-blue-200 text-blue-700',
     icon: '💻'
   });
@@ -40,6 +44,7 @@ export default function CoursesManagementPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
@@ -60,13 +65,36 @@ export default function CoursesManagementPage() {
     course.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateCourse = async (e: React.FormEvent) => {
+  const openCreateForm = () => {
+    setEditingCourseId(null);
+    setFormData({ title: '', description: '', difficulty: 'beginner', xpReward: 100, color: 'bg-blue-200 text-blue-700', icon: '💻' });
+    setShowCreateForm(true);
+  };
+
+  const openEditForm = (course: any) => {
+    setEditingCourseId(course.id);
+    setFormData({
+      title: course.title,
+      description: course.description,
+      difficulty: course.difficulty.toLowerCase(),
+      xpReward: course.xpReward,
+      color: course.color || 'bg-blue-200 text-blue-700',
+      icon: course.image || '💻'
+    });
+    setShowCreateForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const courseId = formData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      await fetch('/api/courses', {
-        method: 'POST',
+      const courseId = editingCourseId || formData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const url = editingCourseId ? `/api/courses/${editingCourseId}` : '/api/courses';
+      const method = editingCourseId ? 'PUT' : 'POST';
+
+      await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: courseId,
@@ -75,13 +103,33 @@ export default function CoursesManagementPage() {
           difficulty: formData.difficulty === 'beginner' ? 'Beginner' : formData.difficulty === 'intermediate' ? 'Intermediate' : 'Advanced',
           xpReward: formData.xpReward,
           color: formData.color,
+          image: formData.icon
         }),
       });
       setShowCreateForm(false);
-      setFormData({ title: '', description: '', difficulty: 'beginner', xpReward: 100, lessons: 0, color: 'bg-blue-200 text-blue-700', icon: '💻' });
+      setEditingCourseId(null);
+      setFormData({ title: '', description: '', difficulty: 'beginner', xpReward: 100, color: 'bg-blue-200 text-blue-700', icon: '💻' });
       await fetchCourses();
     } catch (err) { console.error(err); }
     finally { setSaving(false); }
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    try {
+      const res = await fetch(`/api/courses/${courseToDelete}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(`Gagal menghapus: ${errorData.error}`);
+        return;
+      }
+      await fetchCourses();
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan saat menghapus kelas.");
+    } finally {
+      setCourseToDelete(null);
+    }
   };
 
   return (
@@ -95,16 +143,16 @@ export default function CoursesManagementPage() {
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-8 h-8 text-blue-600" />
                 <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}
+                  {isAsdos ? 'Lihat Kelas' : 'Kelola Kelas'}
                 </h1>
               </div>
               <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-                {isAsdos ? 'Lihat materi pembelajaran yang tersedia' : 'Tambah, edit, dan kelola materi pembelajaran'}
+                {isAsdos ? 'Lihat materi kelas yang tersedia' : 'Tambah, edit, dan kelola materi kelas'}
               </p>
             </div>
             {!isAsdos && (
               <Button 
-                onClick={() => setShowCreateForm(!showCreateForm)}
+                onClick={() => showCreateForm ? setShowCreateForm(false) : openCreateForm()}
                 className="bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-bold shadow-lg"
               >
                 {showCreateForm ? (
@@ -115,7 +163,7 @@ export default function CoursesManagementPage() {
                 ) : (
                   <>
                     <Plus className="w-4 h-4 mr-2" />
-                    Buat Kursus Baru
+                    Buat Kelas Baru
                   </>
                 )}
               </Button>
@@ -123,16 +171,16 @@ export default function CoursesManagementPage() {
           </div>
         </div>
 
-        {/* Create Form - Dosen only */}
+        {/* Create / Edit Form - Dosen only */}
         {!isAsdos && showCreateForm && (
           <Card className="p-6 rounded-2xl border-2 mb-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
             <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6">
-              Buat Kursus Baru
+              {editingCourseId ? 'Edit Kelas' : 'Buat Kelas Baru'}
             </h3>
-            <form onSubmit={handleCreateCourse} className="space-y-4">
+            <form onSubmit={handleSaveCourse} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Judul Kursus *</Label>
+                  <Label htmlFor="title">Judul Kelas *</Label>
                   <Input
                     id="title"
                     value={formData.title}
@@ -164,13 +212,13 @@ export default function CoursesManagementPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Jelaskan tentang kursus ini..."
+                  placeholder="Jelaskan tentang kelas ini..."
                   required
                   rows={4}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="xp">XP Reward</Label>
                   <Input
@@ -178,18 +226,6 @@ export default function CoursesManagementPage() {
                     type="number"
                     value={formData.xpReward}
                     onChange={(e) => setFormData({...formData, xpReward: parseInt(e.target.value) || 0})}
-                    min="0"
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lessons">Jumlah Pelajaran</Label>
-                  <Input
-                    id="lessons"
-                    type="number"
-                    value={formData.lessons}
-                    onChange={(e) => setFormData({...formData, lessons: parseInt(e.target.value)})}
                     min="0"
                     className="h-11"
                   />
@@ -208,9 +244,9 @@ export default function CoursesManagementPage() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold">
-                  <Save className="w-4 h-4 mr-2" />
-                  Simpan Kursus
+                <Button type="submit" disabled={saving} className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold">
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {editingCourseId ? 'Simpan Perubahan' : 'Simpan Kelas'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
                   Batal
@@ -225,7 +261,7 @@ export default function CoursesManagementPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <Input
-              placeholder="Cari kursus..."
+              placeholder="Cari kelas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11"
@@ -251,10 +287,10 @@ export default function CoursesManagementPage() {
                 <div className="flex gap-1">
                   {!isAsdos && (
                     <>
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-950/30">
+                      <Button size="sm" variant="ghost" onClick={() => openEditForm(course)} className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-950/30">
                         <Edit className="w-4 h-4 text-blue-600" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-950/30">
+                      <Button size="sm" variant="ghost" onClick={() => setCourseToDelete(course.id)} className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-950/30">
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </>
@@ -271,10 +307,14 @@ export default function CoursesManagementPage() {
               </p>
 
               {/* Stats */}
-              <div className="flex items-center gap-4 mb-4 text-sm">
+              <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
                 <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-                  <span className="font-bold text-zinc-800 dark:text-zinc-100">{course.lessonsCount}</span>
-                  <span className="text-zinc-600 dark:text-zinc-400 ml-1">lessons</span>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-100">{course.unitsCount || 0}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400 ml-1">unit</span>
+                </div>
+                <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+                  <span className="font-bold text-zinc-800 dark:text-zinc-100">{course.lessonsCount || 0}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400 ml-1">materi</span>
                 </div>
                 <div className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                   <span className="font-bold text-yellow-700 dark:text-yellow-400">{course.xpReward}</span>
@@ -286,9 +326,9 @@ export default function CoursesManagementPage() {
               <div className="mb-4">
                 <span className={cn(
                   "px-3 py-1 rounded-full text-xs font-bold",
-                  course.difficulty === 'beginner' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-                  course.difficulty === 'intermediate' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                  course.difficulty === 'advanced' && "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                  course.difficulty.toLowerCase() === 'beginner' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                  course.difficulty.toLowerCase() === 'intermediate' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                  course.difficulty.toLowerCase() === 'advanced' && "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                 )}>
                   {course.difficulty.toUpperCase()}
                 </span>
@@ -312,11 +352,21 @@ export default function CoursesManagementPage() {
           <div className="text-center py-12">
             <BookOpen className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
             <p className="text-zinc-500 dark:text-zinc-400">
-              Tidak ada kursus yang ditemukan
+              Tidak ada kelas yang ditemukan
             </p>
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={!!courseToDelete}
+        onClose={() => setCourseToDelete(null)}
+        onConfirm={handleDeleteCourse}
+        title="Hapus Kelas"
+        message="Apakah Anda yakin ingin menghapus kelas ini? Semua unit dan pelajaran di dalamnya akan ikut terhapus secara permanen."
+        confirmText="Ya, Hapus Kelas"
+        variant="danger"
+      />
     </div>
   );
 }

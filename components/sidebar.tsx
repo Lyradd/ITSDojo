@@ -48,10 +48,10 @@ const studentMenuItems = [
 const dosenMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/dosen" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/dosen/courses" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/dosen/enrollments" },
   { icon: Users, label: "Mahasiswa", href: "/dosen/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
   { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/dosen/enrollments" },
   { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
   { icon: Settings, label: "Pengaturan", href: "/dosen/settings" },
 ];
@@ -60,20 +60,20 @@ const dosenMenuItems = [
 const asdosMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/asdos" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/asdos/courses" },
+  { icon: UserCheck, label: "Permintaan Kelas", href: "/asdos/enrollments" },
   { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/asdos/evaluations" },
   { icon: Trophy, label: "Papan Peringkat", href: "/asdos/leaderboard" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/asdos/enrollments" },
   { icon: BarChart3, label: "Analitik", href: "/asdos/analytics" },
 ];
 
 // Menu untuk Super Admin
 const superAdminMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/admin" },
-  { icon: Users, label: "Kelola Pengguna", href: "/admin/users" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/admin/courses" },
-  { icon: ClipboardCheck, label: "Evaluasi", href: "/admin/evaluations" },
   { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
+  { icon: Users, label: "Kelola Pengguna", href: "/admin/users" },
+  { icon: ClipboardCheck, label: "Evaluasi", href: "/admin/evaluations" },
   { icon: BarChart3, label: "Analitik", href: "/admin/analytics" },
   { icon: Settings, label: "Pengaturan Sistem", href: "/admin/settings" },
 ];

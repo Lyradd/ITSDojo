@@ -3,11 +3,25 @@ import { db } from "@/db";
 import { courses, units, lessons } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 
-// GET /api/courses — Ambil semua kursus
 export async function GET() {
   try {
     const allCourses = await db.select().from(courses);
-    return NextResponse.json(allCourses);
+    const allUnits = await db.select().from(units);
+    const allLessons = await db.select().from(lessons);
+
+    const enrichedCourses = allCourses.map(course => {
+      const courseUnits = allUnits.filter(u => u.courseId === course.id);
+      const unitIds = courseUnits.map(u => u.id);
+      const courseLessons = allLessons.filter(l => unitIds.includes(l.unitId));
+      
+      return {
+        ...course,
+        unitsCount: courseUnits.length,
+        lessonsCount: courseLessons.length
+      };
+    });
+
+    return NextResponse.json(enrichedCourses);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

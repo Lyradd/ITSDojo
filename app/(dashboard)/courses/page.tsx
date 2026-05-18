@@ -118,7 +118,8 @@ export default function CoursesPage() {
         status,
         semesterRequired,
         isSemesterMet,
-        lessonsCount,
+        unitsCount: course.unitsCount || 0,
+        lessonsCount: course.lessonsCount || 0,
         lastAccessed,
       };
     });
@@ -375,7 +376,7 @@ export default function CoursesPage() {
                 <div className="mt-auto pt-4 border-t flex items-center justify-between">
                   <div className="text-xs text-zinc-500 flex items-center gap-1">
                     <BookOpen className="w-3 h-3" />
-                    {course.lessonsCount} Modul
+                    {course.unitsCount} Unit • {course.lessonsCount} Materi
                   </div>
 
                   {course.status === 'unlocked' ? (
@@ -475,7 +476,7 @@ export default function CoursesPage() {
 
                 <div className="flex items-center gap-4 text-xs text-zinc-400">
                   <span className="flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" /> {course.lessonsCount} Modul
+                    <BookOpen className="w-3 h-3" /> {course.unitsCount} Unit • {course.lessonsCount} Materi
                   </span>
                   <span className="flex items-center gap-1 text-amber-500 font-medium">
                     <Star className="w-3 h-3 fill-current" /> +{course.xpReward} XP

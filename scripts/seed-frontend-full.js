@@ -18,7 +18,7 @@ async function main() {
       INSERT INTO courses (id, title, description, color, difficulty, xp_reward, required_semester)
       VALUES (
         'fe-basic', 
-        'Front-End Web Development', 
+        'Pemrograman Web', 
         'Kuasai dasar-dasar HTML5, CSS3 modern, responsivitas website, serta interaktivitas JavaScript ES6.', 
         'bg-gradient-to-r from-blue-500 to-indigo-600', 
         'Beginner', 

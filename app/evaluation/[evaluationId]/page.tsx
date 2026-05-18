@@ -60,8 +60,35 @@ function WaitingRoomOverlay({
   onStart: () => void;
 }) {
   const { role } = useUserStore();
+  const { countdownEndTime, startWaitingRoomSession } = useEvaluationStore();
   const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
   const [showParticipants, setShowParticipants] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!countdownEndTime) return;
+    
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, countdownEndTime - Date.now());
+      setTimeLeft(Math.ceil(remaining / 1000));
+      
+      if (remaining <= 0) {
+        clearInterval(interval);
+        startWaitingRoomSession(); // Hide overlay
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [countdownEndTime, startWaitingRoomSession]);
+
+  const isStarting = countdownEndTime !== null;
+
+  useEffect(() => {
+    if (isStarting) return;
+    const timer = setInterval(() => {
+      setCurrentFactIndex((p) => (p + 1) % FUN_FACTS.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [isStarting]);
   
   // Simulated joined users list
   const [participants, setParticipants] = useState<{name: string, avatar: string}[]>([
@@ -93,32 +120,33 @@ function WaitingRoomOverlay({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950 text-white"
+      className="fixed inset-0 z-[100] flex flex-col items-center bg-zinc-950 text-white overflow-y-auto custom-scrollbar"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -50 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="absolute inset-0 bg-radial-gradient from-blue-900/20 to-transparent pointer-events-none" />
+      <div className="fixed inset-0 bg-radial-gradient from-blue-900/20 to-transparent pointer-events-none" />
       
       <motion.div 
-        className="text-center mb-8"
-        initial={{ opacity: 0, y: 20 }}
+        className="mt-16 text-center px-4 shrink-0 relative z-10"
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="text-blue-400 font-bold tracking-widest uppercase text-sm mb-2">Ruang Tunggu Evaluasi</div>
-        <h1 className="text-3xl md:text-4xl font-black text-white">{evaluationTitle}</h1>
+        <div className="text-blue-400 font-black tracking-widest uppercase text-3xl md:text-4xl mb-4 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]">RUANG TUNGGU EVALUASI</div>
+        <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-md">{evaluationTitle}</h1>
       </motion.div>
 
       {/* Fun Fact Carousel */}
-      <div className="flex items-center gap-6 max-w-2xl w-full px-4 mb-12">
+      <div className="flex-1 flex items-center justify-center gap-6 max-w-2xl w-full px-4 my-8 shrink-0 relative z-10">
         <Button variant="ghost" size="icon" onClick={prevFact} className="text-white hover:bg-white/10 shrink-0">
           <ChevronLeft className="w-8 h-8" />
         </Button>
         
-        <div className="flex-1 text-center min-h-[120px] flex flex-col justify-center">
-          <div className="text-sm text-zinc-400 font-bold tracking-widest uppercase mb-4 flex items-center justify-center gap-2">
-            <Zap className="w-4 h-4 text-yellow-500" />
+        <div className="flex-1 text-center min-h-[120px] flex flex-col justify-center relative">
+          <div className="absolute inset-0 bg-yellow-500/10 blur-[50px] rounded-full pointer-events-none" />
+          <div className="text-xl md:text-2xl text-yellow-400 font-black tracking-widest uppercase mb-6 flex items-center justify-center gap-3 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]">
+            <Zap className="w-8 h-8 text-yellow-400 fill-current" />
             Fun Fact Koding
           </div>
           <AnimatePresence mode="wait">
@@ -140,18 +168,18 @@ function WaitingRoomOverlay({
       </div>
 
       {/* Status & Actions */}
-      <div className="absolute bottom-16 w-full max-w-md px-6 flex flex-col items-center gap-6">
+      <div className="w-full max-w-md px-6 flex flex-col items-center gap-6 mb-16 shrink-0 relative z-10">
         <button 
           onClick={() => setShowParticipants(!showParticipants)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full border transition-all cursor-pointer",
+            "flex items-center gap-3 px-6 py-4 rounded-full border-2 transition-all cursor-pointer relative z-10",
             showParticipants 
               ? "bg-blue-600 border-blue-500 text-white" 
               : "bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10"
           )}
         >
-          <div className={cn("w-2 h-2 rounded-full bg-green-500", !showParticipants && "animate-pulse")} />
-          <span className="font-bold">{participants.length} Peserta telah bergabung</span>
+          <div className={cn("w-3 h-3 rounded-full bg-green-500", !showParticipants && "animate-pulse")} />
+          <span className="font-bold text-xl">{participants.length} Peserta telah bergabung</span>
           <ChevronRight className={cn("w-4 h-4 transition-transform", showParticipants ? "rotate-90" : "")} />
         </button>
 
@@ -164,7 +192,7 @@ function WaitingRoomOverlay({
               className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden"
             >
               <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Daftar Peserta</div>
-              <div className="grid grid-cols-4 gap-3 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-4 gap-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                 {participants.map((user, i) => (
                   <motion.div 
                     key={i}
@@ -186,16 +214,42 @@ function WaitingRoomOverlay({
         {(role === 'dosen' || role === 'admin' || role === 'asdos') ? (
           <Button 
             onClick={onStart}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-14 rounded-2xl text-lg shadow-lg shadow-blue-500/25"
+            disabled={isStarting}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-16 rounded-2xl text-xl shadow-lg shadow-blue-500/25"
           >
-            Mulai Sesi Sekarang
+            {isStarting ? "Memulai Sesi..." : "Mulai Sesi Sekarang"}
           </Button>
         ) : (
-          <div className="w-full h-14 rounded-2xl border-2 border-dashed border-zinc-700 flex items-center justify-center text-zinc-400 font-bold bg-zinc-900/50">
-            Menunggu Dosen memulai sesi...
+          <div className="w-full h-16 rounded-2xl border-2 border-dashed border-zinc-700 flex items-center justify-center text-zinc-400 font-bold text-lg bg-zinc-900/50">
+            {isStarting ? "Mempersiapkan Evaluasi..." : "Menunggu Dosen memulai sesi..."}
           </div>
         )}
       </div>
+
+      {/* Countdown Overlay */}
+      <AnimatePresence>
+        {isStarting && timeLeft !== null && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 2 }}
+            className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              key={timeLeft}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.5 }}
+              className="text-9xl font-black text-white drop-shadow-[0_0_30px_rgba(59,130,246,0.8)]"
+            >
+              {timeLeft}
+            </motion.div>
+            <div className="mt-8 text-2xl font-bold text-blue-400 uppercase tracking-widest animate-pulse">
+              Bersiaplah!
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -230,11 +284,11 @@ export default function EvaluationFullscreenPage() {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { isWaitingRoomActive, startWaitingRoomSession } = useEvaluationStore();
+  const { isWaitingRoomActive, initiateStartSequence } = useEvaluationStore();
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(true);
-  const [leaderboardWidth, setLeaderboardWidth] = useState(380);
+  const leaderboardWidth = 480;
 
-  const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
+  const [isNavigatorOpen, setIsNavigatorOpen] = useState(true);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
 
   // Calculate remaining time
@@ -352,39 +406,16 @@ export default function EvaluationFullscreenPage() {
     updateLeaderboard(updatedLeaderboard);
   }, [score]);
 
-  // Waiting Room finished → start the real timer
+  // Waiting Room finished -> countdown started
   const handleStartQuiz = useCallback(() => {
-    startWaitingRoomSession();
-  }, [startWaitingRoomSession]);
+    initiateStartSequence();
+  }, [initiateStartSequence]);
 
   const handleExitQuiz = () => {
     router.push('/evaluation');
   };
 
-  // Drag to resize handler
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = leaderboardWidth;
 
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = startX - moveEvent.clientX;
-      const newWidth = Math.max(300, Math.min(600, startWidth + deltaX));
-      setLeaderboardWidth(newWidth);
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = 'default';
-      document.body.style.userSelect = 'auto';
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none'; // Prevent text selection while dragging
-  }, [leaderboardWidth]);
 
   if (!isMounted || !isLoggedIn || !isInitialized || !currentEvaluation) {
     return null;
@@ -677,12 +708,7 @@ export default function EvaluationFullscreenPage() {
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="shrink-0 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 p-4 overflow-hidden relative"
             >
-              {/* Resizer Handle */}
-              <div 
-                className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500/20 active:bg-blue-500/40 z-50 transition-colors"
-                onMouseDown={handleMouseDown}
-                title="Tarik untuk mengubah ukuran"
-              />
+              {/* Resizer Handle Removed */}
               
               <div style={{ width: leaderboardWidth - 32 }}>
                 <LiveLeaderboard 

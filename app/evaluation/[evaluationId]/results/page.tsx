@@ -100,7 +100,7 @@ export default function EvaluationResultsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-6">
         {/* Left: Results */}
         <div className="space-y-6">
           {/* Performance Card */}

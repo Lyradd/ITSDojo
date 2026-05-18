@@ -102,11 +102,6 @@ export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProp
             <ArrowDown className="w-3 h-3" /> -{entry.rank - entry.previousRank!}
           </div>
         )}
-        {rankChange === 'same' && (
-          <div className="flex items-center gap-1 text-[12px] text-zinc-400 font-medium">
-            <Minus className="w-3 h-3" /> =
-          </div>
-        )}
         {rankChange === 'new' && (
           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded-xl text-[11px] font-medium tracking-wide">
             NEW

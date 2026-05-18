@@ -118,8 +118,8 @@ export default function MonitorEvaluationPage() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // null = all groups
   const [enableGroups] = useState(true); // In real app, this comes from evaluation settings
 
-  const { isWaitingRoomActive, startWaitingRoomSession } = useEvaluationStore();
-
+  const { isWaitingRoomActive, initiateStartSequence, countdownEndTime } = useEvaluationStore();
+  const isStarting = countdownEndTime !== null;
   // Find evaluation
   const evaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
 
@@ -221,11 +221,12 @@ export default function MonitorEvaluationPage() {
                 <>
                   {evaluation.isActive && (
                     <Button 
-                      onClick={() => startWaitingRoomSession()}
+                      onClick={() => initiateStartSequence()}
+                      disabled={isStarting || !isWaitingRoomActive}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20"
                     >
                       <Zap className="w-4 h-4 mr-2" />
-                      Mulai Sesi Sekarang
+                      {isStarting ? "Memulai Sesi..." : (!isWaitingRoomActive ? "Sesi Berlangsung" : "Mulai Sesi Sekarang")}
                     </Button>
                   )}
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">

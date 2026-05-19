@@ -91,7 +91,7 @@ export default function AsdosDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Link href="/asdos/courses">
             <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
@@ -123,16 +123,31 @@ export default function AsdosDashboardPage() {
           </Link>
 
           <Link href="/asdos/analytics">
-            <Card className="p-6 rounded-2xl border-2 hover:border-cyan-400 transition-all cursor-pointer group">
+            <Card className="p-6 rounded-2xl border-2 hover:border-cyan-400 transition-all cursor-pointer group h-full">
               <div className="flex items-center gap-4">
                 <div className="p-4 bg-cyan-100 dark:bg-cyan-900/50 rounded-xl group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Data Analytics</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Reports & insights</div>
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Analytics</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Reports</div>
                 </div>
                 <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-cyan-600 transition-all" />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/asdos/leaderboard">
+            <Card className="p-6 rounded-2xl border-2 hover:border-yellow-400 transition-all cursor-pointer group h-full">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl group-hover:scale-110 transition-transform">
+                  <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Leaderboard</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Peringkat</div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-yellow-600 transition-all" />
               </div>
             </Card>
           </Link>

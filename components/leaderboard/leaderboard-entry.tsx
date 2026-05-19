@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
-import { Trophy, TrendingUp, TrendingDown, Minus, Zap } from 'lucide-react';
+import { Trophy, ArrowUp, ArrowDown, Minus, Zap, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -13,142 +13,100 @@ interface LeaderboardEntryProps {
 
 export function LeaderboardEntryComponent({ entry, index }: LeaderboardEntryProps) {
   const [isAnimating, setIsAnimating] = useState(false);
-  const [rankChange, setRankChange] = useState<'up' | 'down' | 'same'>('same');
+  const [rankChange, setRankChange] = useState<'up' | 'down' | 'same' | 'new'>('same');
 
   useEffect(() => {
-    if (entry.previousRank && entry.previousRank !== entry.rank) {
-      setIsAnimating(true);
-      
-      if (entry.rank < entry.previousRank) {
-        setRankChange('up');
-      } else if (entry.rank > entry.previousRank) {
-        setRankChange('down');
+    if (entry.previousRank) {
+      if (entry.previousRank !== entry.rank) {
+        setIsAnimating(true);
+        if (entry.rank < entry.previousRank) {
+          setRankChange('up');
+        } else if (entry.rank > entry.previousRank) {
+          setRankChange('down');
+        }
+        const timer = setTimeout(() => setIsAnimating(false), 1000);
+        return () => clearTimeout(timer);
+      } else {
+        setRankChange('same');
       }
-      
-      const timer = setTimeout(() => setIsAnimating(false), 1000);
-      return () => clearTimeout(timer);
+    } else {
+       setRankChange('new');
     }
   }, [entry.rank, entry.previousRank]);
 
-  const getMedalIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-500" fill="currentColor" />;
-    if (rank === 2) return <Trophy className="w-5 h-5 text-gray-400" fill="currentColor" />;
-    if (rank === 3) return <Trophy className="w-5 h-5 text-amber-600" fill="currentColor" />;
-    return null;
-  };
+  // Accuracy Threshold Color
+  let accClass = "bg-[#fcebeb] text-[#791f1f] dark:bg-red-900/30 dark:text-red-400"; // low
+  if (entry.accuracy > 85) accClass = "bg-[#eaf3de] text-[#27500a] dark:bg-green-900/40 dark:text-green-400"; // high
+  else if (entry.accuracy >= 70) accClass = "bg-[#faeeda] text-[#633806] dark:bg-yellow-900/40 dark:text-yellow-400"; // mid
 
-  const getRankChangeIcon = () => {
-    if (rankChange === 'up') return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (rankChange === 'down') return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <Minus className="w-4 h-4 text-gray-400" />;
-  };
+  const rankStr = entry.rank === 1 ? "1 🏆" : entry.rank === 2 ? "2 🥈" : entry.rank === 3 ? "3 🥉" : `${entry.rank}`;
 
   return (
     <motion.div
       layout
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
       initial={{ opacity: 0, y: 20 }}
-      animate={{ 
-        opacity: 1, 
-        y: 0,
-        boxShadow: isAnimating && rankChange === 'up' 
-          ? "0 0 25px rgba(234, 179, 8, 0.6)" 
-          : "0 0 0px rgba(0,0,0,0)",
-        borderColor: isAnimating && rankChange === 'up' ? "rgba(234, 179, 8, 1)" : undefined
-      }}
+      animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-xl transition-all duration-300",
-        entry.isCurrentUser 
-          ? "bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-100 dark:shadow-blue-900/20" 
-          : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800",
-        isAnimating && rankChange === 'down' && "scale-95 opacity-50",
-        isAnimating && rankChange === 'up' && "scale-[1.02] bg-yellow-50 dark:bg-yellow-900/20 z-10 relative",
-        entry.isCurrentUser && !isAnimating && "animate-pulse-glow"
+        "grid grid-cols-[40px_1fr_auto_auto_auto] gap-3 items-center p-3 border-b border-zinc-200 dark:border-zinc-800 transition-colors last:border-b-0",
+        entry.isCurrentUser ? "bg-blue-50/50 dark:bg-blue-950/20" : "hover:bg-zinc-50 dark:hover:bg-zinc-900/50",
       )}
     >
-      {/* Rank Number */}
-      <div className="flex items-center gap-2 w-12">
+      {/* Rank */}
+      <div className="text-[15px] font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
+        {rankStr}
+      </div>
+
+      {/* User */}
+      <div className="flex items-center gap-2.5 min-w-0">
         <div className={cn(
-          "font-bold text-lg",
-          entry.rank <= 3 ? "text-transparent bg-clip-text bg-linear-to-r" : "text-zinc-500 dark:text-zinc-400",
-          entry.rank === 1 && "from-yellow-400 to-yellow-600",
-          entry.rank === 2 && "from-gray-300 to-gray-500",
-          entry.rank === 3 && "from-amber-500 to-amber-700"
+          "w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium shrink-0",
+          entry.rank === 1 ? "bg-[#faae1a] text-[#2c2402]" :
+          entry.rank === 2 ? "bg-[#d3d1c7] text-[#444441]" :
+          entry.rank === 3 ? "bg-[#f0997b] text-[#4a1b0c]" :
+          "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
         )}>
-          {entry.rank}
+          {entry.name.charAt(0).toUpperCase()}
         </div>
-        {getMedalIcon(entry.rank)}
-      </div>
-
-      {/* Avatar */}
-      <div className={cn(
-        "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold",
-        entry.avatar,
-        entry.isCurrentUser && "ring-2 ring-blue-400 ring-offset-2"
-      )}>
-        {entry.name.charAt(0).toUpperCase()}
-      </div>
-
-      {/* Name & Stats */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <div className={cn(
-            "font-black text-base truncate",
-            entry.isCurrentUser ? "text-blue-600 dark:text-blue-400" : "text-zinc-800 dark:text-zinc-100"
-          )}>
+        <div className="min-w-0 flex-1">
+          <div className="text-[14px] font-medium text-zinc-900 dark:text-zinc-100 truncate mb-0.5">
             {entry.name}
           </div>
-          {entry.isCurrentUser && (
-            <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-black rounded-full shadow-sm">
-              YOU
-            </span>
-          )}
-          {entry.batch && (
-            <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-bold rounded-md border border-zinc-200 dark:border-zinc-700">
-              {entry.batch}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 rounded-lg border border-green-100 dark:border-green-900/50">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span className="text-xs font-black">{entry.accuracy}% Akurasi</span>
+          <div className="text-[12px] text-zinc-500 dark:text-zinc-400 truncate">
+            Level {Math.floor((entry.score ?? 0) / 100) + 1}
           </div>
         </div>
       </div>
 
-      {/* Score & Courses */}
-      <div className="flex items-center gap-4 shrink-0 ml-2">
-        {/* Courses Taken */}
-        <div className="hidden sm:flex flex-col items-center">
-          <div className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Courses</div>
-          <div className="font-black text-sm text-zinc-600 dark:text-zinc-300">
-            {entry.coursesTaken || 0}
-          </div>
-        </div>
+      {/* Accuracy */}
+      <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[13px] font-medium", accClass)}>
+        <Check className="w-3.5 h-3.5" />
+        {entry.accuracy}%
+      </div>
 
-        {/* XP Score */}
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-950/30 px-3 py-1.5 rounded-xl border border-yellow-200 dark:border-yellow-900/50 shadow-sm">
-            <Zap className="w-4 h-4 text-yellow-500" fill="currentColor" />
-            <span className="font-black text-xl text-yellow-700 dark:text-yellow-400 leading-none">{entry.score}</span>
+      {/* XP */}
+      <div className="flex items-center gap-1.5 font-medium text-[14px] text-zinc-900 dark:text-zinc-100 min-w-[60px] justify-end">
+        <Zap className="w-4 h-4 text-[#faae1a] fill-current" />
+        {entry.score}
+      </div>
+
+      {/* Trend */}
+      <div className="min-w-[40px] flex justify-center">
+        {rankChange === 'up' && (
+          <div className="flex items-center gap-1 text-[12px] text-[#639922] dark:text-green-400 font-medium">
+            <ArrowUp className="w-3 h-3" /> +{entry.previousRank! - entry.rank}
           </div>
-          
-          {entry.previousRank && entry.previousRank !== entry.rank && (
-            <div className="flex items-center gap-1 px-1">
-              {getRankChangeIcon()}
-              <span className={cn(
-                "font-black text-xs",
-                rankChange === 'up' && "text-green-600",
-                rankChange === 'down' && "text-red-600",
-                rankChange === 'same' && "text-gray-500"
-              )}>
-                {rankChange === 'up' && `+${entry.previousRank - entry.rank}`}
-                {rankChange === 'down' && `-${entry.rank - entry.previousRank}`}
-              </span>
-            </div>
-          )}
-        </div>
+        )}
+        {rankChange === 'down' && (
+          <div className="flex items-center gap-1 text-[12px] text-[#e24b4a] dark:text-red-400 font-medium">
+            <ArrowDown className="w-3 h-3" /> -{entry.rank - entry.previousRank!}
+          </div>
+        )}
+        {rankChange === 'new' && (
+          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded-xl text-[11px] font-medium tracking-wide">
+            NEW
+          </span>
+        )}
       </div>
     </motion.div>
   );

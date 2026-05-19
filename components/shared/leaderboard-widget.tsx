@@ -31,7 +31,7 @@ export const LeaderboardWidget = ({
 
   return (
     <Card className="hidden lg:block p-4 rounded-2xl border-2">
-      <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200 mb-4">Leaderboard</h3>
+      <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200 mb-4">Papan Peringkat</h3>
       <div className="space-y-3">
         {displayedTop.map((user, idx) => {
           const isMe = user.userId === currentUserId;
@@ -57,7 +57,7 @@ export const LeaderboardWidget = ({
             <div className="flex items-center gap-3 p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50">
               <div className="font-bold text-zinc-400 w-6">{currentUserRank}</div>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-blue-200 text-blue-700">{currentUserName.charAt(0)}</div>
-              <div className="flex-1 font-bold text-sm truncate">{currentUserName} (You)</div>
+              <div className="flex-1 font-bold text-sm truncate">{currentUserName} (Kamu)</div>
               <div className="text-xs font-bold text-zinc-400">
                 <AnimatedNumber value={currentUserXp} /> XP
               </div>

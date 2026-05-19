@@ -73,6 +73,7 @@ interface EvaluationState {
   startTime: number | null;
   isEvaluationActive: boolean;
   isWaitingRoomActive: boolean;
+  countdownEndTime: number | null;
   
   // Leaderboard Data
   leaderboard: LeaderboardEntry[];
@@ -92,6 +93,7 @@ interface EvaluationState {
   resetEvaluation: () => void;
   setStartTime: (time: number) => void;
   startWaitingRoomSession: () => void;
+  initiateStartSequence: () => void;
   
   // Actions - Leaderboard
   updateLeaderboard: (entries: LeaderboardEntry[]) => void;
@@ -118,6 +120,7 @@ export const useEvaluationStore = create<EvaluationState>()(
       startTime: null,
       isEvaluationActive: false,
       isWaitingRoomActive: true,
+      countdownEndTime: null,
       
       leaderboard: [],
       userRank: 0,
@@ -139,12 +142,18 @@ export const useEvaluationStore = create<EvaluationState>()(
         startTime: null, // Deferred — set after countdown
         isEvaluationActive: true,
         isWaitingRoomActive: true,
+        countdownEndTime: null,
         isLiveUpdateActive: true,
       }),
 
       startWaitingRoomSession: () => set({ 
         isWaitingRoomActive: false,
-        startTime: Date.now()
+        startTime: Date.now(),
+        countdownEndTime: null
+      }),
+
+      initiateStartSequence: () => set({
+        countdownEndTime: Date.now() + 5000
       }),
 
       setStartTime: (time) => set({ startTime: time }),
@@ -220,6 +229,7 @@ export const useEvaluationStore = create<EvaluationState>()(
         startTime: null,
         isEvaluationActive: false,
         isWaitingRoomActive: true,
+        countdownEndTime: null,
         isLiveUpdateActive: false,
       }),
       
@@ -292,6 +302,7 @@ export const useEvaluationStore = create<EvaluationState>()(
       partialize: (state) => ({
         userRole: state.userRole,
         isWaitingRoomActive: state.isWaitingRoomActive,
+        countdownEndTime: state.countdownEndTime,
         startTime: state.startTime,
         // Don't persist evaluation session details
       }),

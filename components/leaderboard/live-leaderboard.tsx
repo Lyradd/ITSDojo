@@ -6,6 +6,8 @@ import { LeaderboardEntryComponent } from './leaderboard-entry';
 import { Card } from '@/components/ui/card';
 import { Users, Activity, Clock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { LeaderboardEntry } from '@/lib/evaluation-store';
 
 interface LiveLeaderboardProps {
   className?: string;
@@ -148,6 +150,7 @@ export function LiveLeaderboard({
           </p>
         </div>
       )}
+
     </Card>
   );
 }

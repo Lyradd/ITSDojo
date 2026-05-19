@@ -39,7 +39,7 @@ export default function ProfilePage() {
     name, xp, streak, completedLessonIds = [], unlockedAchievements = [],
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
     activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
-    createdAt, followingCount, followersCount
+    createdAt, followingCount, followersCount, earnedBadges
   } = useUserStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -207,10 +207,10 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Statistik</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatWidget icon={Flame} value={streak} label="Current Streak" color="text-orange-500" />
+              <StatWidget icon={Flame} value={streak} label="Streak Saat Ini" color="text-orange-500" />
               <StatWidget icon={Zap} value={xp.toLocaleString('id-ID')} label="Total XP" color="text-blue-500" />
-              <StatWidget icon={Medal} value={league} label="League" color="text-yellow-500" />
-              <StatWidget icon={Trophy} value={top3Finishes} label="Top 3 Finishes" color="text-purple-500" />
+              <StatWidget icon={Medal} value={league} label="Liga" color="text-yellow-500" />
+              <StatWidget icon={Trophy} value={top3Finishes} label="Masuk 3 Besar" color="text-purple-500" />
             </div>
           </div>
 
@@ -224,6 +224,35 @@ export default function ProfilePage() {
               <ActivityHeatmap />
             </Card>
           </div>
+
+          {/* Koleksi Badge Bulanan */}
+          {earnedBadges && earnedBadges.length > 0 && (
+            <div>
+              <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Koleksi Badge Bulanan</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {earnedBadges.map((badge, idx) => (
+                  <Card key={idx} className={`p-4 border-2 flex flex-col items-center justify-center text-center relative overflow-hidden ${
+                    badge.tier === 'elite' ? 'border-purple-200 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800' :
+                    badge.tier === 'silver' ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800' :
+                    'border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800'
+                  }`}>
+                    {badge.tier === 'elite' && <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />}
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 z-10 shadow-md ${
+                      badge.tier === 'elite' ? 'bg-purple-500 text-white' :
+                      badge.tier === 'silver' ? 'bg-blue-500 text-white' :
+                      'bg-orange-500 text-white'
+                    }`}>
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 z-10">{badge.name}</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase z-10 mt-1">
+                      {badge.tier === 'elite' ? 'Elite Badge' : badge.tier === 'silver' ? 'Silver Badge' : 'Bronze Badge'}
+                    </span>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 4. Pencapaian (Achievements) */}
           <div>
@@ -312,7 +341,7 @@ export default function ProfilePage() {
                     <div className="text-xs text-zinc-400">1.2k XP • Lv. 5</div>
                   </div>
                   <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-blue-500 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20">
-                    Follow
+                    Ikuti
                   </Button>
                 </div>
               ))}
@@ -340,7 +369,7 @@ export default function ProfilePage() {
               <div>
                 <h2 className="text-2xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
-                  Trophy Room & Badges
+                  Ruang Piala & Lencana
                 </h2>
                 <p className="text-sm text-zinc-500 mt-1">Koleksi seluruh pencapaian dan lencana rahasia Anda.</p>
               </div>
@@ -364,21 +393,21 @@ export default function ProfilePage() {
                   <div className="p-4 border-2 rounded-xl flex items-center gap-4 bg-white dark:bg-zinc-950 shadow-sm">
                     <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-xl"><Flame className="w-6 h-6" /></div>
                     <div>
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Longest Streak</p>
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Rekor Streak</p>
                       <p className="text-xl font-black">{Math.max(longestStreak, streak)} <span className="text-sm text-zinc-500 font-bold">Hari</span></p>
                     </div>
                   </div>
                   <div className="p-4 border-2 rounded-xl flex items-center gap-4 bg-white dark:bg-zinc-950 shadow-sm">
                     <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-500 rounded-xl"><Zap className="w-6 h-6" /></div>
                     <div>
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Most XP / Day</p>
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">XP Terbanyak / Hari</p>
                       <p className="text-xl font-black">{mostXpInDay.toLocaleString('id-ID')} <span className="text-sm text-zinc-500 font-bold">XP</span></p>
                     </div>
                   </div>
                   <div className="p-4 border-2 rounded-xl flex items-center gap-4 bg-white dark:bg-zinc-950 shadow-sm">
                     <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-xl"><CheckCircle2 className="w-6 h-6" /></div>
                     <div>
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Perfect Lessons</p>
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Materi Sempurna</p>
                       <p className="text-xl font-black">{totalPerfectLessons} <span className="text-sm text-zinc-500 font-bold">Unit</span></p>
                     </div>
                   </div>

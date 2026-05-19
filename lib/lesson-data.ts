@@ -21,6 +21,8 @@ export type LessonProblem = {
   testCases: TestCase[];
   sampleInput: string;
   sampleOutput: string;
+  videoUrl?: string;         // URL video pembelajaran (YouTube embed)
+  summaryContent?: string;   // HTML-safe string untuk rangkuman materi
 };
 
 export type LessonNode = {
@@ -94,6 +96,19 @@ int main()
       { id: 2, stdin: "A\nHello\nThis is a test", expected: "A\nHello\nThis is a test" },
       { id: 3, stdin: "Z\nProgramming\nI love coding!", expected: "Z\nProgramming\nI love coding!", hidden: true },
     ],
+    videoUrl: "https://www.youtube.com/embed/KJgsSFOSQv0",
+    summaryContent: `
+      <h3 class="font-bold text-xl text-zinc-800 dark:text-zinc-200 mb-3">1. Pengantar Input-Output</h3>
+      <p class="leading-relaxed mb-4">Secara umum, file C akan membutuhkan beberapa kerangka awal seperti header library, layaknya baris <code class="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-sm text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">#include &lt;stdio.h&gt;</code> untuk memanggil utilitas antarmuka <i>input-output</i> standar.</p>
+      <div class="bg-zinc-50 dark:bg-zinc-950 p-5 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 my-6 font-mono text-sm text-zinc-700 dark:text-zinc-300 shadow-inner">
+        <span class="text-blue-600 dark:text-blue-400">int</span> main() {<br/>
+        &nbsp;&nbsp;<span class="text-green-600 dark:text-green-500">// Tempat mengetik kode</span><br/>
+        &nbsp;&nbsp;<span class="text-blue-600 dark:text-blue-400">printf</span>(<span class="text-green-600 dark:text-green-400">"Semangat Belajar!"</span>);<br/>
+        &nbsp;&nbsp;<span class="text-pink-600 dark:text-pink-400">return</span> <span class="text-orange-500">0</span>;<br/>
+        }
+      </div>
+      <p class="leading-relaxed mb-4">Fungsi utama dideklarasikan di dalam <code class="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-sm text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">int main()</code>. Sistem (<i>compiler</i>) akan otomatis mengeksekusi urutan baris di dalamnya langkah demi langkah ketika diaplikasikan.</p>
+    `
   },
 
   "fe-basic-2": {

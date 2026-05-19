@@ -159,16 +159,16 @@ export const SAMPLE_EVALUATIONS: Evaluation[] = [
 // ============================================
 
 export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [
-  { userId: 'user-1', name: 'Sarah Kusuma', avatar: 'bg-pink-200 text-pink-700', score: 280, totalQuestions: 5, answeredQuestions: 4, accuracy: 95, rank: 1, lastUpdate: Date.now(), batch: '2023', coursesTaken: 5 },
-  { userId: 'user-2', name: 'Ahmad Rizki', avatar: 'bg-blue-200 text-blue-700', score: 245, totalQuestions: 5, answeredQuestions: 4, accuracy: 88, rank: 2, lastUpdate: Date.now(), batch: '2022', coursesTaken: 4 },
-  { userId: 'user-3', name: 'Dinda Pratiwi', avatar: 'bg-purple-200 text-purple-700', score: 215, totalQuestions: 5, answeredQuestions: 3, accuracy: 94, rank: 3, lastUpdate: Date.now(), batch: '2023', coursesTaken: 6 },
-  { userId: 'user-4', name: 'Budi Santoso', avatar: 'bg-green-200 text-green-700', score: 180, totalQuestions: 5, answeredQuestions: 3, accuracy: 80, rank: 4, lastUpdate: Date.now(), batch: '2021', coursesTaken: 3 },
-  { userId: 'user-5', name: 'Citra Dewi', avatar: 'bg-yellow-200 text-yellow-700', score: 145, totalQuestions: 5, answeredQuestions: 4, accuracy: 87, rank: 5, lastUpdate: Date.now(), batch: '2023', coursesTaken: 4 },
-  { userId: 'user-6', name: 'Eko Prasetyo', avatar: 'bg-indigo-200 text-indigo-700', score: 120, totalQuestions: 5, answeredQuestions: 2, accuracy: 90, rank: 6, lastUpdate: Date.now(), batch: '2022', coursesTaken: 2 },
-  { userId: 'user-7', name: 'Fitri Handayani', avatar: 'bg-red-200 text-red-700', score: 95, totalQuestions: 5, answeredQuestions: 3, accuracy: 82, rank: 7, lastUpdate: Date.now(), batch: '2021', coursesTaken: 5 },
-  { userId: 'user-8', name: 'Gilang Ramadhan', avatar: 'bg-teal-200 text-teal-700', score: 70, totalQuestions: 5, answeredQuestions: 4, accuracy: 75, rank: 8, lastUpdate: Date.now(), batch: '2023', coursesTaken: 3 },
-  { userId: 'user-9', name: 'Hana Safitri', avatar: 'bg-orange-200 text-orange-700', score: 45, totalQuestions: 5, answeredQuestions: 1, accuracy: 93, rank: 9, lastUpdate: Date.now(), batch: '2022', coursesTaken: 4 },
-  { userId: 'user-10', name: 'Irfan Maulana', avatar: 'bg-cyan-200 text-cyan-700', score: 20, totalQuestions: 5, answeredQuestions: 2, accuracy: 85, rank: 10, lastUpdate: Date.now(), batch: '2023', coursesTaken: 1 },
+  { userId: 'user-1', name: 'Sarah Kusuma', avatar: 'bg-pink-200 text-pink-700', score: 50, totalQuestions: 5, answeredQuestions: 5, accuracy: 100, rank: 1, lastUpdate: Date.now(), batch: '2023' },
+  { userId: 'user-2', name: 'Ahmad Rizki', avatar: 'bg-blue-200 text-blue-700', score: 40, totalQuestions: 5, answeredQuestions: 5, accuracy: 80, rank: 2, lastUpdate: Date.now(), batch: '2022' },
+  { userId: 'user-3', name: 'Dinda Pratiwi', avatar: 'bg-purple-200 text-purple-700', score: 40, totalQuestions: 5, answeredQuestions: 4, accuracy: 100, rank: 3, lastUpdate: Date.now(), batch: '2023' },
+  { userId: 'user-4', name: 'Budi Santoso', avatar: 'bg-green-200 text-green-700', score: 30, totalQuestions: 5, answeredQuestions: 4, accuracy: 75, rank: 4, lastUpdate: Date.now(), batch: '2021' },
+  { userId: 'user-5', name: 'Citra Dewi', avatar: 'bg-yellow-200 text-yellow-700', score: 30, totalQuestions: 5, answeredQuestions: 5, accuracy: 60, rank: 5, lastUpdate: Date.now(), batch: '2023' },
+  { userId: 'user-6', name: 'Eko Prasetyo', avatar: 'bg-indigo-200 text-indigo-700', score: 20, totalQuestions: 5, answeredQuestions: 2, accuracy: 100, rank: 6, lastUpdate: Date.now(), batch: '2022' },
+  { userId: 'user-7', name: 'Fitri Handayani', avatar: 'bg-red-200 text-red-700', score: 20, totalQuestions: 5, answeredQuestions: 3, accuracy: 66, rank: 7, lastUpdate: Date.now(), batch: '2021' },
+  { userId: 'user-8', name: 'Gilang Ramadhan', avatar: 'bg-teal-200 text-teal-700', score: 10, totalQuestions: 5, answeredQuestions: 4, accuracy: 25, rank: 8, lastUpdate: Date.now(), batch: '2023' },
+  { userId: 'user-9', name: 'Hana Safitri', avatar: 'bg-orange-200 text-orange-700', score: 10, totalQuestions: 5, answeredQuestions: 1, accuracy: 100, rank: 9, lastUpdate: Date.now(), batch: '2022' },
+  { userId: 'user-10', name: 'Irfan Maulana', avatar: 'bg-cyan-200 text-cyan-700', score: 0, totalQuestions: 5, answeredQuestions: 2, accuracy: 0, rank: 10, lastUpdate: Date.now(), batch: '2023' },
 ];
 
 // ============================================
@@ -264,9 +264,10 @@ export function addBotsIfNeeded(
     const color = colors[botIndex % colors.length];
     
     // Simulate bots with partial progress
-    const simulatedAnswers = Math.floor(Math.random() * totalQuestions);
+    const simulatedAnswers = Math.floor(Math.random() * (totalQuestions + 1));
+    // Each question is worth 10 points on average in our mock data
     const simulatedScore = simulatedAnswers > 0 ? (Math.floor(Math.random() * simulatedAnswers) + 1) * 10 : 0;
-    const simulatedAccuracy = simulatedAnswers > 0 ? Math.round(((simulatedScore / 10) / simulatedAnswers) * 100) : 0;
+    const simulatedAccuracy = simulatedAnswers > 0 ? Math.round((simulatedScore / (simulatedAnswers * 10)) * 100) : 0;
 
     newBots.push({
       userId: `bot-${Date.now()}-${i}`,

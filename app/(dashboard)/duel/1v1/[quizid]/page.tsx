@@ -124,7 +124,7 @@ const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-16 py-8">
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
         <section>
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

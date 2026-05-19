@@ -112,16 +112,6 @@ export default function DuelPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.push("/duel")}
-        className="mb-4 flex items-center gap-2 cursor-pointer"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Kembali</span>
-      </Button>
-
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Swords className="w-8 h-8 text-blue-600" />
@@ -133,6 +123,15 @@ export default function DuelPage() {
           Pilih topik untuk membuat link undangan duel 1v1.
         </p>
       </div>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.push("/duel")}
+        className="mb-4 flex items-center gap-2 cursor-pointer">
+        <ArrowLeft className="w-5 h-5" />
+        <span>Kembali</span>
+      </Button>
 
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
         <section>
@@ -163,16 +162,16 @@ export default function DuelPage() {
             )}
 
             {inviteLink ? (
-              <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-blue-800 bg-zinc-50 dark:bg-blue-950 p-4">
                 <h3 className="text-lg font-semibold mb-3">Undang Temanmu</h3>
-                <p className="mb-3 text-sm text-zinc-600">
+                <p className="mb-3 text-sm">
                   Bagikan link undangan ini agar temanmu bisa bergabung.
                 </p>
 
                 <input
                   readOnly
                   value={inviteLink}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm "
                 />
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -185,7 +184,7 @@ export default function DuelPage() {
                   </Button>
                 </div>
 
-                <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900">
+                <div className="mt-4 rounded-2xl bg-blue-50 dark:bg-blue-900 p-4 text-sm text-blue-900 dark:text-blue-100">
                   <p className="font-semibold">
                     {lobbyStatus === "waiting"
                       ? "Menunggu pemain lain bergabung..."
@@ -215,7 +214,7 @@ export default function DuelPage() {
         </section>
 
         <aside>
-          <Card className="p-6 bg-linear-to-br from-blue-400 to-blue-600">
+          <Card className="p-6 bg-linear-to-br from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-zinc-100">
             <h2 className="text-xl font-semibold text-zinc-100 mb-4">Detail Topik</h2>
 
             <div className="overflow-hidden rounded-2xl">

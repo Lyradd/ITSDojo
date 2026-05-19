@@ -1,32 +1,52 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useParams, useRouter } from "next/navigation";
 import { QuizQuestionCard } from "@/components/quiz/quiz-question-card";
-import { MOCK_QUESTIONS, MOCK_QUIZ, Question } from "@/lib/quiz-mock-data";
+import { MOCK_WEB_DEV_QUESTIONS } from "@/lib/quiz-mock-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LogOut, CheckCircle2 } from "lucide-react";
 
 const TOPIC_QUESTION_MAP: Record<string, string[]> = {
-  database: ["q1", "q5", "q8"],
-  programming: ["q2", "q3", "q4", "q7", "q10"],
-  operatingsystem: ["q6", "q9"],
-  trivia: ["q1", "q2", "q9"],
+  1: ["q1", "q5", "q8"],
+  2: ["q2", "q3", "q4", "q7", "q10"],
+  3: ["q6", "q9"],
+  4: ["wd1", "wd2", "wd9", "wd8", "wd5"],
 };
 
 function getQuestionsForTopic(topicId: string | undefined) {
-  if (!topicId) return MOCK_QUESTIONS;
-  const ids = TOPIC_QUESTION_MAP[topicId] ?? MOCK_QUESTIONS.map((q) => q.id);
-  return MOCK_QUESTIONS.filter((question) => ids.includes(question.id));
+  if (!topicId) return MOCK_WEB_DEV_QUESTIONS;
+  const ids = TOPIC_QUESTION_MAP[topicId] ?? MOCK_WEB_DEV_QUESTIONS.map((q) => q.id);
+  return MOCK_WEB_DEV_QUESTIONS.filter((question) => ids.includes(question.id));
 }
 
 export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const opponentName = searchParams.get("opponentName");
   const topicId = params.quizid;
-  const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
+  const [topicName, setTopicName] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!topicId) {
+      setTopicName(null);
+      return;
+    }
+
+    fetch("/api/topics")
+      .then((res) => res.json())
+      .then((topics: Array<{ id: number; subjectName: string }>) => {
+        const topic = topics.find((item) => String(item.id) === topicId);
+        setTopicName(topic?.subjectName ?? null);
+      })
+      .catch(() => {
+        setTopicName(null);
+      });
+  }, [topicId]);
+
+const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, { answer: string | number; correct: boolean; points: number }>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -110,10 +130,9 @@ export default function QuizPage() {
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold">
-                {MOCK_QUIZ.title}
-                {topicId ? ` — ${topicId}` : ""}
+                {topicName}
               </h1>
-              <p className="text-zinc-600 dark:text-zinc-400">{MOCK_QUIZ.description}</p>
+              <p className="text-zinc-600 dark:text-zinc-400">Your Opponent is <b>{opponentName}</b></p>
             </div>
 
             <Button

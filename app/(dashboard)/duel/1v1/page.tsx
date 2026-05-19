@@ -93,7 +93,12 @@ export default function DuelPage() {
 
   const handleStartDuel = async () => {
     if (!roomId || !selectedTopic) return;
-    router.push(`/duel/1v1/${selectedTopic}?room=${roomId}`);
+
+    const encodedOpponent = opponentName
+      ? `&opponentName=${encodeURIComponent(opponentName)}`
+      : "";
+
+    router.push(`/duel/1v1/${selectedTopic}?room=${roomId}${encodedOpponent}`);
   };
 
   const handleCancelLobby = () => {
@@ -110,7 +115,7 @@ export default function DuelPage() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.back()}
+        onClick={() => router.push("/duel")}
         className="mb-4 flex items-center gap-2 cursor-pointer"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -187,7 +192,7 @@ export default function DuelPage() {
                       : "Pemain sudah bergabung."}
                   </p>
                   {opponentName ? (
-                    <p>Opponent: {opponentName}</p>
+                    <p>Opponent: <b>{opponentName}</b></p>
                   ) : (
                     <p>Temanmu membuka link untuk join ke lobby.</p>
                   )}
@@ -230,7 +235,7 @@ export default function DuelPage() {
                 className={`transition-all duration-300 ease-out overflow-hidden text-zinc-100 py-1 ${
                   activeTopicData
                     ? "max-h-96 opacity-100"
-                    : "max-h-0 opacity-0 delay-200"
+                    : "max-h-0 opacity-0 delay-100"
                 }`}
               >
                 {activeTopicData ? (

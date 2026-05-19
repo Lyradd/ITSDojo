@@ -60,6 +60,8 @@ export interface UserState {
   activeCourseId: string;
   enrolledCourseIds: string[];
   pendingCourseIds: string[];
+  rejectedCourseIds: string[];
+  acceptedCourseIds: string[];
   courseAccessHistory: Record<string, string>;
   completedLessonIds: string[]; 
   activityHistory: { date: string, count: number, xpEarned: number, freezeUsed?: boolean }[];
@@ -82,6 +84,8 @@ export interface UserState {
   requestEnrollment: (courseId: string) => void;
   acceptEnrollment: (courseId: string) => void;
   rejectEnrollment: (courseId: string) => void;
+  clearAllRejectedCourses: () => void;
+  clearAllAcceptedCourses: () => void;
   unlockAchievement: (id: string) => void;
   toggleBookmarkCourse: (courseId: string) => void;
   resetProgress: () => void;
@@ -146,6 +150,8 @@ export const useUserStore = create<UserState>()(
       activeCourseId: "fe-basic",
       enrolledCourseIds: ['fe-basic'],
       pendingCourseIds: [],
+      rejectedCourseIds: [],
+      acceptedCourseIds: [],
       courseAccessHistory: { 'fe-basic': new Date().toISOString() },
       completedLessonIds: ['fe-basic-1'],
       activityHistory: [],
@@ -344,14 +350,30 @@ export const useUserStore = create<UserState>()(
         return { pendingCourseIds: [...state.pendingCourseIds, courseId] };
       }),
       
-      acceptEnrollment: (courseId) => set((state) => ({
-        pendingCourseIds: state.pendingCourseIds.filter((id) => id !== courseId),
-        enrolledCourseIds: [...state.enrolledCourseIds, courseId]
-      })),
+      acceptEnrollment: (courseId) => set((state) => {
+        const alreadyAccepted = state.acceptedCourseIds?.includes(courseId) || false;
+        return {
+          pendingCourseIds: state.pendingCourseIds.filter((id) => id !== courseId),
+          enrolledCourseIds: [...state.enrolledCourseIds, courseId],
+          acceptedCourseIds: alreadyAccepted ? state.acceptedCourseIds : [...(state.acceptedCourseIds || []), courseId]
+        };
+      }),
       
-      rejectEnrollment: (courseId) => set((state) => ({
-        pendingCourseIds: state.pendingCourseIds.filter((id) => id !== courseId)
-      })),
+      rejectEnrollment: (courseId) => set((state) => {
+        const alreadyRejected = state.rejectedCourseIds?.includes(courseId) || false;
+        return {
+          pendingCourseIds: state.pendingCourseIds.filter((id) => id !== courseId),
+          rejectedCourseIds: alreadyRejected ? state.rejectedCourseIds : [...(state.rejectedCourseIds || []), courseId]
+        };
+      }),
+
+      clearAllRejectedCourses: () => set({
+        rejectedCourseIds: []
+      }),
+
+      clearAllAcceptedCourses: () => set({
+        acceptedCourseIds: []
+      }),
       
       unlockAchievement: (id) => set((state) => {
         if (state.unlockedAchievements.includes(id)) return state;

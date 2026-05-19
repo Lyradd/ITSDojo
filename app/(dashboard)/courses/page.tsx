@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,9 +29,50 @@ export default function CoursesPage() {
   const router = useRouter();
   const { 
     setActiveCourse, level, completedLessonIds, semester, 
-    enrolledCourseIds, pendingCourseIds, requestEnrollment, 
+    enrolledCourseIds, pendingCourseIds, rejectedCourseIds, acceptedCourseIds,
+    requestEnrollment, clearAllRejectedCourses, clearAllAcceptedCourses,
     courseAccessHistory, bookmarkedCourseIds, toggleBookmarkCourse 
   } = useUserStore();
+
+  const toastedRef = useRef<Set<string>>(new Set());
+
+  // Toast untuk request Ditolak
+  useEffect(() => {
+    if (rejectedCourseIds && rejectedCourseIds.length > 0) {
+      rejectedCourseIds.forEach(courseId => {
+        if (!toastedRef.current.has(courseId)) {
+          toastedRef.current.add(courseId);
+          const formattedTitle = courseId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          toast.error(`Permintaan akses untuk kelas ${formattedTitle} ditolak.`, { 
+            icon: '❌', 
+            duration: 6000,
+            style: { border: '1px solid #fee2e2', color: '#b91c1c' }
+          });
+        }
+      });
+      // Bersihkan state di Zustand agar tidak muncul lagi di mount berikutnya
+      clearAllRejectedCourses();
+    }
+  }, [rejectedCourseIds, clearAllRejectedCourses]);
+
+  // Toast untuk request Diterima
+  useEffect(() => {
+    if (acceptedCourseIds && acceptedCourseIds.length > 0) {
+      acceptedCourseIds.forEach(courseId => {
+        if (!toastedRef.current.has(courseId)) {
+          toastedRef.current.add(courseId);
+          const formattedTitle = courseId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          toast.success(`Selamat! Permintaan akses untuk kelas ${formattedTitle} telah diterima.`, { 
+            icon: '✅', 
+            duration: 6000,
+            style: { border: '1px solid #dcfce7', color: '#15803d' }
+          });
+        }
+      });
+      // Bersihkan state di Zustand agar tidak muncul lagi di mount berikutnya
+      clearAllAcceptedCourses();
+    }
+  }, [acceptedCourseIds, clearAllAcceptedCourses]);
 
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   const [showSavedOnly, setShowSavedOnly] = useState(false);
@@ -113,7 +154,7 @@ export default function CoursesPage() {
 
       return {
         ...course,
-        image: course.imageSrc || `/images/courses/${course.id}.png`,
+        image: course.imageSrc,
         progress,
         status,
         semesterRequired,
@@ -156,9 +197,9 @@ export default function CoursesPage() {
     const isCurrentlyBookmarked = bookmarkedCourseIds.includes(courseId);
     toggleBookmarkCourse(courseId);
     if (isCurrentlyBookmarked) {
-      toast("Kursus dihapus dari simpanan.", { icon: "🔖" });
+      toast("Kelas dihapus dari simpanan.", { icon: "🔖" });
     } else {
-      toast.success("Kursus disimpan!");
+      toast.success("Kelas disimpan!");
     }
   };
 
@@ -172,79 +213,89 @@ export default function CoursesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
-
       {/* --- HEADER SECTION --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Daftar Kelas</h1>
-          <p className="text-zinc-500 mt-1">Pilih kursus untuk menjadikannya materi belajar aktifmu.</p>
-        </div>
+      <div className="mb-8 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl" />
+        <div className="relative">
+          {/* Row 1: Title and Saved Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-4xl font-bold text-blue-700 dark:text-white">Daftar Kelas</h1>
+              <p className="text-zinc-600 dark:text-zinc-400 mt-1 text-lg">Pilih kelas untuk menjadikannya materi belajar aktifmu.</p>
+            </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto pb-2 md:pb-0">
-          {/* Search Bar */}
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
-            <Input 
-              type="text" 
-              placeholder="Cari kursus..." 
-              className="pl-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* View Toggle */}
-          <div className="flex items-center p-1 bg-background rounded-md border border-input shrink-0">
-            <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Filter Dropdown */}
-          <DropdownMenu open={isSortOpen} onOpenChange={setIsSortOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 min-w-[180px] justify-between">
-                <div className="flex items-center gap-2">
-                  <ListFilter className="w-4 h-4 text-zinc-500" />
-                  <span>{
-                    sortOption === "name-asc" ? "Nama Kelas (A-Z)" : 
-                    sortOption === "progress-desc" ? "Progres Tertinggi" : 
-                    "Terakhir Diakses"
-                  }</span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`} />
+            <div className="shrink-0 self-start sm:self-auto">
+              {/* Saved Toggle Button */}
+              <Button 
+                variant={showSavedOnly ? "secondary" : "outline"} 
+                className={`gap-2 ${showSavedOnly ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : ""}`}
+                onClick={() => setShowSavedOnly(!showSavedOnly)}
+              >
+                {showSavedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                <span>Tersimpan {bookmarkedCourseIds.length > 0 && `(${bookmarkedCourseIds.length})`}</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuLabel>Urutkan Berdasarkan</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSortOption("name-asc")} className="flex items-center gap-2 cursor-pointer">
-                {sortOption === "name-asc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
-                Nama Kelas (A-Z)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOption("last-accessed")} className="flex items-center gap-2 cursor-pointer">
-                {sortOption === "last-accessed" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
-                Terakhir Diakses
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOption("progress-desc")} className="flex items-center gap-2 cursor-pointer">
-                {sortOption === "progress-desc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
-                Progres Tertinggi
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          </div>
 
-          {/* Saved Toggle Button */}
-          <Button 
-            variant={showSavedOnly ? "secondary" : "outline"} 
-            className={`gap-2 ${showSavedOnly ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : ""}`}
-            onClick={() => setShowSavedOnly(!showSavedOnly)}
-          >
-            {showSavedOnly ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-            <span>Tersimpan {bookmarkedCourseIds.length > 0 && `(${bookmarkedCourseIds.length})`}</span>
-          </Button>
+          {/* Row 2: Search, View Toggle, and Sort */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50">
+            {/* Search Bar */}
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+              <Input 
+                type="text" 
+                placeholder="Cari kelas..." 
+                className="pl-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+              {/* Filter Dropdown */}
+              <DropdownMenu open={isSortOpen} onOpenChange={setIsSortOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 min-w-[180px] justify-between">
+                    <div className="flex items-center gap-2">
+                      <ListFilter className="w-4 h-4 text-zinc-500" />
+                      <span>{
+                        sortOption === "name-asc" ? "Nama Kelas (A-Z)" : 
+                        sortOption === "progress-desc" ? "Progres Tertinggi" : 
+                        "Terakhir Diakses"
+                      }</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[200px]">
+                  <DropdownMenuLabel>Urutkan Berdasarkan</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSortOption("name-asc")} className="flex items-center gap-2 cursor-pointer">
+                    {sortOption === "name-asc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
+                    Nama Kelas (A-Z)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("last-accessed")} className="flex items-center gap-2 cursor-pointer">
+                    {sortOption === "last-accessed" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
+                    Terakhir Diakses
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("progress-desc")} className="flex items-center gap-2 cursor-pointer">
+                    {sortOption === "progress-desc" ? <Check className="w-4 h-4" /> : <div className="w-4 h-4" />}
+                    Progres Tertinggi
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* View Toggle */}
+              <div className="flex items-center p-1 bg-background rounded-md border border-input shrink-0">
+                <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -269,27 +320,27 @@ export default function CoursesPage() {
           <p className="text-sm text-zinc-500 max-w-sm">Coba ubah kata kunci pencarian Anda.</p>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedCourses.map((course) => (
             <div 
               key={course.id} 
-              className="group relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden"
+              className="group relative flex flex-col h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/25 hover:-translate-y-2 hover:border-blue-500 dark:hover:border-blue-500 overflow-hidden"
               onMouseEnter={() => setHoveredCourseId(course.id)}
               onMouseLeave={() => setHoveredCourseId(null)}
             >
               {/* Header Gambar */}
-              <div className={`h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300 group-hover:h-24 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
+              <div className={`h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
                 <div className={`absolute inset-0 ${course.color} opacity-20`} />
-                {!imageErrorIds.includes(course.id) ? (
+                {course.image && !imageErrorIds.includes(course.id) ? (
                   <Image 
                     src={course.image} 
                     alt={course.title} 
                     fill 
-                    className="object-cover" 
+                    className="object-cover transition-transform duration-500 group-hover:scale-105" 
                     onError={() => setImageErrorIds(prev => [...prev, course.id])}
                   />
                 ) : (
-                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40`}>
+                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40 transition-transform duration-500 group-hover:scale-105`}>
                     <BookOpen className="w-12 h-12 text-white/50" />
                   </div>
                 )}
@@ -356,41 +407,28 @@ export default function CoursesPage() {
                   )}
                 </div>
 
-                {/* Deskripsi: Animasi AnimatePresence */}
-                <AnimatePresence>
-                  {hoveredCourseId === course.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <p className="text-sm text-zinc-500 mb-4 pt-1">
-                        {course.description}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <p className="text-sm text-zinc-500 mb-4 line-clamp-2 mt-2">
+                  {course.description}
+                </p>
 
-                <div className="mt-auto pt-4 border-t flex items-center justify-between">
-                  <div className="text-xs text-zinc-500 flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" />
-                    {course.unitsCount} Unit • {course.lessonsCount} Materi
+                <div className="mt-auto pt-4 border-t flex flex-col gap-3">
+                  <div className="text-xs text-zinc-500 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>{course.unitsCount} Unit • {course.lessonsCount} Materi</span>
                   </div>
 
                   {course.status === 'unlocked' ? (
-                    <Button size="sm" onClick={() => handleSelectCourse(course.id)}>
+                    <Button size="sm" className="w-full font-bold" onClick={() => handleSelectCourse(course.id)}>
                       {course.progress > 0 ? "Lanjutkan" : "Mulai Belajar"}
                     </Button>
                   ) : course.status === 'pending' ? (
-                    <Button size="sm" variant="secondary" disabled>Menunggu Persetujuan</Button>
+                    <Button size="sm" variant="secondary" disabled className="w-full font-bold">Menunggu Persetujuan</Button>
                   ) : course.status === 'semester-locked' ? (
-                    <Button size="sm" variant="ghost" disabled className="text-red-400 text-xs">
+                    <Button size="sm" variant="ghost" disabled className="text-red-400 text-xs w-full font-bold justify-start">
                       <Lock className="w-3 h-3 mr-1" /> Semester Belum Tercapai
                     </Button>
                   ) : (
-                    <Button size="sm" variant="outline" onClick={() => requestEnrollment(course.id)}>Minta Akses Kelas</Button>
+                    <Button size="sm" variant="outline" className="w-full font-bold" onClick={() => requestEnrollment(course.id)}>Minta Akses Kelas</Button>
                   )}
                 </div>
               </div>
@@ -405,7 +443,7 @@ export default function CoursesPage() {
               {/* Icon Box */}
               <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
                 <div className={`absolute inset-0 ${course.color} opacity-20`} />
-                {!imageErrorIds.includes(course.id) ? (
+                {course.image && !imageErrorIds.includes(course.id) ? (
                   <Image 
                     src={course.image} 
                     alt={course.title} 

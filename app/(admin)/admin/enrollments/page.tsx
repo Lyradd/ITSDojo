@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '@/lib/store';
 import { EnrollmentRequest } from '@/lib/admin-data';
 import { Card } from '@/components/ui/card';
@@ -24,8 +24,9 @@ const STATUS_LABELS = {
 };
 
 function formatRelativeTime(ts: number) {
-  const diffMs = Date.now() - ts;
-  const diffMin = Math.floor(diffMs / 60000);
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'Baru saja';
+  const diffMin = Math.floor(diff / 60000);
   if (diffMin < 60) return `${diffMin} menit lalu`;
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `${diffHr} jam lalu`;
@@ -40,6 +41,12 @@ export default function EnrollmentsPage() {
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Timer state purely to trigger re-renders
+  const [, setTick] = useState(0);
+  
+  // Ref to store fixed timestamps so they don't reset on render
+  const mockupTimestamps = useRef<Record<string, number>>({});
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     // Sync state across tabs from localStorage manually
@@ -50,9 +57,19 @@ export default function EnrollmentsPage() {
     }, 800);
   };
 
-  const isDosen = role === 'dosen';
+  const isAuthorized = role === 'dosen' || role === 'admin';
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => { 
+    setIsMounted(true); 
+    
+    // Set interval to trigger re-render every 30 seconds for dynamic time updates
+    const interval = setInterval(() => {
+      setTick(t => t + 1);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   if (!isMounted) return null;
 
   const getCourseTitle = (id: string) => {
@@ -75,19 +92,37 @@ export default function EnrollmentsPage() {
     return map[id] || 1;
   };
 
-  const dynamicRequests: EnrollmentRequest[] = pendingCourseIds.map(courseId => ({
-    id: `dynamic-${courseId}`,
-    studentId: 'mahasiswa-1',
-    studentName: 'Mahasiswa Teladan (Demo)',
-    studentEmail: 'siswa@itsdojo.id',
-    studentAvatar: 'bg-blue-100 text-blue-700',
-    studentSemester: 3,
-    courseId: courseId,
-    courseTitle: getCourseTitle(courseId),
-    courseRequiredSemester: getCourseSem(courseId),
-    requestedAt: Date.now() - 60000,
-    status: 'pending',
-  }));
+  const dynamicRequests: EnrollmentRequest[] = pendingCourseIds.map(courseId => {
+    // If we haven't seen this course request yet, check localStorage or set it to now - 60s
+    if (!mockupTimestamps.current[courseId]) {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem(`enroll_ts_${courseId}`);
+        if (stored) {
+          mockupTimestamps.current[courseId] = parseInt(stored, 10);
+        } else {
+          const initialTime = Date.now() - 60000;
+          mockupTimestamps.current[courseId] = initialTime;
+          localStorage.setItem(`enroll_ts_${courseId}`, initialTime.toString());
+        }
+      } else {
+        mockupTimestamps.current[courseId] = Date.now() - 60000;
+      }
+    }
+
+    return {
+      id: `dynamic-${courseId}`,
+      studentId: 'mahasiswa-1',
+      studentName: 'Mahasiswa Teladan (Demo)',
+      studentEmail: 'siswa@itsdojo.id',
+      studentAvatar: 'bg-blue-100 text-blue-700',
+      studentSemester: 3,
+      courseId: courseId,
+      courseTitle: getCourseTitle(courseId),
+      courseRequiredSemester: getCourseSem(courseId),
+      requestedAt: mockupTimestamps.current[courseId],
+      status: 'pending',
+    };
+  });
 
   const allRequests = [...dynamicRequests, ...processedRequests];
 
@@ -106,21 +141,29 @@ export default function EnrollmentsPage() {
 
   const handleAccept = (id: string) => {
     if (id.startsWith('dynamic-')) {
+      const courseId = id.replace('dynamic-', '');
       const req = dynamicRequests.find(r => r.id === id);
       if (req) {
         setProcessedRequests(prev => [{ ...req, status: 'accepted' }, ...prev]);
       }
-      acceptEnrollment(id.replace('dynamic-', ''));
+      acceptEnrollment(courseId);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`enroll_ts_${courseId}`);
+      }
     }
   };
 
   const handleReject = (id: string) => {
     if (id.startsWith('dynamic-')) {
+      const courseId = id.replace('dynamic-', '');
       const req = dynamicRequests.find(r => r.id === id);
       if (req) {
         setProcessedRequests(prev => [{ ...req, status: 'rejected' }, ...prev]);
       }
-      rejectEnrollment(id.replace('dynamic-', ''));
+      rejectEnrollment(courseId);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`enroll_ts_${courseId}`);
+      }
     }
   };
 
@@ -153,9 +196,9 @@ export default function EnrollmentsPage() {
               </Button>
             </div>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-              {isDosen
+              {isAuthorized
                 ? 'Kelola permintaan masuk kelas dari mahasiswa'
-                : 'Lihat status permintaan pendaftaran mahasiswa (hanya dosen yang dapat menyetujui)'}
+                : 'Lihat status permintaan pendaftaran mahasiswa (hanya dosen atau admin yang dapat menyetujui)'}
             </p>
           </div>
         </div>
@@ -191,11 +234,11 @@ export default function EnrollmentsPage() {
           </Card>
         </div>
 
-        {/* Asdos notice */}
-        {!isDosen && (
+        {/* Role notice */}
+        {!isAuthorized && (
           <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-700 dark:text-amber-400 font-medium">
             <Clock className="w-4 h-4 shrink-0" />
-            <span>Kamu login sebagai <b>Asisten Dosen</b>. Hanya Dosen yang dapat menyetujui atau menolak permintaan ini.</span>
+            <span>Kamu login sebagai <b>Asisten Dosen</b>. Hanya Dosen atau Super Admin yang dapat menyetujui atau menolak permintaan ini.</span>
           </div>
         )}
 
@@ -306,7 +349,7 @@ export default function EnrollmentsPage() {
                       <span className={cn("px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap", STATUS_LABELS[req.status].color)}>
                         {STATUS_LABELS[req.status].label}
                       </span>
-                      {isDosen && req.status === 'pending' && (
+                      {isAuthorized && req.status === 'pending' && (
                         <div className="flex items-center gap-1.5">
                           <Button
                             size="sm"

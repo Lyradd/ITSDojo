@@ -2,17 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUserStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { 
   Home, 
   BookOpen, 
   Trophy, 
   Swords, 
-  ShoppingBag,
-  MoreHorizontal
+  MoreHorizontal,
+  LayoutDashboard,
+  UserCheck,
+  Users,
+  ClipboardCheck,
+  ShieldCheck,
+  Settings
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-const mobileNavItems = [
+const studentMobileNavItems = [
   { icon: Home, label: "Belajar", href: "/learn" },
   { icon: BookOpen, label: "Kelas", href: "/courses" },
   { icon: Trophy, label: "Peringkat", href: "/leaderboard" },
@@ -20,13 +27,56 @@ const mobileNavItems = [
   { icon: MoreHorizontal, label: "Lainnya", href: "/more" },
 ];
 
+const dosenMobileNavItems = [
+  { icon: LayoutDashboard, label: "Dasbor", href: "/dosen" },
+  { icon: BookOpen, label: "Kelas", href: "/dosen/courses" },
+  { icon: UserCheck, label: "Pendaftar", href: "/dosen/enrollments" },
+  { icon: Users, label: "Mahasiswa", href: "/dosen/students" },
+  { icon: MoreHorizontal, label: "Lainnya", href: "/dosen/more" },
+];
+
+const asdosMobileNavItems = [
+  { icon: LayoutDashboard, label: "Dasbor", href: "/asdos" },
+  { icon: BookOpen, label: "Kelas", href: "/asdos/courses" },
+  { icon: UserCheck, label: "Pendaftar", href: "/asdos/enrollments" },
+  { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
+  { icon: MoreHorizontal, label: "Lainnya", href: "/asdos/more" },
+];
+
+const adminMobileNavItems = [
+  { icon: LayoutDashboard, label: "Dasbor", href: "/admin" },
+  { icon: BookOpen, label: "Kelas", href: "/admin/courses" },
+  { icon: UserCheck, label: "Pendaftar", href: "/admin/enrollments" },
+  { icon: Users, label: "Pengguna", href: "/admin/users" },
+  { icon: MoreHorizontal, label: "Lainnya", href: "/admin/more" },
+];
+
 export function MobileNav() {
   const pathname = usePathname();
+  const { role } = useUserStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const mobileNavItems = 
+    role === 'admin' ? adminMobileNavItems :
+    role === 'dosen' ? dosenMobileNavItems :
+    role === 'asdos' ? asdosMobileNavItems :
+    studentMobileNavItems;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white dark:bg-zinc-950 border-t flex items-center justify-around px-2 md:hidden">
       {mobileNavItems.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(item.href);
+        // Strict exact match for specific dashboard paths to avoid false positives
+        const isDashboard = item.href === '/learn' || item.href === '/dosen' || item.href === '/admin' || item.href === '/asdos';
+        const isActive = isDashboard 
+          ? pathname === item.href 
+          : (pathname === item.href || pathname.startsWith(`${item.href}/`));
+          
         return (
           <Link
             key={item.href}

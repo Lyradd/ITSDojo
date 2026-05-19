@@ -51,9 +51,9 @@ export default function DosenCoursesPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <BookOpen className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold tracking-tight text-blue-700 dark:text-white">Daftar Kelas Anda</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-blue-700 dark:text-white">Daftar Kelas</h1>
           </div>
-          <p className="text-zinc-500 mt-1">Kelola materi, evaluasi, dan pantau mahasiswa pada kelas yang Anda ampu.</p>
+          <p className="text-zinc-500 mt-1">Kelola materi pada kelas yang Anda ampu.</p>
         </div>
       </div>
 

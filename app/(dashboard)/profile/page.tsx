@@ -39,7 +39,7 @@ export default function ProfilePage() {
     name, xp, streak, completedLessonIds = [], unlockedAchievements = [],
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
     activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
-    createdAt, followingCount, followersCount, earnedBadges
+    createdAt, followingCount, followersCount, earnedBadges, perfectWeeksCount = 0
   } = useUserStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,7 +109,9 @@ export default function ProfilePage() {
     completedLessonIds,
     nocturnalCount,
     earlyBirdCount,
-    unlockedAchievements
+    unlockedAchievements,
+    earnedBadgesCount: earnedBadges?.length || 0,
+    perfectWeeksCount
   });
 
   return (
@@ -225,35 +227,6 @@ export default function ProfilePage() {
             </Card>
           </div>
 
-          {/* Koleksi Badge Bulanan */}
-          {earnedBadges && earnedBadges.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Koleksi Badge Bulanan</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {earnedBadges.map((badge, idx) => (
-                  <Card key={idx} className={`p-4 border-2 flex flex-col items-center justify-center text-center relative overflow-hidden ${
-                    badge.tier === 'elite' ? 'border-purple-200 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800' :
-                    badge.tier === 'silver' ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800' :
-                    'border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800'
-                  }`}>
-                    {badge.tier === 'elite' && <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />}
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 z-10 shadow-md ${
-                      badge.tier === 'elite' ? 'bg-purple-500 text-white' :
-                      badge.tier === 'silver' ? 'bg-blue-500 text-white' :
-                      'bg-orange-500 text-white'
-                    }`}>
-                      <Trophy className="w-6 h-6" />
-                    </div>
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 z-10">{badge.name}</span>
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase z-10 mt-1">
-                      {badge.tier === 'elite' ? 'Elite Badge' : badge.tier === 'silver' ? 'Silver Badge' : 'Bronze Badge'}
-                    </span>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* 4. Pencapaian (Achievements) */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -289,6 +262,47 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Koleksi Badge Bulanan */}
+          <div className="mt-2">
+            <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Koleksi Badge Bulanan</h2>
+            {earnedBadges && earnedBadges.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {earnedBadges.map((badge, idx) => (
+                  <Card key={idx} className={`p-4 border-2 flex flex-col items-center justify-center text-center relative overflow-hidden ${
+                    badge.tier === 'elite' ? 'border-purple-200 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800' :
+                    badge.tier === 'silver' ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800' :
+                    'border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800'
+                  }`}>
+                    {badge.tier === 'elite' && <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />}
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 z-10 shadow-md ${
+                      badge.tier === 'elite' ? 'bg-purple-500 text-white' :
+                      badge.tier === 'silver' ? 'bg-blue-500 text-white' :
+                      'bg-orange-500 text-white'
+                    }`}>
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 z-10">{badge.name}</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase z-10 mt-1">
+                      {badge.tier === 'elite' ? 'Elite Badge' : badge.tier === 'silver' ? 'Silver Badge' : 'Bronze Badge'}
+                    </span>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-center flex flex-col items-center justify-center gap-3 rounded-2xl">
+                <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-zinc-700 dark:text-zinc-300">Belum Ada Lencana</h3>
+                  <p className="text-xs text-zinc-500 max-w-md mt-1 mx-auto">
+                    Selesaikan Misi Bulanan (45 Misi Harian) untuk mendapatkan Lencana Eksklusif yang akan dipajang di sini!
+                  </p>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
 
@@ -369,9 +383,9 @@ export default function ProfilePage() {
               <div>
                 <h2 className="text-2xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
-                  Ruang Piala & Lencana
+                  Ruang Pencapaian
                 </h2>
-                <p className="text-sm text-zinc-500 mt-1">Koleksi seluruh pencapaian dan lencana rahasia Anda.</p>
+                <p className="text-sm text-zinc-500 mt-1">Koleksi seluruh pencapaian dan rekor pribadi Anda.</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}

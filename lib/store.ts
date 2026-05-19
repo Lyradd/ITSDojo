@@ -67,6 +67,7 @@ export interface UserState {
   activityHistory: { date: string, count: number, xpEarned: number, freezeUsed?: boolean }[];
   earnedBadges: { id: string, name: string, date: string, tier: string }[];
   unlockedAchievements: string[];
+  perfectWeeksCount: number;
   nocturnalCount: number;
   earlyBirdCount: number;
   longestStreak: number;
@@ -163,6 +164,7 @@ export const useUserStore = create<UserState>()(
       mostXpInDay: 0,
       totalPerfectLessons: 0,
       weeklyActiveDays: 0,
+      perfectWeeksCount: 0,
       claimedWeeklyMilestones: [],
       league: "Silver",
       top3Finishes: 0,
@@ -302,8 +304,15 @@ export const useUserStore = create<UserState>()(
               }
               newLastActiveDate = today;
               
-              // Increment weekly active days
-              set((s) => ({ weeklyActiveDays: s.weeklyActiveDays + 1 }));
+              // Increment weekly active days and check for perfect week
+              set((s) => {
+                const nextActiveDays = s.weeklyActiveDays + 1;
+                const nextPerfectWeeks = nextActiveDays === 7 ? s.perfectWeeksCount + 1 : s.perfectWeeksCount;
+                return {
+                  weeklyActiveDays: nextActiveDays,
+                  perfectWeeksCount: nextPerfectWeeks
+                };
+              });
             }
           }
 

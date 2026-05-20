@@ -220,7 +220,10 @@ export default function CoursesPage() {
           {/* Row 1: Title and Saved Toggle */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-blue-700 dark:text-white">Daftar Kelas</h1>
+              <div className="flex items-center gap-3 mb-1">
+                <BookOpen className="w-8 h-8 text-blue-600" />
+                <h1 className="text-4xl font-bold tracking-tight text-blue-700 dark:text-white">Daftar Kelas</h1>
+              </div>
               <p className="text-zinc-600 dark:text-zinc-400 mt-1 text-lg">Pilih kelas untuk menjadikannya materi belajar aktifmu.</p>
             </div>
 

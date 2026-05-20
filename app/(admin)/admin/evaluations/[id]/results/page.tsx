@@ -59,7 +59,7 @@ export default function DetailedResultsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+              <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">
                 Results: {evaluation.title}
               </h1>
               <p className="text-zinc-600 dark:text-zinc-400">

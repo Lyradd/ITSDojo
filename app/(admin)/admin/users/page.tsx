@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, UserCog, ShieldAlert, Trash2, Edit3, Shield, 
-  CheckCircle2, UserPlus, X, BookOpen, Link2, Unlink, Loader2 
+import {
+  Users, UserCog, ShieldAlert, Trash2, Edit3, Shield,
+  CheckCircle2, UserPlus, X, BookOpen, Link2, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast, { Toaster } from 'react-hot-toast';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 
 export default function SuperAdminUsersPage() {
   const router = useRouter();
@@ -44,6 +46,10 @@ export default function SuperAdminUsersPage() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [assignType, setAssignType] = useState<'instructor' | 'assistant' | 'student'>('student');
+
+  // Confirm modal state
+  const [unassignTarget, setUnassignTarget] = useState<{ type: string; id: number; name?: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Fetch all initial data
   const loadData = useCallback(async () => {
@@ -101,15 +107,16 @@ export default function SuperAdminUsersPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membuat user");
-      
+
       setIsAddModalOpen(false);
       setNewName('');
       setNewEmail('');
       setNewRole('mahasiswa');
       setNewSemester(1);
       loadData();
+      toast.success(`Pengguna "${newName}" berhasil ditambahkan!`);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Terjadi kesalahan.');
     } finally {
       setSaving(false);
     }
@@ -132,8 +139,9 @@ export default function SuperAdminUsersPage() {
       setIsEditModalOpen(false);
       setEditingUser(null);
       loadData();
+      toast.success(`Data pengguna "${editingUser.name}" berhasil diperbarui!`);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Terjadi kesalahan.');
     } finally {
       setSaving(false);
     }
@@ -141,13 +149,20 @@ export default function SuperAdminUsersPage() {
 
   // Handle Delete User
   const handleDeleteUser = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus user ini? Semua progress & assignment terkait akan ikut terhapus.")) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/users/${deleteTarget}`, { method: 'DELETE' });
       if (!res.ok) throw new Error("Gagal menghapus user");
       loadData();
+      toast.success('Pengguna berhasil dihapus.');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Terjadi kesalahan.');
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -155,10 +170,13 @@ export default function SuperAdminUsersPage() {
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUserId || !selectedCourseId) {
-      alert("Harap pilih User dan Kelas terlebih dahulu.");
+      toast.error('Harap pilih User dan Kelas terlebih dahulu.');
       return;
     }
     setSaving(true);
+    const userName = users.find(u => u.id === selectedUserId)?.name || 'Pengguna';
+    const courseName = courses.find(c => c.id === selectedCourseId)?.title || 'Kelas';
+    const typeLabel = assignType === 'instructor' ? 'Dosen Pengampu' : assignType === 'assistant' ? 'Asisten Dosen' : 'Mahasiswa';
     try {
       const res = await fetch('/api/admin/assignments', {
         method: 'POST',
@@ -170,29 +188,61 @@ export default function SuperAdminUsersPage() {
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menugaskan ke kelas");
+      if (!res.ok) throw new Error(data.error || 'Gagal menugaskan ke kelas');
 
-      alert("Penugasan kelas berhasil ditambahkan!");
+      toast.custom((t) => (
+        <motion.div
+          initial={{ opacity: 0, y: -20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.9 }}
+          className={`${
+            t.visible ? 'opacity-100' : 'opacity-0'
+          } max-w-sm w-full bg-white dark:bg-zinc-900 border-2 border-green-200 dark:border-green-800 shadow-2xl shadow-green-500/10 rounded-2xl pointer-events-auto flex gap-4 p-4`}
+        >
+          <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-zinc-900 dark:text-white">Penugasan Berhasil! 🎉</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{userName}</span> telah ditugaskan sebagai{' '}
+              <span className="font-semibold text-purple-600 dark:text-purple-400">{typeLabel}</span> di kelas{' '}
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">{courseName}</span>.
+            </p>
+          </div>
+          <button onClick={() => toast.dismiss(t.id)} className="shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      ), { duration: 5000 });
+
       setSelectedUserId('');
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Terjadi kesalahan saat menugaskan.');
     } finally {
       setSaving(false);
     }
   };
 
   // Handle Unassign Class
-  const handleUnassign = async (type: string, id: number) => {
-    if (!confirm("Apakah Anda yakin ingin membatalkan penugasan kelas ini?")) return;
+  const handleUnassign = (type: string, id: number) => {
+    setUnassignTarget({ type, id });
+  };
+
+  const confirmUnassign = async () => {
+    if (!unassignTarget) return;
     try {
-      const res = await fetch(`/api/admin/assignments?type=${type}&id=${id}`, {
+      const res = await fetch(`/api/admin/assignments?type=${unassignTarget.type}&id=${unassignTarget.id}`, {
         method: 'DELETE'
       });
-      if (!res.ok) throw new Error("Gagal membatalkan penugasan");
+      if (!res.ok) throw new Error('Gagal membatalkan penugasan');
       loadData();
+      toast.success('Penugasan berhasil dibatalkan.');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Terjadi kesalahan.');
+    } finally {
+      setUnassignTarget(null);
     }
   };
 
@@ -201,7 +251,7 @@ export default function SuperAdminUsersPage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -209,15 +259,15 @@ export default function SuperAdminUsersPage() {
               <Shield className="w-4 h-4" />
               Super Admin Area
             </div>
-            <h1 className="text-4xl font-bold text-zinc-900 dark:text-white mb-2">
+            <h1 className="text-4xl font-bold text-blue-700 dark:text-white mb-2">
               Manajemen Sistem Kelas
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">
               Kelola role pengguna dan lakukan pre-assignment mahasiswa serta dosen ke mata kuliah.
             </p>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={() => setIsAddModalOpen(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 px-6 rounded-xl shadow-lg shadow-blue-500/25 shrink-0"
           >
@@ -288,8 +338,8 @@ export default function SuperAdminUsersPage() {
             onClick={() => setActiveTab('users')}
             className={cn(
               "px-4 py-2 text-sm font-bold transition-all border-b-2 -mb-[3px] flex items-center gap-2",
-              activeTab === 'users' 
-                ? "border-blue-500 text-blue-600" 
+              activeTab === 'users'
+                ? "border-blue-500 text-blue-600"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             )}
           >
@@ -300,8 +350,8 @@ export default function SuperAdminUsersPage() {
             onClick={() => setActiveTab('assignments')}
             className={cn(
               "px-4 py-2 text-sm font-bold transition-all border-b-2 -mb-[3px] flex items-center gap-2",
-              activeTab === 'assignments' 
-                ? "border-blue-500 text-blue-600" 
+              activeTab === 'assignments'
+                ? "border-blue-500 text-blue-600"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             )}
           >
@@ -364,9 +414,9 @@ export default function SuperAdminUsersPage() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => {
                                     setEditingUser({ ...user });
                                     setIsEditModalOpen(true);
@@ -375,9 +425,9 @@ export default function SuperAdminUsersPage() {
                                 >
                                   <Edit3 className="w-4 h-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => handleDeleteUser(user.id)}
                                   className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                                 >
@@ -406,28 +456,28 @@ export default function SuperAdminUsersPage() {
                     <Link2 className="w-5 h-5 text-blue-600" />
                     Penugasan Baru
                   </h3>
-                  
+
                   <form onSubmit={handleAssign} className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-zinc-500">Tipe Penugasan</label>
-                      <select 
-                        value={assignType} 
+                      <select
+                        value={assignType}
                         onChange={(e) => {
                           setAssignType(e.target.value as any);
                           setSelectedUserId('');
                         }}
                         className="w-full bg-zinc-100 dark:bg-zinc-800 border rounded-xl px-3 py-2.5 text-sm"
                       >
-                        <option value="student">Mahasiswa $\rightarrow$ Kelas</option>
-                        <option value="instructor">Dosen Pengampu $\rightarrow$ Kelas</option>
-                        <option value="assistant">Asisten Dosen $\rightarrow$ Kelas</option>
+                        <option value="student">Mahasiswa → Kelas</option>
+                        <option value="instructor">Dosen Pengampu → Kelas</option>
+                        <option value="assistant">Asisten Dosen → Kelas</option>
                       </select>
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-zinc-500">Pilih Kelas</label>
-                      <select 
-                        value={selectedCourseId} 
+                      <select
+                        value={selectedCourseId}
                         onChange={(e) => setSelectedCourseId(e.target.value)}
                         required
                         className="w-full bg-zinc-100 dark:bg-zinc-800 border rounded-xl px-3 py-2.5 text-sm"
@@ -441,8 +491,8 @@ export default function SuperAdminUsersPage() {
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-zinc-500">Pilih User</label>
-                      <select 
-                        value={selectedUserId} 
+                      <select
+                        value={selectedUserId}
                         onChange={(e) => setSelectedUserId(e.target.value)}
                         required
                         className="w-full bg-zinc-100 dark:bg-zinc-800 border rounded-xl px-3 py-2.5 text-sm"
@@ -470,79 +520,205 @@ export default function SuperAdminUsersPage() {
                   </form>
                 </Card>
 
-                {/* List Assignments */}
+                {/* List Assignments — Grouped by Person */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Dosen Assignments */}
                   <Card className="rounded-2xl border overflow-hidden bg-white dark:bg-zinc-900/50">
-                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center gap-2">
-                      <UserCog className="w-4 h-4 text-purple-600" />
-                      Dosen Pengampu Kelas
+                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <UserCog className="w-4 h-4 text-purple-600" />
+                        Dosen Pengampu Kelas
+                      </div>
+                      {assignments.instructors.length > 0 && (
+                        <span className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-0.5 rounded-full font-bold">
+                          {(() => {
+                            const grouped = assignments.instructors.reduce((acc: Record<string, any[]>, item) => {
+                              const key = item.userId || item.userName;
+                              if (!acc[key]) acc[key] = [];
+                              acc[key].push(item);
+                              return acc;
+                            }, {});
+                            return `${Object.keys(grouped).length} Dosen · ${assignments.instructors.length} Kelas`;
+                          })()}
+                        </span>
+                      )}
                     </div>
-                    <div className="divide-y">
+                    <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
                       {assignments.instructors.length === 0 ? (
-                        <div className="p-4 text-xs text-zinc-500 text-center">Belum ada dosen yang ditugaskan ke kelas manapun.</div>
+                        <div className="p-6 text-xs text-zinc-500 text-center">Belum ada dosen yang ditugaskan ke kelas manapun.</div>
                       ) : (
-                        assignments.instructors.map(item => (
-                          <div key={item.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900/30">
-                            <div>
-                              <div className="font-bold text-sm text-zinc-900 dark:text-white">{item.userName}</div>
-                              <div className="text-xs text-zinc-500">Mata Kuliah: <span className="font-bold text-blue-600">{item.courseTitle}</span></div>
+                        (() => {
+                          const grouped = assignments.instructors.reduce((acc: Record<string, any[]>, item) => {
+                            const key = item.userId || item.userName;
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(item);
+                            return acc;
+                          }, {});
+                          return Object.entries(grouped).map(([key, items]) => (
+                            <div key={key} className="p-4 border-b last:border-b-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-bold shrink-0">
+                                      {items[0].userName?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="font-bold text-sm text-zinc-900 dark:text-white truncate">{items[0].userName}</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 ml-10">
+                                    {items.map(item => (
+                                      <span key={item.id} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 px-2.5 py-1 rounded-lg border border-blue-200/50 dark:border-blue-800/30 group">
+                                        <BookOpen className="w-3 h-3 shrink-0" />
+                                        <span className="truncate max-w-[160px]">{item.courseTitle}</span>
+                                        <button
+                                          onClick={() => handleUnassign('instructor', item.id)}
+                                          className="ml-0.5 text-blue-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                          title="Hapus penugasan"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => handleUnassign('instructor', item.id)}>
-                              <Unlink className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
+                          ));
+                        })()
                       )}
                     </div>
                   </Card>
 
                   {/* Asdos Assignments */}
                   <Card className="rounded-2xl border overflow-hidden bg-white dark:bg-zinc-900/50">
-                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center gap-2">
-                      <UserCog className="w-4 h-4 text-orange-600" />
-                      Asisten Dosen Pendamping
+                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <UserCog className="w-4 h-4 text-orange-600" />
+                        Asisten Dosen Pendamping
+                      </div>
+                      {assignments.assistants.length > 0 && (
+                        <span className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 rounded-full font-bold">
+                          {(() => {
+                            const grouped = assignments.assistants.reduce((acc: Record<string, any[]>, item) => {
+                              const key = item.userId || item.userName;
+                              if (!acc[key]) acc[key] = [];
+                              acc[key].push(item);
+                              return acc;
+                            }, {});
+                            return `${Object.keys(grouped).length} Asdos · ${assignments.assistants.length} Kelas`;
+                          })()}
+                        </span>
+                      )}
                     </div>
-                    <div className="divide-y">
+                    <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
                       {assignments.assistants.length === 0 ? (
-                        <div className="p-4 text-xs text-zinc-500 text-center">Belum ada asdos yang ditugaskan ke kelas manapun.</div>
+                        <div className="p-6 text-xs text-zinc-500 text-center">Belum ada asdos yang ditugaskan ke kelas manapun.</div>
                       ) : (
-                        assignments.assistants.map(item => (
-                          <div key={item.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900/30">
-                            <div>
-                              <div className="font-bold text-sm text-zinc-900 dark:text-white">{item.userName}</div>
-                              <div className="text-xs text-zinc-500">Mata Kuliah: <span className="font-bold text-blue-600">{item.courseTitle}</span></div>
+                        (() => {
+                          const grouped = assignments.assistants.reduce((acc: Record<string, any[]>, item) => {
+                            const key = item.userId || item.userName;
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(item);
+                            return acc;
+                          }, {});
+                          return Object.entries(grouped).map(([key, items]) => (
+                            <div key={key} className="p-4 border-b last:border-b-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-sm font-bold shrink-0">
+                                      {items[0].userName?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="font-bold text-sm text-zinc-900 dark:text-white truncate">{items[0].userName}</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 ml-10">
+                                    {items.map(item => (
+                                      <span key={item.id} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 px-2.5 py-1 rounded-lg border border-orange-200/50 dark:border-orange-800/30 group">
+                                        <BookOpen className="w-3 h-3 shrink-0" />
+                                        <span className="truncate max-w-[160px]">{item.courseTitle}</span>
+                                        <button
+                                          onClick={() => handleUnassign('assistant', item.id)}
+                                          className="ml-0.5 text-orange-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                          title="Hapus penugasan"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => handleUnassign('assistant', item.id)}>
-                              <Unlink className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
+                          ));
+                        })()
                       )}
                     </div>
                   </Card>
 
                   {/* Student Enrollments */}
                   <Card className="rounded-2xl border overflow-hidden bg-white dark:bg-zinc-900/50">
-                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-blue-600" />
-                      Pendaftaran Kelas Mahasiswa
+                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        Pendaftaran Kelas Mahasiswa
+                      </div>
+                      {assignments.students.length > 0 && (
+                        <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full font-bold">
+                          {(() => {
+                            const grouped = assignments.students.reduce((acc: Record<string, any[]>, item) => {
+                              const key = item.userId || item.userName;
+                              if (!acc[key]) acc[key] = [];
+                              acc[key].push(item);
+                              return acc;
+                            }, {});
+                            return `${Object.keys(grouped).length} Mahasiswa · ${assignments.students.length} Kelas`;
+                          })()}
+                        </span>
+                      )}
                     </div>
-                    <div className="divide-y">
+                    <div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
                       {assignments.students.length === 0 ? (
-                        <div className="p-4 text-xs text-zinc-500 text-center">Belum ada mahasiswa yang didaftarkan ke kelas manapun.</div>
+                        <div className="p-6 text-xs text-zinc-500 text-center">Belum ada mahasiswa yang didaftarkan ke kelas manapun.</div>
                       ) : (
-                        assignments.students.map(item => (
-                          <div key={item.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900/30">
-                            <div>
-                              <div className="font-bold text-sm text-zinc-900 dark:text-white">{item.userName} (Semester {item.userSemester || '?'})</div>
-                              <div className="text-xs text-zinc-500">Mata Kuliah: <span className="font-bold text-blue-600">{item.courseTitle}</span></div>
+                        (() => {
+                          const grouped = assignments.students.reduce((acc: Record<string, any[]>, item) => {
+                            const key = item.userId || item.userName;
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(item);
+                            return acc;
+                          }, {});
+                          return Object.entries(grouped).map(([key, items]) => (
+                            <div key={key} className="p-4 border-b last:border-b-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">
+                                      {items[0].userName?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="font-bold text-sm text-zinc-900 dark:text-white truncate">{items[0].userName}</span>
+                                    {items[0].userSemester && (
+                                      <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">Smtr {items[0].userSemester}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 ml-10">
+                                    {items.map(item => (
+                                      <span key={item.id} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 px-2.5 py-1 rounded-lg border border-green-200/50 dark:border-green-800/30 group">
+                                        <BookOpen className="w-3 h-3 shrink-0" />
+                                        <span className="truncate max-w-[160px]">{item.courseTitle}</span>
+                                        <button
+                                          onClick={() => handleUnassign('student', item.id)}
+                                          className="ml-0.5 text-green-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                          title="Hapus penugasan"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => handleUnassign('student', item.id)}>
-                              <Unlink className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))
+                          ));
+                        })()
                       )}
                     </div>
                   </Card>
@@ -575,25 +751,25 @@ export default function SuperAdminUsersPage() {
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
-                
+
                 <form onSubmit={handleAddUser} className="p-6 space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Nama Lengkap</label>
-                    <input 
+                    <input
                       required
-                      type="text" 
+                      type="text"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       placeholder="Contoh: Dr. Budi Santoso"
                       className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
-                  
+
                   <div className="space-y-1.5">
                     <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Email ITS</label>
-                    <input 
+                    <input
                       required
-                      type="email" 
+                      type="email"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
                       placeholder="budi@itsdojo.id"
@@ -604,7 +780,7 @@ export default function SuperAdminUsersPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Role</label>
-                      <select 
+                      <select
                         value={newRole}
                         onChange={(e) => setNewRole(e.target.value)}
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -615,11 +791,11 @@ export default function SuperAdminUsersPage() {
                         <option value="admin">Super Admin</option>
                       </select>
                     </div>
-                    
+
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Semester</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         min="1" max="14"
                         value={newSemester}
                         disabled={newRole === 'dosen' || newRole === 'admin'}
@@ -628,7 +804,7 @@ export default function SuperAdminUsersPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="pt-4 flex gap-3">
                     <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)} className="flex-1 rounded-xl">
                       Batal
@@ -664,34 +840,34 @@ export default function SuperAdminUsersPage() {
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
-                
+
                 <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Nama Lengkap</label>
-                    <input 
+                    <input
                       required
-                      type="text" 
+                      type="text"
                       value={editingUser.name}
                       onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
                       className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
-                  
+
                   <div className="space-y-1.5">
                     <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Email ITS</label>
-                    <input 
+                    <input
                       required
-                      type="email" 
+                      type="email"
                       value={editingUser.email}
                       onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                       className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Role</label>
-                      <select 
+                      <select
                         value={editingUser.role || 'mahasiswa'}
                         onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -702,11 +878,11 @@ export default function SuperAdminUsersPage() {
                         <option value="admin">Super Admin</option>
                       </select>
                     </div>
-                    
+
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Semester</label>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         min="1" max="14"
                         value={editingUser.semester || 1}
                         disabled={editingUser.role === 'dosen' || editingUser.role === 'admin'}
@@ -715,7 +891,7 @@ export default function SuperAdminUsersPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="pt-4 flex gap-3">
                     <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)} className="flex-1 rounded-xl">
                       Batal

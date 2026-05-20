@@ -101,7 +101,7 @@ export default function EvaluationsPage() {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <ClipboardCheck className="w-8 h-8 text-purple-600" />
-            <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
+            <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
               {isAsdos ? 'Monitoring Evaluasi' : 'Manajemen Evaluasi'}
             </h1>
           </div>

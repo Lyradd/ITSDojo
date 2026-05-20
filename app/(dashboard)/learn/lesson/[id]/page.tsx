@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,9 @@ import {
   Code,
   Loader2,
   Terminal,
-  PlayCircle
+  PlayCircle,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -29,8 +31,15 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import Editor from "@monaco-editor/react";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 
 type LessonStep = 'video' | 'summary' | 'practice';
+
+const LANGUAGE_TEMPLATES: Record<string, string> = {
+  c: `#include <stdio.h>\n\nint main() {\n    // Tulis kode C Anda di sini\n    printf("Hello, World!\\n");\n    return 0;\n}`,
+  cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Tulis kode C++ Anda di sini\n    cout << "Hello, World!" << endl;\n    return 0;\n}`,
+  javascript: `// Tulis kode JavaScript Anda di sini\nconsole.log("Hello, World!");`
+};
 
 export default function LessonIDEPage() {
   const router = useRouter();
@@ -42,6 +51,7 @@ export default function LessonIDEPage() {
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<any>(null);
   const [code, setCode] = useState<string>('');
+  const [codes, setCodes] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState('problem');
   const [step, setStep] = useState<LessonStep>('video');
   const [isRunning, setIsRunning] = useState(false);
@@ -49,6 +59,60 @@ export default function LessonIDEPage() {
   const [executionResult, setExecutionResult] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [language, setLanguage] = useState("c");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLanguageChange = (newLang: string) => {
+    // Save current code to codes map
+    setCodes(prev => ({
+      ...prev,
+      [language]: code
+    }));
+
+    setLanguage(newLang);
+
+    // Get code for new language, or fall back to template
+    const savedCodeForNewLang = codes[newLang];
+    if (savedCodeForNewLang !== undefined) {
+      setCode(savedCodeForNewLang);
+    } else {
+      // If it's the lesson's default language, use its starter code
+      if (newLang === lesson?.defaultLanguage) {
+        setCode(lesson.starterCode || '');
+      } else {
+        // Use a generic template for the language
+        const template = LANGUAGE_TEMPLATES[newLang] || '';
+        setCode(template);
+      }
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const fileContent = event.target?.result as string || "";
+      setCode(fileContent);
+
+      // Auto-detect language by file extension
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      let detectedLang = language;
+      if (extension === 'c') detectedLang = 'c';
+      else if (extension === 'cpp' || extension === 'cc' || extension === 'cxx') detectedLang = 'cpp';
+      else if (extension === 'js' || extension === 'jsx') detectedLang = 'javascript';
+
+      setLanguage(detectedLang);
+      setCodes(prev => ({
+        ...prev,
+        [detectedLang]: fileContent
+      }));
+    };
+    reader.readAsText(file);
+  };
 
   // Fetch lesson data from API
   const fetchLesson = useCallback(async () => {
@@ -62,8 +126,12 @@ export default function LessonIDEPage() {
       }
       const data = await res.json();
       setLesson(data);
+      const defaultLang = data.defaultLanguage || 'c';
       setCode(data.starterCode || '');
-      setLanguage(data.defaultLanguage || 'c');
+      setLanguage(defaultLang);
+      setCodes({
+        [defaultLang]: data.starterCode || ''
+      });
     } catch (err) {
       console.error('Failed to fetch lesson:', err);
       setLesson(null);
@@ -131,7 +199,7 @@ export default function LessonIDEPage() {
     setIsError(false);
 
     try {
-      const data = await executeCode();
+      const data = await executeCode(showCustomInput ? customInput : undefined);
       
       if (data.run && data.run.output !== undefined) {
         setExecutionResult(data.run.output || "Program finished with no output.");
@@ -224,7 +292,7 @@ export default function LessonIDEPage() {
     }
   };
 
-  const stageNumber = lessonId;
+  const stageNumber = lesson?.order || lessonId;
 
   // ============================================
   // RENDER: VIDEO & SUMMARY LAYOUT (Langkah 1 & 2)
@@ -411,7 +479,8 @@ export default function LessonIDEPage() {
       <ResizablePanelGroup direction="horizontal" className="flex-1 w-full p-4 gap-4">
 
         {/* ================= LEFT PANE (Problem Description) ================= */}
-        <ResizablePanel defaultSize={40} minSize={25} className="flex flex-col bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
+        {!isFullScreen && (
+          <ResizablePanel defaultSize={40} minSize={25} className="flex flex-col bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
 
           {/* Horizontal Tabs */}
           <div className="flex items-center p-4 gap-2 bg-zinc-50 dark:bg-zinc-800/50 border-b-2 border-zinc-200 dark:border-zinc-800 shrink-0">
@@ -459,11 +528,14 @@ export default function LessonIDEPage() {
 
           </div>
         </ResizablePanel>
+        )}
 
-        <ResizableHandle withHandle className="bg-transparent w-4 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors flex items-center justify-center mx-1 cursor-col-resize" />
+        {!isFullScreen && (
+          <ResizableHandle withHandle className="bg-transparent w-4 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors flex items-center justify-center mx-1 cursor-col-resize" />
+        )}
 
         {/* ================= RIGHT PANE (Code Editor) ================= */}
-        <ResizablePanel defaultSize={60} minSize={30} className="flex flex-col bg-[#1e1e1e] rounded-3xl overflow-hidden shadow-2xl border-4 border-zinc-800 relative z-20">
+        <ResizablePanel defaultSize={isFullScreen ? 100 : 60} minSize={isFullScreen ? 100 : 30} className="flex flex-col bg-[#1e1e1e] rounded-3xl overflow-hidden shadow-2xl border-4 border-zinc-800 relative z-20">
 
           {/* Editor Top Bar */}
           <div className="h-14 border-b border-[#2d2d2d] flex items-center justify-between px-6 bg-[#252526] shrink-0">
@@ -477,7 +549,7 @@ export default function LessonIDEPage() {
               <span className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Lang:</span>
               <select 
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                onChange={(e) => handleLanguageChange(e.target.value)}
                 className="bg-transparent text-white border-none text-xs outline-none cursor-pointer p-0 font-bold"
               >
                 <option className="bg-zinc-900" value="c">C</option>
@@ -487,9 +559,20 @@ export default function LessonIDEPage() {
             </div>
 
             <div className="flex items-center gap-4 text-zinc-400">
-              <RotateCcw className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
-              <Settings className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
-              <MoreVertical className="w-4 h-4 cursor-pointer hover:text-white transition-colors" />
+              <button
+                onClick={() => setIsConfirmResetOpen(true)}
+                className="text-zinc-400 hover:text-white transition-colors flex items-center justify-center p-1 rounded hover:bg-white/5"
+                title="Reset Kode"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setIsFullScreen(!isFullScreen)} 
+                className="text-zinc-400 hover:text-white transition-colors flex items-center justify-center p-1 rounded hover:bg-white/5"
+                title={isFullScreen ? "Keluar Layar Penuh" : "Layar Penuh"}
+              >
+                {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -499,7 +582,7 @@ export default function LessonIDEPage() {
               <div className="flex-1 w-full relative pt-4">
             <Editor
               height="100%"
-              defaultLanguage={language}
+              language={language}
               theme="vs-dark"
               value={code}
               onChange={(val) => setCode(val || "")}
@@ -526,6 +609,25 @@ export default function LessonIDEPage() {
           </div>
           </ResizablePanel>
 
+          {showCustomInput && (
+            <>
+              <ResizableHandle withHandle className="bg-[#2d2d2d] h-2 hover:bg-zinc-700 transition-colors cursor-row-resize" />
+              <ResizablePanel defaultSize={20} minSize={10} className="flex flex-col bg-[#1e1e1e]">
+                <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#333] shrink-0">
+                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
+                    <FileText className="w-4 h-4" /> Custom Input (stdin)
+                  </div>
+                </div>
+                <textarea
+                  className="flex-1 w-full p-4 bg-[#1e1e1e] text-zinc-200 font-mono text-sm resize-none outline-none border-none focus:ring-0 placeholder:text-zinc-650"
+                  placeholder="Masukkan data input (stdin) untuk program Anda di sini..."
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                />
+              </ResizablePanel>
+            </>
+          )}
+
           {executionResult !== null && (
             <>
               <ResizableHandle withHandle className="bg-[#2d2d2d] h-2 hover:bg-zinc-700 transition-colors cursor-row-resize" />
@@ -547,11 +649,26 @@ export default function LessonIDEPage() {
           {/* Editor Bottom Actions Bar (Submit / Run) */}
           <div className="h-20 border-t border-[#2d2d2d] flex items-center justify-between px-6 bg-[#252526] shrink-0">
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white cursor-pointer transition-colors px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10">
+              <div 
+                className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white cursor-pointer transition-colors px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Upload className="w-4 h-4" /> Upload File
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  accept=".c,.cpp,.cc,.cxx,.js,.jsx" 
+                  className="hidden" 
+                />
               </div>
               <label className="flex items-center gap-2 text-xs font-bold text-zinc-400 cursor-pointer hover:text-white transition-colors">
-                <input type="checkbox" className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-blue-500" />
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-blue-500"
+                  checked={showCustomInput}
+                  onChange={(e) => setShowCustomInput(e.target.checked)}
+                />
                 Custom Input
               </label>
             </div>
@@ -574,6 +691,23 @@ export default function LessonIDEPage() {
 
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      <ConfirmModal
+        isOpen={isConfirmResetOpen}
+        onClose={() => setIsConfirmResetOpen(false)}
+        onConfirm={() => {
+          const resetCode = language === lesson?.defaultLanguage
+            ? (lesson?.starterCode || '')
+            : (LANGUAGE_TEMPLATES[language] || '');
+          setCode(resetCode);
+          setCodes(prev => ({ ...prev, [language]: resetCode }));
+        }}
+        title="Setel Ulang Kode?"
+        message="Apakah Anda yakin ingin menyetel ulang kode ke kondisi awal? Seluruh perubahan kode yang Anda tulis akan hilang."
+        confirmText="Ya, Setel Ulang"
+        cancelText="Batal"
+        variant="warning"
+      />
     </div>
   );
 }

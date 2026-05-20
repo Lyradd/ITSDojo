@@ -39,7 +39,7 @@ export default function SettingsPage() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <SettingsIcon className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-white">Settings</h1>
         </div>
         <p className="text-zinc-600 dark:text-zinc-400">
           Kelola preferensi dan akun kamu

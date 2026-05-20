@@ -196,7 +196,7 @@ export default function MonitorEvaluationPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
+                <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
                   {evaluation.isActive ? "Live Monitoring" : "Final Results"}: {evaluation.title}
                 </h1>
                 <span className={cn(

@@ -56,7 +56,7 @@ export default function AsdosEvaluationsPage() {
                 <Swords className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Monitoring Arena</h1>
+                <h1 className="text-3xl font-bold text-blue-700 dark:text-white">Monitoring Arena</h1>
                 <p className="text-zinc-600 dark:text-zinc-400">Pantau jalannya pertandingan dan evaluasi mahasiswa</p>
               </div>
             </div>

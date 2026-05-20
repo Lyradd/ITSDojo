@@ -12,6 +12,9 @@ export async function POST(req: Request) {
     let output = "";
 
     if (stdin) {
+      const trimmedStdin = stdin.trim();
+      const nums = trimmedStdin.split(/\s+/).map(Number);
+
       // Mock for fe-basic-1: Playing With Characters
       if (stdin.includes("C\nLanguage")) output = stdin;
       else if (stdin.includes("A\nHello")) output = stdin;
@@ -54,11 +57,29 @@ export async function POST(req: Request) {
       else if (stdin.trim() === "42\n3.14\nHello") output = "42\n3.14\nHello";
       else if (stdin.trim() === "0\n1.5\nWorld") output = "0\n1.5\nWorld";
 
+      // Mock for Dasar Pemrograman Stage 2 (Penjumlahan Dua Bilangan)
+      else if (nums.length === 2 && !nums.some(isNaN)) {
+        if (code.includes("+") || code.includes("a+b") || code.includes("a + b") || code.includes("sum")) {
+          output = String(nums[0] + nums[1]);
+        } else if (code.includes("-") || code.includes("a-b") || code.includes("a - b")) {
+          output = String(nums[0] - nums[1]);
+        } else {
+          output = "0";
+        }
+      }
+
       // Default fallback
       else output = stdin;
     } else {
-      // React mastery JS Hello World
-      if (language === "javascript" || code.includes("console.log")) {
+      // Parse print expressions from C/C++ code to simulate actual console output
+      const printfMatch = code.match(/printf\s*\(\s*"([^"]*)"/);
+      const coutMatch = code.match(/cout\s*<<\s*"([^"]*)"/);
+
+      if (printfMatch) {
+        output = printfMatch[1].replace(/\\n/g, "\n");
+      } else if (coutMatch) {
+        output = coutMatch[1];
+      } else if (language === "javascript" || code.includes("console.log")) {
         output = "Hello, World!";
       } else {
         output = "Program finished with no output.";

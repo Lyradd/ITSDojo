@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <BarChart3 className="w-8 h-8 text-green-600" />
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
             Analytics & Reports
           </h1>
         </div>

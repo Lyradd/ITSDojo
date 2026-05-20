@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
@@ -24,8 +25,17 @@ import { cn } from '@/lib/utils';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 
 export default function CoursesManagementPage() {
+  const router = useRouter();
   const { role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    if (role === 'dosen') {
+      router.push('/dosen/courses');
+    }
+  }, [role, router]);
+
   const isAsdos = role === 'asdos';
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -142,7 +152,7 @@ export default function CoursesManagementPage() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-8 h-8 text-blue-600" />
-                <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold text-blue-700 dark:text-white">
                   {isAsdos ? 'Lihat Kelas' : 'Kelola Kelas'}
                 </h1>
               </div>

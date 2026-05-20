@@ -96,7 +96,7 @@ export default function EditEvaluationPage() {
             Cancel
           </Button>
 
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">
             Edit Evaluation
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">

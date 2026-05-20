@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { INITIAL_LEADERBOARD } from '@/lib/evaluation-data';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
+import { getAngkatanFromSemester } from '@/lib/academic-utils';
+import { getLeaderboardData } from '@/actions/leaderboard';
 import { wsClient } from '@/lib/websocket-client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +28,9 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { isLoggedIn, name, xp, level } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
-  const [subScope, setSubScope] = useState<string>('2023');
+  const [subScope, setSubScope] = useState<string>(getAngkatanFromSemester(6).toString());
   const [evalScope, setEvalScope] = useState<string>('all');
   const [isConnected, setIsConnected] = useState(false);
 
@@ -41,70 +42,59 @@ export default function LeaderboardPage() {
     }
   }, [isLoggedIn, router, isMounted]);
 
-  // Initialize WebSocket connection
+  // Fetch real data from database
   useEffect(() => {
     if (!isMounted || !isLoggedIn) return;
 
+    const loadRealtimeData = async () => {
+      try {
+        const dbLeaderboard = await getLeaderboardData();
+        
+        // Inject current user stats if they exist, otherwise append
+        const hasCurrentUser = dbLeaderboard.some(u => u.name === name || u.name.includes(name));
+        
+        const currentUserEntry: LeaderboardEntry = {
+          userId: 'current-user',
+          name: `${name} (You)`,
+          avatar: 'bg-blue-200 text-blue-700',
+          score: xp,
+          totalQuestions: 50,
+          answeredQuestions: 35,
+          accuracy: 85,
+          rank: 0,
+          lastUpdate: Date.now(),
+          isCurrentUser: true,
+          batch: getAngkatanFromSemester(6).toString(), // Mock current user's batch
+          coursesTaken: 4,
+        };
+
+        const finalData = hasCurrentUser 
+          ? dbLeaderboard.map(u => (u.name === name || u.name.includes(name)) ? { ...u, isCurrentUser: true, name: `${name} (You)` } : u)
+          : [...dbLeaderboard, currentUserEntry];
+
+        // Sort and rank
+        const sorted = finalData.sort((a, b) => b.score - a.score);
+        const ranked = sorted.map((entry, index) => ({
+          ...entry,
+          rank: index + 1,
+        }));
+
+        setLeaderboard(ranked);
+      } catch (error) {
+        console.error("Failed to load leaderboard:", error);
+      }
+    };
+
+    loadRealtimeData();
+
+    // Setup websocket for live status only (disabled dummy injections)
     wsClient.connect();
     const unsubscribeStatus = wsClient.onConnectionStatus((connected) => {
       setIsConnected(connected);
     });
 
-    const unsubscribeLeaderboard = wsClient.onLeaderboardUpdate((data) => {
-      if (!data || data.length === 0) return;
-
-      const otherUsers = data.filter(entry => entry.userId !== 'current-user');
-      const liveUserIds = new Set(otherUsers.map(u => u.userId));
-      const filteredMockData = INITIAL_LEADERBOARD.filter(u => !liveUserIds.has(u.userId) && u.userId !== 'current-user');
-
-      const currentUserEntry: LeaderboardEntry = {
-        userId: 'current-user',
-        name: `${name} (You)`,
-        avatar: 'bg-blue-200 text-blue-700',
-        score: xp,
-        totalQuestions: 50,
-        answeredQuestions: 35,
-        accuracy: 85,
-        rank: 0,
-        lastUpdate: Date.now(),
-        isCurrentUser: true,
-        batch: '2023',
-        coursesTaken: 4,
-      };
-
-      const allEntries = [...otherUsers, ...filteredMockData, currentUserEntry];
-      const sorted = allEntries.sort((a, b) => b.score - a.score);
-      const ranked = sorted.map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }));
-
-      setLeaderboard(ranked);
-    });
-
-    const currentUserEntry: LeaderboardEntry = {
-      userId: 'current-user',
-      name: `${name} (You)`,
-      avatar: 'bg-blue-200 text-blue-700',
-      score: xp,
-      totalQuestions: 50,
-      answeredQuestions: 35,
-      accuracy: 85,
-      rank: 0,
-      lastUpdate: Date.now(),
-      isCurrentUser: true,
-      batch: '2023',
-      coursesTaken: 4,
-    };
-    
-    const timeout = setTimeout(() => {
-      wsClient.addUser(currentUserEntry);
-    }, 500);
-
     return () => {
-      clearTimeout(timeout);
       unsubscribeStatus();
-      unsubscribeLeaderboard();
     };
   }, [isMounted, isLoggedIn, name, xp]);
 
@@ -228,7 +218,7 @@ export default function LeaderboardPage() {
                   key={filter}
                   onClick={() => {
                       setScopeFilter(filter);
-                      if (filter === 'angkatan') setSubScope('2023');
+                      if (filter === 'angkatan') setSubScope(getAngkatanFromSemester(6).toString());
                       else setSubScope('web');
                   }}
                   className={cn(
@@ -252,9 +242,10 @@ export default function LeaderboardPage() {
               >
                 {scopeFilter === 'angkatan' && (
                   <>
-                    <option value="2023">Angkatan 2023 (Aktif)</option>
-                    <option value="2022">Angkatan 2022</option>
-                    <option value="2021">Angkatan 2021</option>
+                    <option value={getAngkatanFromSemester(6).toString()}>Angkatan {getAngkatanFromSemester(6)} (Aktif)</option>
+                    <option value={getAngkatanFromSemester(8).toString()}>Angkatan {getAngkatanFromSemester(8)} (Tingkat Akhir)</option>
+                    <option value={getAngkatanFromSemester(4).toString()}>Angkatan {getAngkatanFromSemester(4)}</option>
+                    <option value={getAngkatanFromSemester(2).toString()}>Angkatan {getAngkatanFromSemester(2)} (Maba)</option>
                   </>
                 )}
                 {scopeFilter === 'course' && (

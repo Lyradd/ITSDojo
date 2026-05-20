@@ -30,6 +30,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
   const [subScope, setSubScope] = useState<string>('2023');
+  const [evalScope, setEvalScope] = useState<string>('all');
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -264,6 +265,34 @@ export default function LeaderboardPage() {
                   </>
                 )}
               </select>
+              {scopeFilter === 'course' && (
+                <select 
+                  className="flex-1 max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
+                  value={evalScope}
+                  onChange={(e) => setEvalScope(e.target.value)}
+                >
+                  <option value="all">Semua Evaluasi</option>
+                  {subScope === 'web' && (
+                    <>
+                      <option value="eval-html">Quiz: HTML & CSS Fundamentals</option>
+                      <option value="eval-js">Quiz: JavaScript Basics</option>
+                      <option value="eval-react">Quiz: React Components</option>
+                    </>
+                  )}
+                  {subScope === 'pbo' && (
+                    <>
+                      <option value="eval-oop">Quiz: Konsep Dasar OOP</option>
+                      <option value="eval-java">Quiz: Java Inheritance</option>
+                    </>
+                  )}
+                  {subScope === 'sbd' && (
+                    <>
+                      <option value="eval-sql">Quiz: SQL Joins & Queries</option>
+                      <option value="eval-erd">Quiz: Relational Database Design</option>
+                    </>
+                  )}
+                </select>
+              )}
             </div>
           </div>
 

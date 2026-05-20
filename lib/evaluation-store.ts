@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 // TYPES & INTERFACES
 // ============================================
 
-export type QuestionType = 'multiple-choice' | 'short-answer' | 'true-false';
+export type QuestionType = 'multiple-choice' | 'short-answer' | 'true-false' | 'puzzle';
 
 export type UserRole = 'mahasiswa' | 'asisten' | 'dosen';
 
@@ -14,17 +14,20 @@ export interface Question {
   type: QuestionType;
   question: string;
   options?: string[]; // For multiple-choice and true-false
-  correctAnswer: string | number; // Index for MC, string for short answer, boolean for T/F
+  correctAnswer: string | number | boolean | string[]; // Index for MC, string for short answer, boolean for T/F, string[] for puzzle
   points: number;
   explanation?: string;
+  puzzlePairs?: { id: string; text: string }[];
 }
 
 export interface Answer {
   questionId: string;
-  answer: string | number | boolean;
+  answer: string | number | boolean | string[];
   isCorrect: boolean;
   timestamp: number;
   pointsEarned: number;
+  xpEarned?: number;
+  gemsEarned?: number;
 }
 
 export interface Evaluation {
@@ -69,6 +72,8 @@ interface EvaluationState {
   userAnswers: Map<string, Answer>;
   currentQuestionIndex: number;
   score: number;
+  sessionXp: number;
+  sessionGems: number;
   currentStreak: number;
   startTime: number | null;
   isEvaluationActive: boolean;
@@ -86,7 +91,7 @@ interface EvaluationState {
   
   // Actions - Evaluation
   startEvaluation: (evaluation: Evaluation) => void;
-  submitAnswer: (questionId: string, answer: string | number | boolean) => void;
+  submitAnswer: (questionId: string, answer: string | number | boolean | string[]) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   finishEvaluation: () => void;
@@ -116,6 +121,8 @@ export const useEvaluationStore = create<EvaluationState>()(
       userAnswers: new Map(),
       currentQuestionIndex: 0,
       score: 0,
+      sessionXp: 0,
+      sessionGems: 0,
       currentStreak: 0,
       startTime: null,
       isEvaluationActive: false,
@@ -138,6 +145,8 @@ export const useEvaluationStore = create<EvaluationState>()(
         userAnswers: new Map(),
         currentQuestionIndex: 0,
         score: 0,
+        sessionXp: 0,
+        sessionGems: 0,
         currentStreak: 0,
         startTime: null, // Deferred — set after countdown
         isEvaluationActive: true,
@@ -175,16 +184,31 @@ export const useEvaluationStore = create<EvaluationState>()(
           const userAnswer = String(answer).toLowerCase().trim();
           const correctAnswer = String(question.correctAnswer).toLowerCase().trim();
           isCorrect = userAnswer === correctAnswer;
+        } else if (question.type === 'puzzle') {
+          const userSequence = Array.isArray(answer) ? answer : [];
+          // If correctAnswer is defined, use it, otherwise use the order of puzzlePairs ids
+          const correctSequence = Array.isArray(question.correctAnswer) 
+            ? question.correctAnswer 
+            : (question.puzzlePairs?.map(p => p.id) || []);
+            
+          isCorrect = userSequence.length === correctSequence.length && 
+                      userSequence.every((val, index) => val === correctSequence[index]);
         }
         
-        const pointsEarned = isCorrect ? question.points : 0;
+        // Skenario B Logic: Base XP + Streak Multiplier
+        const basePoints = isCorrect ? question.points : 0; // Untuk Leaderboard murni
+        const streakBonus = isCorrect ? (state.currentStreak * 2) : 0; // 2 XP per current streak
+        const totalXpEarned = basePoints + streakBonus;
+        const gemsEarned = isCorrect ? 2 : 0; // 2 Gems per correct question
         
         const answerObj: Answer = {
           questionId,
           answer,
           isCorrect,
           timestamp: Date.now(),
-          pointsEarned,
+          pointsEarned: basePoints,
+          xpEarned: totalXpEarned,
+          gemsEarned: gemsEarned,
         };
         
         const newAnswers = new Map(state.userAnswers);
@@ -195,7 +219,9 @@ export const useEvaluationStore = create<EvaluationState>()(
         
         set({
           userAnswers: newAnswers,
-          score: state.score + pointsEarned,
+          score: state.score + basePoints,
+          sessionXp: state.sessionXp + totalXpEarned,
+          sessionGems: state.sessionGems + gemsEarned,
           currentStreak: newStreak,
         });
       },

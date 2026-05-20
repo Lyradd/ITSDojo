@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
+import { toast } from 'react-hot-toast';
 import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
 import { COURSES } from '@/lib/dummydata';
 import { Card } from '@/components/ui/card';
@@ -60,7 +60,10 @@ export default function DosenEvaluationsPage() {
                 <p className="text-zinc-600 dark:text-zinc-400">Atur evaluasi dan pantau pertandingan mahasiswa</p>
               </div>
             </div>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/25 px-6">
+            <Button 
+              onClick={() => router.push('/admin/evaluations/create')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/25 px-6"
+            >
               <Plus className="w-5 h-5 mr-2" /> Buat Arena Baru
             </Button>
           </div>
@@ -237,7 +240,11 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
         <div className="mt-auto flex gap-2">
           {isActive ? (
             <>
-              <Button variant="outline" className="flex-1 font-bold border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">
+              <Button 
+                onClick={() => toast.success("Status arena berhasil diubah!")}
+                variant="outline" 
+                className="flex-1 font-bold border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
                 <XCircle className="w-4 h-4 mr-1.5" /> Tutup Arena
               </Button>
               <Button onClick={handlePantauLive} className="flex-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">

@@ -124,20 +124,6 @@ export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
         </Button>
         <Button
           type="button"
-          onClick={() => addQuestion('essay')}
-          variant="ghost"
-          className={cn(
-            "border-2",
-            currentType === 'essay'
-              ? "bg-blue-600 hover:bg-blue-700 text-white! border-blue-600"
-              : "bg-white dark:bg-zinc-800 text-zinc-900! dark:text-white! border-zinc-300 dark:border-zinc-600 hover:border-blue-500"
-          )}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Essay
-        </Button>
-        <Button
-          type="button"
           onClick={() => addQuestion('short_answer')}
           variant="ghost"
           className={cn(
@@ -225,7 +211,6 @@ function QuestionCard({
   const questionTypeLabels = {
     multiple_choice: 'Multiple Choice',
     true_false: 'True/False',
-    essay: 'Essay',
     short_answer: 'Short Answer',
     puzzle: '🧩 Puzzle',
   } as const;
@@ -315,14 +300,6 @@ function QuestionCard({
             <TrueFalseOptions
               correctAnswer={question.correctAnswer ?? true}
               onChange={(correctAnswer: boolean) => onUpdate({ correctAnswer })}
-            />
-          )}
-
-          {question.type === 'essay' && (
-            <EssayOptions
-              wordLimit={question.wordLimit}
-              rubric={question.rubric}
-              onChange={(updates: { wordLimit?: number; rubric?: string }) => onUpdate(updates)}
             />
           )}
 
@@ -555,37 +532,7 @@ function TrueFalseOptions({ correctAnswer, onChange }: any) {
   );
 }
 
-function EssayOptions({ wordLimit, rubric, onChange }: any) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-          Word Limit
-        </label>
-        <input
-          type="number"
-          value={wordLimit || ''}
-          onChange={(e) => onChange({ wordLimit: parseInt(e.target.value) || undefined })}
-          placeholder="e.g., 500"
-          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
-          min={50}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-          Grading Rubric (Optional)
-        </label>
-        <textarea
-          value={rubric || ''}
-          onChange={(e) => onChange({ rubric: e.target.value })}
-          placeholder="Describe how this essay should be graded..."
-          className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 resize-none"
-          rows={3}
-        />
-      </div>
-    </div>
-  );
-}
+
 
 
 // Puzzle Options Component - For ordering/sequencing questions

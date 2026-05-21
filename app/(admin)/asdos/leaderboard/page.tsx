@@ -107,7 +107,7 @@ export default function AsdosLeaderboardPage() {
               <Trophy className="w-8 h-8 text-emerald-600" fill="currentColor" />
             </div>
             <div>
-              <h1 className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
+              <h1 className="text-4xl font-black tracking-tighter text-blue-700 dark:text-white">
                 Papan Peringkat
               </h1>
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-bold text-sm">

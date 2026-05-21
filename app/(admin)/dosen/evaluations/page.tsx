@@ -65,7 +65,7 @@ export default function DosenEvaluationsPage() {
                 <Swords className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Manajemen Arena</h1>
+                <h1 className="text-3xl font-bold text-blue-700 dark:text-white">Manajemen Arena</h1>
                 <p className="text-zinc-600 dark:text-zinc-400">Atur evaluasi dan pantau pertandingan mahasiswa</p>
               </div>
             </div>

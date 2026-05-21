@@ -47,12 +47,12 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
       {node.type === 'completed' && (
         <div className="relative cursor-pointer group" onClick={() => router.push(`/learn/lesson/${node.id}`)}>
           {/* Tooltip Label */}
-          <div className={`absolute z-30 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all group-hover:shadow-md group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all group-hover:shadow-md group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-zinc-400 text-[10px] uppercase block mb-0.5">Stage {index + 1}</span>
             <span className="text-green-600 dark:text-green-400">{node.title}</span>
 
             {/* INFO OVERVIEW ON HOVER */}
-            <div className="max-h-0 opacity-0 group-hover:max-h-32 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
+            <div className="max-h-0 opacity-0 group-hover:max-h-80 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
               <p className="text-xs text-zinc-500 font-normal mb-2 whitespace-normal min-w-[140px] text-center sm:text-left">{node.desc}</p>
               <div className={`flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded text-[10px] text-green-700 dark:text-green-400 w-fit font-bold border border-green-100 dark:border-green-900/40`}>
                 <CheckCircle className="w-3 h-3" /> Diselesaikan
@@ -89,12 +89,12 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
           </motion.div>
 
           {/* Tooltip Label */}
-          <div className={`absolute z-30 bg-white dark:bg-zinc-900 border-2 border-blue-200 dark:border-blue-800 px-4 py-3 rounded-xl text-sm font-bold shadow-md transition-all group-hover:shadow-xl group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+48px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+48px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 bg-white dark:bg-zinc-900 border-2 border-blue-200 dark:border-blue-800 px-4 py-3 rounded-xl text-sm font-bold shadow-md transition-all group-hover:shadow-xl group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+48px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+48px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-blue-500 dark:text-blue-400 text-[10px] uppercase block mb-0.5 animate-pulse">👉 Saat Ini (Stage {index + 1})</span>
             <span className="text-zinc-800 dark:text-white text-base">{node.title}</span>
 
             {/* INFO OVERVIEW ON HOVER */}
-            <div className="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-3 transition-all duration-300 ease-in-out overflow-hidden">
+            <div className="max-h-0 opacity-0 group-hover:max-h-96 group-hover:opacity-100 group-hover:mt-3 transition-all duration-300 ease-in-out overflow-hidden">
               <p className="text-xs text-zinc-500 font-normal mb-3 whitespace-normal min-w-[160px] text-center sm:text-left">{node.desc}</p>
 
               <div className={`flex flex-wrap items-center gap-2 ${!isEven && 'sm:justify-end'}`}>
@@ -131,12 +131,12 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
           className="relative cursor-default z-20 group"
         >
           {/* Tooltip Label */}
-          <div className={`absolute z-30 px-4 py-2 rounded-xl text-sm font-bold opacity-60 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 backdrop-blur-sm transition-all group-hover:opacity-100 group-hover:shadow-md top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 px-4 py-2 rounded-xl text-sm font-bold opacity-60 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 backdrop-blur-sm transition-all group-hover:opacity-100 group-hover:shadow-md top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-zinc-400 text-[10px] uppercase block mb-0.5">Stage {index + 1}</span>
             <span className="text-zinc-600 dark:text-zinc-400">{node.title}</span>
 
             {/* INFO OVERVIEW ON HOVER */}
-            <div className="max-h-0 opacity-0 group-hover:max-h-32 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
+            <div className="max-h-0 opacity-0 group-hover:max-h-80 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
               <p className="text-[11px] text-zinc-400 font-normal mb-2 whitespace-normal min-w-[150px] text-center sm:text-left">Belum terbuka. Selesaikan stage sebelumnya terlebih dahulu.</p>
               <div className={`flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-[10px] text-zinc-500 w-fit ${!isEven && 'sm:self-end'}`}>
                 <Lock className="w-3 h-3" /> Terkunci

@@ -16,7 +16,8 @@ import {
   Gem,
   Clock,
   Snowflake,
-  Check
+  Check,
+  Target
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
@@ -134,9 +135,12 @@ export default function GoalsPage() {
           {/* Header Page */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl font-extrabold text-zinc-800 dark:text-white">
-                Misi
-              </h1>
+              <div className="flex items-center gap-3 mb-1">
+                <Target className="w-8 h-8 text-blue-600" />
+                <h1 className="text-2xl font-extrabold text-zinc-800 dark:text-white">
+                  Misi
+                </h1>
+              </div>
               {resetTimeLeft && (
                 <p className="text-sm font-medium text-zinc-500 flex items-center gap-1">
                   <Clock className="w-4 h-4" /> Reset dalam {resetTimeLeft}

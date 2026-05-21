@@ -22,8 +22,36 @@ const coursesData = [
         title: 'Unit 1: Pengenalan Algoritma',
         description: 'Pahami apa itu algoritma dan cara menulis pseudocode.',
         lessons: [
-          { title: 'Apa itu Algoritma?', duration: '10 menit' },
-          { title: 'Pseudocode dan Flowchart', duration: '15 menit' },
+          { 
+            title: 'Apa itu Algoritma?', 
+            duration: '10 menit',
+            problemTitle: 'Program Pertama C: Hello ITSDojo!',
+            problemCategory: 'Basic I/O',
+            problemDescription: 'Tuliskan sebuah program C sederhana yang mencetak kalimat "Hello ITSDojo!" ke layar (standard output). Pastikan ejaan dan tanda serunya tepat.',
+            starterCode: '#include <stdio.h>\n\nint main() {\n    // Tulis kode cetak Anda di sini\n    printf("Hello ITSDojo!\\n");\n    return 0;\n}',
+            defaultLanguage: 'c',
+            sampleInput: '',
+            sampleOutput: 'Hello ITSDojo!',
+            testCases: [
+              { stdin: '', expected: 'Hello ITSDojo!', hidden: false }
+            ]
+          },
+          { 
+            title: 'Pseudocode dan Flowchart', 
+            duration: '15 menit',
+            problemTitle: 'Penjumlahan Dua Bilangan',
+            problemCategory: 'Variables & Arithmetic',
+            problemDescription: 'Buatlah program C yang membaca dua bilangan bulat (integer) dari input pengguna (standard input), menjumlahkan keduanya, dan mencetak hasil penjumlahannya ke layar.',
+            starterCode: '#include <stdio.h>\n\nint main() {\n    int a, b;\n    // Baca dua bilangan bulat dan cetak hasil penjumlahan\n    if (scanf("%d %d", &a, &b) == 2) {\n        printf("%d\\n", a + b);\n    }\n    return 0;\n}',
+            defaultLanguage: 'c',
+            sampleInput: '5 7',
+            sampleOutput: '12',
+            testCases: [
+              { stdin: '5 7', expected: '12', hidden: false },
+              { stdin: '-3 8', expected: '5', hidden: false },
+              { stdin: '100 250', expected: '350', hidden: true }
+            ]
+          },
           { title: 'Instalasi Compiler C/C++', duration: '12 menit' }
         ]
       },
@@ -228,16 +256,41 @@ async function main() {
         for (let lIdx = 0; lIdx < u.lessons.length; lIdx++) {
           const l = u.lessons[lIdx];
           
-          await sql`
+          const [insertedLesson] = await sql`
             INSERT INTO lessons (
               unit_id, title, "order", description, duration, xp_reward, gem_reward,
-              summary_content
+              summary_content, problem_title, problem_description, problem_category,
+              starter_code, default_language, sample_input, sample_output
             )
             VALUES (
-              ${unitId}, ${l.title}, ${lIdx + 1}, 'Materi pembelajaran untuk topik ' || ${l.title}, ${l.duration}, 50, 10,
-              '<h3>' || ${l.title} || '</h3><p>Ini adalah ringkasan materi untuk ' || ${l.title} || '.</p>'
+              ${unitId}, 
+              ${l.title}, 
+              ${lIdx + 1}, 
+              ${l.problemDescription || 'Materi pembelajaran untuk topik ' + l.title}, 
+              ${l.duration}, 
+              50, 
+              10,
+              ${l.summaryContent || '<h3>' + l.title + '</h3><p>Ini adalah ringkasan materi untuk ' + l.title + '.</p>'},
+              ${l.problemTitle || null},
+              ${l.problemDescription || null},
+              ${l.problemCategory || null},
+              ${l.starterCode || null},
+              ${l.defaultLanguage || 'c'},
+              ${l.sampleInput || null},
+              ${l.sampleOutput || null}
             )
+            RETURNING id;
           `;
+
+          if (l.testCases && l.testCases.length > 0) {
+            for (let tcIdx = 0; tcIdx < l.testCases.length; tcIdx++) {
+              const tc = l.testCases[tcIdx];
+              await sql`
+                INSERT INTO test_cases (lesson_id, stdin, expected, hidden, "order")
+                VALUES (${insertedLesson.id}, ${tc.stdin}, ${tc.expected}, ${tc.hidden}, ${tcIdx + 1})
+              `;
+            }
+          }
         }
       }
     }

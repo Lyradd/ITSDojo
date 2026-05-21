@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
         <div className="mb-8 relative">
           <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
           <div className="relative">
-            <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold text-blue-700 dark:text-white mb-2">
               Super Admin Dashboard
             </h1>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">

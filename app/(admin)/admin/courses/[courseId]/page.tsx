@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useUserStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,7 +61,15 @@ const EMPTY_LESSON: LessonForm = {
 
 export default function CourseDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const courseId = params.courseId as string;
+  const { role } = useUserStore();
+
+  useEffect(() => {
+    if (role === 'dosen') {
+      router.push(`/dosen/courses/${courseId}`);
+    }
+  }, [role, courseId, router]);
 
   const [course, setCourse] = useState<any>(null);
   const [units, setUnits] = useState<any[]>([]);
@@ -245,7 +254,7 @@ export default function CourseDetailPage() {
 
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">
                 {course.title}
               </h1>
               <p className="text-zinc-600 dark:text-zinc-400">{course.description}</p>

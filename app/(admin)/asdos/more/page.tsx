@@ -80,7 +80,7 @@ export default function AsdosMorePage() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Fitur Lainnya</h1>
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">Fitur Lainnya</h1>
           <p className="text-zinc-600 dark:text-zinc-400">
             Akses menu administrasi asisten dosen
           </p>

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { toast } from 'react-hot-toast';
-import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
 import { COURSES } from '@/lib/dummydata';
+import { getActiveEvaluations } from '@/actions/evaluations';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -30,18 +30,27 @@ export default function DosenEvaluationsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
 
+  const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+
   useEffect(() => {
     setIsMounted(true);
-    if (isMounted && role !== 'dosen' && role !== 'asdos') {
+    if (role !== 'dosen' && role !== 'asdos') {
       router.push('/login');
+      return;
     }
-  }, [isMounted, role, router]);
+
+    const loadEvals = async () => {
+      const data = await getActiveEvaluations();
+      setEvaluationsList(data);
+    };
+    loadEvals();
+  }, [role, router]);
 
   if (!isMounted || (role !== 'dosen' && role !== 'asdos')) return null;
 
   const filteredEvaluations = selectedCourse === 'all'
-    ? SAMPLE_EVALUATIONS
-    : SAMPLE_EVALUATIONS.filter(e => e.courseId === selectedCourse);
+    ? evaluationsList
+    : evaluationsList.filter(e => e.courseId === selectedCourse);
 
   const getCourseName = (courseId: string) => COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
   
@@ -77,7 +86,7 @@ export default function DosenEvaluationsPage() {
                 <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{SAMPLE_EVALUATIONS.filter(e => e.isActive).length}</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{evaluationsList.filter(e => e.isActive).length}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Arena Aktif</div>
               </div>
             </div>
@@ -88,7 +97,7 @@ export default function DosenEvaluationsPage() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{SAMPLE_EVALUATIONS.filter(e => !e.isActive).length}</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{evaluationsList.filter(e => !e.isActive).length}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Selesai</div>
               </div>
             </div>
@@ -158,7 +167,7 @@ export default function DosenEvaluationsPage() {
 }
 
 function AdminEvaluationCard({ evaluation, getCourseName }: {
-  evaluation: typeof SAMPLE_EVALUATIONS[0];
+  evaluation: any;
   getCourseName: (id: string) => string;
 }) {
   const router = useRouter();
@@ -222,7 +231,7 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <ClipboardCheck className="w-5 h-5 mx-auto mb-1 text-emerald-500 dark:text-emerald-400" />
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{evaluation.questions.length}</div>
+            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{Array.isArray(evaluation.questions) ? evaluation.questions.length : 0}</div>
             <div className="text-[10px] uppercase font-bold text-zinc-500">Soal</div>
           </div>
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">

@@ -31,6 +31,8 @@ export default function EvaluationResultsPage() {
   const { 
     currentEvaluation,
     score,
+    sessionXp,
+    sessionGems,
     userAnswers,
     getAccuracy,
     userRank,
@@ -55,11 +57,11 @@ export default function EvaluationResultsPage() {
     }
 
     // Add XP reward (only once)
-    if (!hasAddedXp && score > 0) {
-      addXp(score);
+    if (!hasAddedXp && sessionXp > 0) {
+      addXp(sessionXp);
       setHasAddedXp(true);
     }
-  }, [evaluationId, isLoggedIn, score, hasAddedXp]);
+  }, [evaluationId, isLoggedIn, sessionXp, hasAddedXp]);
 
   if (!isMounted || !isLoggedIn || !currentEvaluation) {
     return null;
@@ -113,11 +115,11 @@ export default function EvaluationResultsPage() {
             </p>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
-                <Zap className="w-6 h-6 text-yellow-500 mx-auto mb-2" fill="currentColor" />
+                <Target className="w-6 h-6 text-blue-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">{score}</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Total Poin</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Poin Papan Peringkat</div>
               </div>
 
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
@@ -131,11 +133,23 @@ export default function EvaluationResultsPage() {
                 <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">#{userRank}</div>
                 <div className="text-xs text-zinc-500 dark:text-zinc-400">Peringkat</div>
               </div>
+              
+              <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
+                <Zap className="w-6 h-6 text-yellow-500 mx-auto mb-2" fill="currentColor" />
+                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">+{sessionXp}</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">XP Gamifikasi</div>
+              </div>
+              
+              <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2 flex flex-col justify-center">
+                <div className="text-2xl mb-1 text-center">💎</div>
+                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">+{sessionGems}</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Gems Diterima</div>
+              </div>
 
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
-                <Target className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                <CheckCircle className="w-6 h-6 text-blue-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">{userAnswers.size}/{totalQuestions}</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Terjawab</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Soal Terjawab</div>
               </div>
             </div>
           </Card>
@@ -232,7 +246,7 @@ export default function EvaluationResultsPage() {
               <Zap className="w-6 h-6 text-yellow-600" fill="currentColor" />
               <div>
                 <p className="font-bold text-yellow-800 dark:text-yellow-200 text-sm">
-                  +{score} XP Diterima!
+                  +{sessionXp} Bonus XP!
                 </p>
                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
                   XP telah ditambahkan ke profilmu

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, boolean, timestamp, pgEnum, jsonb, unique } from 'drizzle-orm/pg-core';
 import { desc, relations } from 'drizzle-orm';
 
 // ==========================================
@@ -144,6 +144,7 @@ export const evaluations = pgTable('evaluations', {
   duration: integer('duration').notNull(), // dalam menit
   isActive: boolean('is_active').default(true).notNull(),
   totalPoints: integer('total_points').default(100).notNull(),
+  questions: jsonb('questions').default([]).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -156,6 +157,20 @@ export const evaluationResults = pgTable('evaluation_results', {
   timeSpent: integer('time_spent').notNull(), // dalam detik
   completedAt: timestamp('completed_at').defaultNow().notNull(),
 });
+
+export const evaluationProgress = pgTable('evaluation_progress', {
+  id: serial('id').primaryKey(),
+  evaluationId: text('evaluation_id').notNull(),
+  studentName: text('student_name').notNull(),
+  currentQuestion: integer('current_question').default(0).notNull(),
+  totalQuestions: integer('total_questions').notNull(),
+  score: integer('score').default(0).notNull(),
+  status: text('status').default('active').notNull(), // 'active', 'completed', 'stuck'
+  timeElapsed: integer('time_elapsed').default(0).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => ({
+  unq: unique().on(t.evaluationId, t.studentName),
+}));
 
 // ==========================================
 // 5. TABEL ACTIVITY & LOGS

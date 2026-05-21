@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
 import { COURSES } from '@/lib/dummydata';
+import { getActiveEvaluations } from '@/actions/evaluations';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -108,13 +108,26 @@ export default function EvaluationPage() {
   // Triggering Next.js Fast Refresh to reload the TUTORIAL_STEPS data correctly
   useEffect(() => { setIsMounted(true); }, []);
 
+  const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+
   useEffect(() => {
-    if (isMounted && !isLoggedIn) router.push('/login');
+    if (isMounted && !isLoggedIn) {
+      router.push('/login');
+      return;
+    }
+    
+    if (isMounted && isLoggedIn) {
+      const fetchEvals = async () => {
+        const data = await getActiveEvaluations();
+        setEvaluationsList(data);
+      };
+      fetchEvals();
+    }
   }, [isLoggedIn, router, isMounted]);
 
   if (!isMounted || !isLoggedIn) return null;
 
-  const enrolledEvaluations = SAMPLE_EVALUATIONS.filter(e => enrolledCourseIds.includes(e.courseId));
+  const enrolledEvaluations = evaluationsList.filter(e => enrolledCourseIds.includes(e.courseId));
   const filteredEvaluations = selectedCourse === 'all'
     ? enrolledEvaluations
     : enrolledEvaluations.filter(e => e.courseId === selectedCourse);
@@ -323,7 +336,7 @@ export default function EvaluationPage() {
 
 // ─── Card Component with Warning Modal ──────────────────────────────────────
 function EvaluationCard({ evaluation, getCourseName, onStart, name }: {
-  evaluation: typeof SAMPLE_EVALUATIONS[0];
+  evaluation: any;
   getCourseName: (id: string) => string;
   onStart: () => void;
   name: string;
@@ -448,7 +461,7 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name }: {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4 mb-6">
             <div className="flex items-center gap-2 text-zinc-700 dark:text-indigo-100/80 text-sm font-bold">
               <ClipboardCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-              <span>{evaluation.questions.length} soal</span>
+              <span>{Array.isArray(evaluation.questions) ? evaluation.questions.length : 0} soal</span>
             </div>
             <div className="flex items-center gap-2 text-zinc-700 dark:text-indigo-100/80 text-sm font-bold">
               <Target className="w-5 h-5 text-yellow-600 dark:text-yellow-500" />

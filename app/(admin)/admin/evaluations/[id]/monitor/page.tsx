@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { SAMPLE_EVALUATIONS } from "@/lib/evaluation-data";
-import { MOCK_EVALUATION_RESULTS } from "@/lib/admin-data";
+import { getEvaluationById, getLiveEvaluationProgress } from "@/actions/evaluations";
+import { Evaluation } from "@/lib/evaluation-types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -112,7 +112,7 @@ export default function MonitorEvaluationPage() {
   const router = useRouter();
   const evaluationId = params.id as string;
   
-  const [liveStudents, setLiveStudents] = useState(MOCK_LIVE_STUDENTS);
+  const [liveStudents, setLiveStudents] = useState<any[]>([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // null = all groups
@@ -120,22 +120,58 @@ export default function MonitorEvaluationPage() {
 
   const { isWaitingRoomActive, initiateStartSequence, countdownEndTime } = useEvaluationStore();
   const isStarting = countdownEndTime !== null;
-  // Find evaluation
-  const evaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    async function loadEval() {
+      try {
+        const data = await getEvaluationById(evaluationId);
+        setEvaluation(data as unknown as Evaluation);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadEval();
+  }, [evaluationId]);
   // Simulate live updates (in real app, use WebSocket or polling)
   useEffect(() => {
     // Only auto-refresh if evaluation is active AND toggle is on
     if (!autoRefresh || !evaluation?.isActive) return;
 
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-      // In real app: fetch updated data from server
-      // For now, just update timestamp
-    }, 3000); // Refresh every 3 seconds
+    const fetchLiveData = async () => {
+      try {
+        const liveData = await getLiveEvaluationProgress(evaluationId);
+        const mappedData = liveData.map((d: any, index: number) => ({
+          id: d.studentName,
+          name: d.studentName,
+          avatar: d.studentName.substring(0, 2).toUpperCase(),
+          currentQuestion: d.currentQuestion,
+          totalQuestions: d.totalQuestions,
+          score: d.score,
+          timeElapsed: d.timeElapsed,
+          status: d.status as 'active' | 'completed' | 'stuck',
+          groupId: (index % 3 === 0) ? 'group_a' : (index % 3 === 1) ? 'group_b' : 'group_c', // Dummy group for now
+          groupName: (index % 3 === 0) ? 'Kelompok A' : (index % 3 === 1) ? 'Kelompok B' : 'Kelompok C',
+        }));
+        setLiveStudents(mappedData);
+        setLastUpdate(new Date());
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchLiveData(); // Initial fetch
+    const interval = setInterval(fetchLiveData, 3000); // Refresh every 3 seconds
 
     return () => clearInterval(interval);
   }, [autoRefresh, evaluation?.isActive]);
+
+  if (loading) {
+    return <div className="p-8 text-center text-zinc-500">Loading evaluation data...</div>;
+  }
 
   if (!evaluation) {
     return (

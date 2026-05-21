@@ -9,6 +9,8 @@ import { GroupManager } from "@/components/admin/group-manager";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Eye, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createEvaluation } from "@/actions/evaluations";
+import { toast } from "react-hot-toast";
 
 const STORAGE_KEY = 'draft_evaluation';
 
@@ -60,32 +62,31 @@ export default function CreateEvaluationPage() {
   const canProceedToStep3 = questions.length > 0;
   const canPublish = canProceedToStep2 && canProceedToStep3;
 
-  const handlePublish = () => {
-    // TODO: API call to save evaluation
-    const evaluation = {
-      ...metadata,
-      totalPoints,
-      questions,
-      bloomDistribution,
-      // Group settings
-      groupSettings: {
-        enableGroups,
-        groups,
-      },
-      isActive: true,
-      createdBy: 'current-user-id',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    console.log('Publishing evaluation:', evaluation);
-    
-    // Clear draft
-    localStorage.removeItem(STORAGE_KEY);
-    
-    // Redirect to manage page
-    alert('Evaluation published successfully! (API not connected yet)');
-    router.push('/admin/evaluations');
+  const handlePublish = async () => {
+    try {
+      const evaluationData = {
+        ...metadata,
+        totalPoints,
+        questions,
+        bloomDistribution,
+        // Optional tracking if needed later
+        // groupSettings: { enableGroups, groups },
+      };
+      
+      const res = await createEvaluation(evaluationData);
+      
+      if (res.success) {
+        // Clear draft
+        localStorage.removeItem(STORAGE_KEY);
+        toast.success('Arena Evaluasi berhasil diterbitkan secara live!');
+        router.push('/admin/evaluations');
+      } else {
+        toast.error('Gagal menerbitkan evaluasi: Server Error');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menerbitkan evaluasi');
+    }
   };
 
   return (

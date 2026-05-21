@@ -11,6 +11,7 @@ import {
   addCurrentUserToLeaderboard,
   addBotsIfNeeded,
 } from '@/lib/evaluation-data';
+import { getEvaluationById, upsertEvaluationProgress } from '@/actions/evaluations';
 import { QuestionCard } from '@/components/evaluation/question-card';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
 import { Button } from '@/components/ui/button';
@@ -325,6 +326,8 @@ export default function EvaluationFullscreenPage() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  const [dbEvaluation, setDbEvaluation] = useState<any>(null);
+
   // Initialize evaluation
   useEffect(() => {
     setIsMounted(true);
@@ -334,32 +337,40 @@ export default function EvaluationFullscreenPage() {
       return;
     }
 
-    const evaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
-    if (!evaluation) {
-      router.push('/evaluation');
-      return;
-    }
+    const fetchEval = async () => {
+      const data = await getEvaluationById(evaluationId);
+      if (!data) {
+        router.push('/evaluation');
+        return;
+      }
+      setDbEvaluation(data);
+    };
+    fetchEval();
+  }, [evaluationId, isLoggedIn, router]);
+
+  useEffect(() => {
+    if (!dbEvaluation) return;
 
     if (!currentEvaluation || currentEvaluation.id !== evaluationId || !isEvaluationActive) {
-      startEvaluation(evaluation);
+      startEvaluation(dbEvaluation);
 
       // Initialize leaderboard with current user
       let initialLeaderboard = addCurrentUserToLeaderboard(
         INITIAL_LEADERBOARD,
         name,
         0,
-        evaluation.questions.length,
+        dbEvaluation.questions?.length || 0,
         0
       );
       
-      // Inject bots if threshold not met (e.g. need at least 15 participants)
-      initialLeaderboard = addBotsIfNeeded(initialLeaderboard, 15, evaluation.questions.length);
+      // Inject bots if threshold not met
+      initialLeaderboard = addBotsIfNeeded(initialLeaderboard, 15, dbEvaluation.questions?.length || 0);
       
       updateLeaderboard(initialLeaderboard);
     }
 
     setIsInitialized(true);
-  }, [evaluationId, isLoggedIn]);
+  }, [dbEvaluation, currentEvaluation, evaluationId, isEvaluationActive, startEvaluation, name, updateLeaderboard]);
 
   // Live leaderboard updates simulation
   useEffect(() => {
@@ -429,12 +440,45 @@ export default function EvaluationFullscreenPage() {
   const progress = getProgress();
   const accuracy = getAccuracy();
 
+  // Sync progress to DB
+  useEffect(() => {
+    if (!currentEvaluation || !isEvaluationActive) return;
+
+    const syncProgress = async () => {
+      const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+      await upsertEvaluationProgress({
+        evaluationId: currentEvaluation.id,
+        studentName: name || 'Anonim',
+        currentQuestion: userAnswers.size, // How many answered so far
+        totalQuestions: currentEvaluation.questions.length,
+        score: score,
+        status: 'active',
+        timeElapsed: elapsed,
+      });
+    };
+    
+    syncProgress();
+  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name]);
+
   const handleSubmitAnswer = (answer: string | number | boolean) => {
     if (!currentQuestion) return;
     submitAnswer(currentQuestion.id, answer);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+    if (currentEvaluation) {
+      await upsertEvaluationProgress({
+        evaluationId: currentEvaluation.id,
+        studentName: name || 'Anonim',
+        currentQuestion: userAnswers.size,
+        totalQuestions: currentEvaluation.questions.length,
+        score: score,
+        status: 'completed',
+        timeElapsed: elapsed,
+      });
+    }
+
     finishEvaluation();
     const pct = currentEvaluation ? (score / currentEvaluation.totalPoints) * 100 : 0;
     if (pct >= 90) {

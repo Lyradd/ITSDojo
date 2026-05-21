@@ -295,8 +295,6 @@ export function QuestionCard({
         {question.type === 'true-false' && renderTrueFalse()}
         {question.type === 'short-answer' && renderShortAnswer()}
         {question.type === 'puzzle' && renderPuzzle()}
-      </div>
-
       {/* Feedback */}
       {showFeedback && (
         <div className={cn(

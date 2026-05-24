@@ -28,6 +28,7 @@ export async function PUT(
         gemReward: body.gemReward,
         videoUrl: body.videoUrl,
         summaryContent: body.summaryContent,
+        materialFiles: body.materialFiles,
         problemTitle: body.problemTitle,
         problemDescription: body.problemDescription,
         problemCategory: body.problemCategory,

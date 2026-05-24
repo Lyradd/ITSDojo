@@ -84,8 +84,6 @@ export default function CoursesPage() {
 
   // === DATA DARI API (bukan dummy) ===
   const [apiCourses, setApiCourses] = useState<any[]>([]);
-  const [courseLessonCounts, setCourseLessonCounts] = useState<Record<string, number>>({});
-  const [courseLessonIds, setCourseLessonIds] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchCourses = useCallback(async () => {
@@ -94,31 +92,6 @@ export default function CoursesPage() {
       const res = await fetch('/api/courses');
       const data = await res.json();
       setApiCourses(data);
-
-      // Untuk setiap kursus, ambil jumlah lesson dan ID-nya dari units API
-      const counts: Record<string, number> = {};
-      const ids: Record<string, string[]> = {};
-      await Promise.all(
-        data.map(async (course: any) => {
-          try {
-            const unitsRes = await fetch(`/api/courses/${course.id}/units`);
-            const unitsData = await unitsRes.json();
-            const lessonIdList: string[] = [];
-            for (const unit of unitsData) {
-              for (const lesson of (unit.lessons || [])) {
-                lessonIdList.push(String(lesson.id));
-              }
-            }
-            counts[course.id] = lessonIdList.length;
-            ids[course.id] = lessonIdList;
-          } catch {
-            counts[course.id] = 0;
-            ids[course.id] = [];
-          }
-        })
-      );
-      setCourseLessonCounts(counts);
-      setCourseLessonIds(ids);
     } catch (err) {
       console.error('Failed to fetch courses:', err);
     } finally {
@@ -130,11 +103,10 @@ export default function CoursesPage() {
 
   // Data Processing (Mapping, Filtering, Sorting)
   const sortedCourses = useMemo(() => {
-    // 1. Map status and progress
     let data = apiCourses.map((course) => {
-      const lessonsCount = courseLessonCounts[course.id] || 0;
-      const lessonIdsForCourse = courseLessonIds[course.id] || [];
-      const completedCount = lessonIdsForCourse.filter(id => completedLessonIds.includes(id)).length;
+      const lessonsCount = course.lessonsCount || 0;
+      const lessonIdsForCourse: string[] = course.lessonIds || [];
+      const completedCount = lessonIdsForCourse.filter((id: string) => completedLessonIds.includes(id)).length;
       const progress = Math.min(Math.floor((completedCount / (lessonsCount || 1)) * 100), 100);
 
       const accessDateStr = courseAccessHistory?.[course.id];
@@ -160,7 +132,7 @@ export default function CoursesPage() {
         semesterRequired,
         isSemesterMet,
         unitsCount: course.unitsCount || 0,
-        lessonsCount: course.lessonsCount || 0,
+        lessonsCount,
         lastAccessed,
       };
     });
@@ -183,7 +155,7 @@ export default function CoursesPage() {
       else if (sortOption === "progress-desc") return b.progress - a.progress;
       return 0;
     });
-  }, [apiCourses, courseLessonCounts, courseLessonIds, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption, bookmarkedCourseIds, showSavedOnly]);
+  }, [apiCourses, completedLessonIds, semester, enrolledCourseIds, pendingCourseIds, courseAccessHistory, searchQuery, sortOption, bookmarkedCourseIds, showSavedOnly]);
 
   const formatDate = (date: Date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
 

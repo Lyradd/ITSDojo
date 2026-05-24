@@ -67,8 +67,9 @@ export const lessons = pgTable('lessons', {
   gemReward: integer('gem_reward').default(10).notNull(),
 
   // Konten Pembelajaran
-  videoUrl: text('video_url'),                    // YouTube embed URL
+  videoUrl: text('video_url'),                    // YouTube/Google Drive embed URL
   summaryContent: text('summary_content'),        // HTML content untuk rangkuman materi
+  materialFiles: text('material_files'),          // JSON array of uploaded files [{url, fileName, fileSize, fileType}]
 
   // Soal Coding (Practice)
   problemTitle: text('problem_title'),

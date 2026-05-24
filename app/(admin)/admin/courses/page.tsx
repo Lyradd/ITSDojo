@@ -61,16 +61,18 @@ export default function CoursesManagementPage() {
     try {
       const res = await fetch('/api/courses');
       const data = await res.json();
-      setCourses(data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      setCourses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setCourses([]);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { setIsMounted(true); fetchCourses(); }, [fetchCourses]);
 
   if (!isMounted || loading) return null;
 
-  const filteredCourses = courses.filter((course: any) =>
+  const filteredCourses = (Array.isArray(courses) ? courses : []).filter((course: any) =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     course.description.toLowerCase().includes(searchQuery.toLowerCase())
   );

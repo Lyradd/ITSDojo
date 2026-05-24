@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getEvaluationById, getLiveEvaluationProgress } from "@/actions/evaluations";
+import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession } from "@/actions/evaluations";
 import { Evaluation } from "@/lib/evaluation-types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -256,8 +256,11 @@ export default function MonitorEvaluationPage() {
               {evaluation.isActive && (
                 <>
                   {evaluation.isActive && (
-                    <Button 
-                      onClick={() => initiateStartSequence()}
+                    <Button
+                      onClick={async () => {
+                        const res = await startEvaluationSession(evaluationId);
+                        if (res.success) initiateStartSequence();
+                      }}
                       disabled={isStarting || !isWaitingRoomActive}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20"
                     >

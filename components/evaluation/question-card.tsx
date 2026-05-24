@@ -14,7 +14,8 @@ interface QuestionCardProps {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
-  onSubmit: (answer: string | number | boolean) => void;
+  onSubmit: (answer: string | number | boolean | string[]) => void;
+  isSubmitted?: boolean;
   userAnswer?: string | number | boolean | string[];
 }
 

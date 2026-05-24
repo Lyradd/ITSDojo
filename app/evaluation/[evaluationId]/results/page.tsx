@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
 import { useEvaluationStore } from '@/lib/evaluation-store';
-import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
+import { getEvaluationById, getStudentEvaluationResult } from '@/actions/evaluations';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
@@ -44,23 +44,30 @@ export default function EvaluationResultsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    
+
     if (!isLoggedIn) {
       router.push('/login');
       return;
     }
 
-    const evaluation = SAMPLE_EVALUATIONS.find(e => e.id === evaluationId);
-    if (!evaluation) {
-      router.push('/evaluation');
-      return;
-    }
+    // Validasi evaluation ada di DB. Kalau tidak, redirect.
+    let cancelled = false;
+    (async () => {
+      const evaluation = await getEvaluationById(evaluationId);
+      if (cancelled) return;
+      if (!evaluation) {
+        router.push('/evaluation');
+        return;
+      }
+    })();
 
     // Add XP reward (only once)
     if (!hasAddedXp && sessionXp > 0) {
       addXp(sessionXp);
       setHasAddedXp(true);
     }
+
+    return () => { cancelled = true; };
   }, [evaluationId, isLoggedIn, sessionXp, hasAddedXp]);
 
   if (!isMounted || !isLoggedIn || !currentEvaluation) {

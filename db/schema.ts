@@ -146,6 +146,9 @@ export const evaluations = pgTable('evaluations', {
   isActive: boolean('is_active').default(true).notNull(),
   totalPoints: integer('total_points').default(100).notNull(),
   questions: jsonb('questions').default([]).notNull(),
+  // Session lifecycle: 'waiting' (default, menunggu dosen mulai) | 'active' (sedang berjalan) | 'finished'
+  sessionStatus: text('session_status').default('waiting').notNull(),
+  sessionStartedAt: timestamp('session_started_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

@@ -7,6 +7,94 @@ import { persist } from 'zustand/middleware';
 
 export type QuestionType = 'multiple-choice' | 'short-answer' | 'true-false' | 'puzzle';
 
+// ============================================
+// QUESTION NORMALIZER
+// ============================================
+// Dosen membuat soal dengan format dari lib/evaluation-types.ts:
+//   - type: 'multiple_choice' | 'true_false' | 'short_answer' | 'puzzle' | 'essay'
+//   - options: Array<{id, text, isCorrect}> untuk MC
+//   - correctAnswer: boolean untuk true_false
+// Mahasiswa mengerjakan dengan format dari store ini:
+//   - type: 'multiple-choice' | 'true-false' | 'short-answer' | 'puzzle'
+//   - options: string[]
+//   - correctAnswer: number (index) untuk MC dan true-false
+
+export function normalizeQuestion(raw: any): Question {
+  const rawType = String(raw?.type || '').replace(/_/g, '-');
+
+  if (rawType === 'multiple-choice') {
+    const rawOptions: any[] = Array.isArray(raw.options) ? raw.options : [];
+    const options = rawOptions.map((o) => (typeof o === 'string' ? o : (o?.text ?? '')));
+    const correctIndex = rawOptions.findIndex((o) => o?.isCorrect === true);
+    return {
+      id: raw.id,
+      type: 'multiple-choice',
+      question: raw.question || '',
+      options,
+      correctAnswer: correctIndex >= 0 ? correctIndex : (typeof raw.correctAnswer === 'number' ? raw.correctAnswer : 0),
+      points: typeof raw.points === 'number' ? raw.points : 10,
+      explanation: raw.explanation,
+    };
+  }
+
+  if (rawType === 'true-false') {
+    let correctIndex = 0; // default Benar
+    if (typeof raw.correctAnswer === 'boolean') {
+      correctIndex = raw.correctAnswer ? 0 : 1;
+    } else if (typeof raw.correctAnswer === 'number') {
+      correctIndex = raw.correctAnswer;
+    }
+    return {
+      id: raw.id,
+      type: 'true-false',
+      question: raw.question || '',
+      options: ['Benar', 'Salah'],
+      correctAnswer: correctIndex,
+      points: typeof raw.points === 'number' ? raw.points : 10,
+      explanation: raw.explanation,
+    };
+  }
+
+  if (rawType === 'short-answer' || rawType === 'essay') {
+    return {
+      id: raw.id,
+      type: 'short-answer',
+      question: raw.question || '',
+      correctAnswer: String(raw.expectedAnswer ?? raw.correctAnswer ?? ''),
+      points: typeof raw.points === 'number' ? raw.points : 10,
+      explanation: raw.explanation,
+    };
+  }
+
+  if (rawType === 'puzzle') {
+    const pairs = Array.isArray(raw.puzzlePairs) ? raw.puzzlePairs : [];
+    return {
+      id: raw.id,
+      type: 'puzzle',
+      question: raw.question || '',
+      puzzlePairs: pairs.map((p: any) => ({ id: String(p.id), text: String(p.text || '') })),
+      correctAnswer: Array.isArray(raw.correctAnswer) ? raw.correctAnswer : pairs.map((p: any) => String(p.id)),
+      points: typeof raw.points === 'number' ? raw.points : 10,
+      explanation: raw.explanation,
+    };
+  }
+
+  // Fallback: pertahankan struktur asli tapi pastikan minimal valid
+  return {
+    id: raw.id,
+    type: 'multiple-choice',
+    question: raw.question || '',
+    options: [],
+    correctAnswer: 0,
+    points: typeof raw.points === 'number' ? raw.points : 10,
+  };
+}
+
+export function normalizeEvaluation<T extends { questions?: any[] }>(raw: T): T & { questions: Question[] } {
+  const questions = Array.isArray(raw?.questions) ? raw.questions.map(normalizeQuestion) : [];
+  return { ...(raw as any), questions };
+}
+
 export type UserRole = 'mahasiswa' | 'asisten' | 'dosen';
 
 export interface Question {

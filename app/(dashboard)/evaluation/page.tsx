@@ -140,8 +140,8 @@ export default function EvaluationPage() {
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded-2xl shadow-lg border border-indigo-200 dark:border-indigo-900/50">
-              <Swords className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+            <div>
+              <Swords className="w-8 h-8 text-blue-600" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Arena Evaluasi</h1>

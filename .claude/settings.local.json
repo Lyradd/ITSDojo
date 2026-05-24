@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr /C:\"id\" /C:\"name\" /C:\"role\" \"c:\\\\Ngoding\\\\ITSDojo\\\\lib\\\\store.ts\")",
+      "Bash(more +0)"
+    ]
+  }
+}

@@ -126,8 +126,8 @@ export default function LeaderboardPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/10 rounded-2xl border-2 border-yellow-500/20 shadow-xl shadow-yellow-500/5">
-              <Trophy className="w-8 h-8 text-yellow-600" fill="currentColor" />
+            <div>
+              <Trophy className="w-8 h-8 text-blue-600" />
             </div>
             <div>
               <h1 className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">

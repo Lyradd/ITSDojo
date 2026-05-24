@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
-import { useEvaluationStore } from '@/lib/evaluation-store';
+import { useEvaluationStore, normalizeEvaluation } from '@/lib/evaluation-store';
 import {
   SAMPLE_EVALUATIONS,
   INITIAL_LEADERBOARD,
@@ -11,7 +11,7 @@ import {
   addCurrentUserToLeaderboard,
   addBotsIfNeeded,
 } from '@/lib/evaluation-data';
-import { getEvaluationById, upsertEvaluationProgress } from '@/actions/evaluations';
+import { getEvaluationById, upsertEvaluationProgress, getEvaluationSessionStatus, startEvaluationSession, submitEvaluationResult } from '@/actions/evaluations';
 import { QuestionCard } from '@/components/evaluation/question-card';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
 import { Button } from '@/components/ui/button';
@@ -54,17 +54,41 @@ const FUN_FACTS = [
 ];
 
 function WaitingRoomOverlay({
+  evaluationId,
   evaluationTitle,
   onStart,
 }: {
+  evaluationId: string;
   evaluationTitle: string;
   onStart: () => void;
 }) {
   const { role } = useUserStore();
-  const { countdownEndTime, startWaitingRoomSession } = useEvaluationStore();
+  const { countdownEndTime, startWaitingRoomSession, initiateStartSequence } = useEvaluationStore();
   const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
   const [showParticipants, setShowParticipants] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  // Poll DB session status — when dosen presses "Mulai Sesi" from another device,
+  // sessionStatus becomes 'active' and we trigger the local countdown sequence.
+  useEffect(() => {
+    if (role === 'dosen' || role === 'admin' || role === 'asdos') return; // dosen drives the start, doesn't poll
+    if (countdownEndTime) return; // already counting down
+
+    let cancelled = false;
+    const poll = async () => {
+      const status = await getEvaluationSessionStatus(evaluationId);
+      if (cancelled) return;
+      if (status?.sessionStatus === 'active' && !useEvaluationStore.getState().countdownEndTime) {
+        initiateStartSequence();
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [evaluationId, role, countdownEndTime, initiateStartSequence]);
 
   useEffect(() => {
     if (!countdownEndTime) return;
@@ -351,26 +375,30 @@ export default function EvaluationFullscreenPage() {
   useEffect(() => {
     if (!dbEvaluation) return;
 
-    if (!currentEvaluation || currentEvaluation.id !== evaluationId || !isEvaluationActive) {
-      startEvaluation(dbEvaluation);
+    // Hanya inisialisasi sekali per evaluasi. Jangan re-init saat isEvaluationActive
+    // berubah jadi false (mis. setelah submit) — itu menyebabkan loop kembali ke waiting room
+    // sebelum router sempat navigate ke /results.
+    if (!currentEvaluation || currentEvaluation.id !== evaluationId) {
+      const normalized = normalizeEvaluation(dbEvaluation);
+      startEvaluation(normalized as any);
 
       // Initialize leaderboard with current user
       let initialLeaderboard = addCurrentUserToLeaderboard(
         INITIAL_LEADERBOARD,
         name,
         0,
-        dbEvaluation.questions?.length || 0,
+        normalized.questions?.length || 0,
         0
       );
-      
+
       // Inject bots if threshold not met
-      initialLeaderboard = addBotsIfNeeded(initialLeaderboard, 15, dbEvaluation.questions?.length || 0);
-      
+      initialLeaderboard = addBotsIfNeeded(initialLeaderboard, 15, normalized.questions?.length || 0);
+
       updateLeaderboard(initialLeaderboard);
     }
 
     setIsInitialized(true);
-  }, [dbEvaluation, currentEvaluation, evaluationId, isEvaluationActive, startEvaluation, name, updateLeaderboard]);
+  }, [dbEvaluation, currentEvaluation, evaluationId, startEvaluation, name, updateLeaderboard]);
 
   // Live leaderboard updates simulation
   useEffect(() => {
@@ -418,15 +446,38 @@ export default function EvaluationFullscreenPage() {
   }, [score]);
 
   // Waiting Room finished -> countdown started
-  const handleStartQuiz = useCallback(() => {
-    initiateStartSequence();
-  }, [initiateStartSequence]);
+  const handleStartQuiz = useCallback(async () => {
+    // Persist sesi 'active' ke DB agar mahasiswa lain (yang polling) ikut countdown.
+    const res = await startEvaluationSession(evaluationId);
+    if (res.success) {
+      initiateStartSequence();
+    }
+  }, [evaluationId, initiateStartSequence]);
 
   const handleExitQuiz = () => {
     router.push('/evaluation');
   };
 
+  // Sync progress to DB. Harus dideklarasikan sebelum early return
+  // agar urutan hook konsisten antar render (Rules of Hooks).
+  useEffect(() => {
+    if (!currentEvaluation || !isEvaluationActive) return;
 
+    const syncProgress = async () => {
+      const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+      await upsertEvaluationProgress({
+        evaluationId: currentEvaluation.id,
+        studentName: name || 'Anonim',
+        currentQuestion: userAnswers.size,
+        totalQuestions: currentEvaluation.questions.length,
+        score: score,
+        status: 'active',
+        timeElapsed: elapsed,
+      });
+    };
+
+    syncProgress();
+  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name]);
 
   if (!isMounted || !isLoggedIn || !isInitialized || !currentEvaluation) {
     return null;
@@ -440,27 +491,7 @@ export default function EvaluationFullscreenPage() {
   const progress = getProgress();
   const accuracy = getAccuracy();
 
-  // Sync progress to DB
-  useEffect(() => {
-    if (!currentEvaluation || !isEvaluationActive) return;
-
-    const syncProgress = async () => {
-      const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-      await upsertEvaluationProgress({
-        evaluationId: currentEvaluation.id,
-        studentName: name || 'Anonim',
-        currentQuestion: userAnswers.size, // How many answered so far
-        totalQuestions: currentEvaluation.questions.length,
-        score: score,
-        status: 'active',
-        timeElapsed: elapsed,
-      });
-    };
-    
-    syncProgress();
-  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name]);
-
-  const handleSubmitAnswer = (answer: string | number | boolean) => {
+  const handleSubmitAnswer = (answer: string | number | boolean | string[]) => {
     if (!currentQuestion) return;
     submitAnswer(currentQuestion.id, answer);
   };
@@ -476,6 +507,15 @@ export default function EvaluationFullscreenPage() {
         score: score,
         status: 'completed',
         timeElapsed: elapsed,
+      });
+
+      // Persist final hasil ke evaluation_results untuk halaman hasil & analitik.
+      await submitEvaluationResult({
+        evaluationId: currentEvaluation.id,
+        studentName: name || 'Anonim',
+        score: score,
+        accuracy: getAccuracy(),
+        timeSpent: elapsed,
       });
     }
 
@@ -495,6 +535,7 @@ export default function EvaluationFullscreenPage() {
       <AnimatePresence>
         {isWaitingRoomActive && (
           <WaitingRoomOverlay
+            evaluationId={evaluationId}
             evaluationTitle={currentEvaluation.title}
             onStart={handleStartQuiz}
           />

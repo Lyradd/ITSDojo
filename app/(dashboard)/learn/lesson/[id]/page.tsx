@@ -22,7 +22,8 @@ import {
   Terminal,
   PlayCircle,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Paperclip
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/resizable";
 import Editor from "@monaco-editor/react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import 'react-quill-new/dist/quill.snow.css';
 
 type LessonStep = 'video' | 'summary' | 'practice';
 
@@ -345,9 +347,9 @@ export default function LessonIDEPage() {
 
                 {/* DYNAMIC SUMMARY CONTENT */}
                 {!isVideo && (
-                  <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-400 mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
+                  <div className="ql-snow mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
                     {lesson.summaryContent ? (
-                      <div dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
+                      <div className="ql-editor p-0 text-zinc-600 dark:text-zinc-400" dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
                     ) : (
                       <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center">
                         <p>Rangkuman belum tersedia untuk materi ini.</p>
@@ -355,6 +357,35 @@ export default function LessonIDEPage() {
                     )}
                   </div>
                 )}
+                
+                {/* ATTACHMENTS (PDF/DOCX) */}
+                {!isVideo && lesson.materialFiles && (() => {
+                  try {
+                    const files = JSON.parse(lesson.materialFiles);
+                    if (files.length === 0) return null;
+                    return (
+                      <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800/50 space-y-4">
+                        <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                          <Paperclip className="w-4 h-4" /> Lampiran Materi Tambahan
+                        </h4>
+                        <div className="flex flex-wrap gap-3">
+                          {files.map((file: any, i: number) => (
+                            <a
+                              key={i}
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl text-sm font-semibold text-blue-600 dark:text-blue-400 transition-all shadow-sm"
+                            >
+                              <FileText className="w-5 h-5 shrink-0" />
+                              <span className="truncate max-w-[250px]">{file.fileName}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
                 {isVideo && (
                   <p className="text-zinc-500 mb-2 leading-relaxed">
                     Tonton video pembelajaran singkat ini untuk mengerti konsep fundamental mengenai tata bahasa pemrograman. Konsep input-output ini akan jadi modal dasar untuk tantangan berikutnya.

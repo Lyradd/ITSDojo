@@ -19,7 +19,7 @@ export function RewardAnimation() {
   useEffect(() => {
     if (rewardAnimationQueue.length > 0) {
       let newParticles: Particle[] = [];
-      
+
       rewardAnimationQueue.forEach(reward => {
         const generated = Array.from({ length: reward.count }).map((_, i) => ({
           id: `${reward.id}-${i}-${Math.random().toString(36).substring(2, 9)}`,
@@ -29,9 +29,9 @@ export function RewardAnimation() {
         }));
         newParticles = [...newParticles, ...generated];
       });
-      
+
       setParticles(prev => [...prev, ...newParticles]);
-      
+
       // Clear the queue from store once they are captured locally
       clearRewardAnimationQueue();
 
@@ -48,13 +48,13 @@ export function RewardAnimation() {
         {particles.map((particle, i) => (
           <motion.div
             key={particle.id}
-            initial={{ 
-              opacity: 0, 
+            initial={{
+              opacity: 0,
               scale: 0,
               x: particle.x,
-              y: particle.y 
+              y: particle.y
             }}
-            animate={{ 
+            animate={{
               opacity: [0, 1, 1, 0],
               scale: particle.type === 'gem' ? [0, 1, 0.8, 0.4] : [0, 1.2, 1.1, 0.6],
               // Move towards sidebar profile section
@@ -64,16 +64,15 @@ export function RewardAnimation() {
               x: particle.type === 'gem' ? 160 : 80,
               y: typeof window !== 'undefined' ? window.innerHeight - (particle.type === 'gem' ? 115 : 80) : 800,
             }}
-            transition={{ 
+            transition={{
               duration: 1.4,
               delay: i * 0.1,
               ease: [0.23, 1, 0.32, 1] // OutQuint for smoother arrival
             }}
             className="absolute"
           >
-            <div className={`p-1.5 rounded-full shadow-xl border border-white/20 backdrop-blur-sm ${
-              particle.type === 'gem' ? 'bg-blue-500 text-white' : 'bg-amber-400 text-zinc-900'
-            }`}>
+            <div className={`p-1.5 rounded-full shadow-xl border border-white/20 backdrop-blur-sm ${particle.type === 'gem' ? 'bg-blue-500 text-white' : 'bg-amber-400 text-zinc-900'
+              }`}>
               {particle.type === 'gem' ? (
                 <Gem className="w-4 h-4 fill-current" />
               ) : (

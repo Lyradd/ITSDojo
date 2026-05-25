@@ -2,10 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Users, Plus, LayoutGrid } from "lucide-react";
+import { BookOpen, Users, Plus, LayoutGrid, Filter, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useUserStore } from "@/lib/store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function DosenCoursesPage() {
   const router = useRouter();
@@ -13,6 +19,7 @@ export default function DosenCoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageErrorIds, setImageErrorIds] = useState<string[]>([]);
+  const [selectedSemester, setSelectedSemester] = useState<number | 'all'>('all');
 
   // Karena ini sistem dummy login, kita asumsikan ID dosen adalah 'dosen-1'
   // (Nanti saat NextAuth aktif, kita ambil langsung session-nya)
@@ -22,7 +29,7 @@ export default function DosenCoursesPage() {
     async function fetchMyCourses() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/dosen/my-courses?dosenId=${dosenId}`);
+        const res = await fetch(`/api/courses`);
         const data = await res.json();
         setCourses(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -45,6 +52,10 @@ export default function DosenCoursesPage() {
     );
   }
 
+  const filteredCourses = selectedSemester === 'all' 
+    ? courses 
+    : courses.filter(c => (c.requiredSemester || 1) === selectedSemester);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -53,8 +64,32 @@ export default function DosenCoursesPage() {
             <BookOpen className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold tracking-tight text-blue-700 dark:text-white">Daftar Kelas</h1>
           </div>
-          <p className="text-zinc-500 mt-1">Kelola materi pada kelas yang Anda ampu.</p>
+          <p className="text-zinc-500 mt-1">Kelola materi pada semua kelas yang ada di sistem.</p>
         </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2 shrink-0 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <Filter className="w-4 h-4 text-zinc-500" />
+              <span>
+                {selectedSemester === 'all' ? 'Semua Semester' : `Semester ${selectedSemester}`}
+              </span>
+              <ChevronDown className="w-4 h-4 text-zinc-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuItem onClick={() => setSelectedSemester('all')} className="flex items-center justify-between cursor-pointer">
+              <span>Semua Semester</span>
+              {selectedSemester === 'all' && <Check className="w-4 h-4" />}
+            </DropdownMenuItem>
+            {[1, 2, 3, 4, 5, 6, 7].map(sem => (
+              <DropdownMenuItem key={sem} onClick={() => setSelectedSemester(sem)} className="flex items-center justify-between cursor-pointer">
+                <span>Semester {sem}</span>
+                {selectedSemester === sem && <Check className="w-4 h-4" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {courses.length === 0 ? (
@@ -64,12 +99,22 @@ export default function DosenCoursesPage() {
           </div>
           <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-1">Belum Ada Kelas</h3>
           <p className="text-sm text-zinc-500 max-w-sm mb-4">
-            Anda belum ditugaskan untuk mengampu kelas manapun. Hubungi SuperAdmin untuk penugasan kelas.
+            Sistem belum memiliki kelas. Hubungi Admin untuk membuat kelas baru.
+          </p>
+        </div>
+      ) : filteredCourses.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+          <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+            <Filter className="w-8 h-8 text-zinc-400" />
+          </div>
+          <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tidak ada kelas</h3>
+          <p className="text-sm text-zinc-500 max-w-sm mb-4">
+            Tidak ada mata kuliah yang terdaftar pada semester ini.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+          {filteredCourses.map((course) => (
             <div
               key={course.id}
               className="group flex flex-col h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/25 hover:-translate-y-2 hover:border-blue-500 dark:hover:border-blue-500 overflow-hidden cursor-pointer"
@@ -97,6 +142,9 @@ export default function DosenCoursesPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
                     {course.difficulty}
+                  </span>
+                  <span className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-full">
+                    Semester {course.requiredSemester || 1}
                   </span>
                 </div>
 

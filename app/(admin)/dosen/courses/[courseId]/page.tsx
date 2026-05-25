@@ -26,53 +26,24 @@ import {
   Paperclip
 } from 'lucide-react';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
-import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import VideoUrlInput from '@/components/admin/video-url-input';
 import MaterialUpload from '@/components/admin/material-upload';
 
 const RichTextEditor = dynamic(() => import('@/components/admin/rich-text-editor'), { ssr: false });
 
-interface TestCaseForm {
-  stdin: string;
-  expected: string;
-  hidden: boolean;
-}
+import LessonEditor, { LessonForm, EMPTY_LESSON, MaterialFile } from '@/components/admin/lesson-editor';
+import UnitEditor, { UnitFormValues } from '@/components/admin/unit-editor';
 
-interface MaterialFile {
-  url: string;
-  fileName: string;
-  fileSize?: number;
-  fileType?: string;
-}
-
-interface LessonForm {
-  title: string;
-  order: number;
-  description: string;
-  duration: string;
-  xpReward: number;
-  gemReward: number;
-  videoUrl: string;
-  summaryContent: string;
-  materialFiles: MaterialFile[];
-  problemTitle: string;
-  problemDescription: string;
-  problemCategory: string;
-  starterCode: string;
-  defaultLanguage: string;
-  sampleInput: string;
-  sampleOutput: string;
-  testCases: TestCaseForm[];
-}
-
-const EMPTY_LESSON: LessonForm = {
-  title: '', order: 1, description: '', duration: '',
-  xpReward: 50, gemReward: 10, videoUrl: '', summaryContent: '',
-  materialFiles: [],
-  problemTitle: '', problemDescription: '', problemCategory: '',
-  starterCode: '', defaultLanguage: 'c', sampleInput: '', sampleOutput: '',
-  testCases: [{ stdin: '', expected: '', hidden: false }],
+const DragHandleItem = ({ value, children, className }: { value: any, children: (controls: any) => React.ReactNode, className?: string }) => {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item value={value} dragListener={false} dragControls={controls} className={className}>
+      {children(controls)}
+    </Reorder.Item>
+  );
 };
 
 export default function CourseDetailPage() {
@@ -86,12 +57,10 @@ export default function CourseDetailPage() {
 
   // Form states
   const [showAddUnit, setShowAddUnit] = useState(false);
-  const [unitForm, setUnitForm] = useState({ title: '', description: '', order: 1 });
 
   const [showAddLesson, setShowAddLesson] = useState<number | null>(null); // unitId
   const [editingLessonId, setEditingLessonId] = useState<number | null>(null);
   const [lessonForm, setLessonForm] = useState<LessonForm>({ ...EMPTY_LESSON });
-  const [expandedSection, setExpandedSection] = useState<string>('basic');
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [deleteUnitConfirmId, setDeleteUnitConfirmId] = useState<number | null>(null);
 
@@ -99,22 +68,22 @@ export default function CourseDetailPage() {
   const [courseEditForm, setCourseEditForm] = useState({ title: '', description: '' });
 
   const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
-  const [unitEditForm, setUnitEditForm] = useState({ title: '', description: '', order: 1 });
 
   // Fetch data
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [coursesRes, unitsRes] = await Promise.all([
-        fetch('/api/courses'),
+        fetch(`/api/courses/${courseId}`),
         fetch(`/api/courses/${courseId}/units`),
       ]);
-      const allCourses = await coursesRes.json();
+      const singleCourse = await coursesRes.json();
       const unitsData = await unitsRes.json();
-      setCourse(allCourses.find((c: any) => c.id === courseId) || null);
+      setCourse(singleCourse || null);
       setUnits(unitsData);
     } catch (err) {
       console.error('Failed to fetch data:', err);
+      toast.error('Gagal memuat data kelas.');
     } finally {
       setLoading(false);
     }
@@ -123,20 +92,24 @@ export default function CourseDetailPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // --- UNIT CRUD ---
-  const handleCreateUnit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateUnit = async (data: UnitFormValues) => {
     setSaving(true);
     try {
       const res = await fetch('/api/admin/units', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-role': 'dosen' },
-        body: JSON.stringify({ ...unitForm, courseId }),
+        body: JSON.stringify({ ...data, courseId }),
       });
-      if (!res.ok) { const err = await res.json(); alert(`Gagal: ${err.error}`); return; }
+      if (!res.ok) { const err = await res.json(); toast.error(`Gagal: ${err.error}`); return; }
+      const newUnit = await res.json();
+      setUnits(prev => [...prev, { ...newUnit, lessons: [] }].sort((a, b) => a.order - b.order));
+      toast.success('Unit berhasil ditambahkan!');
       setShowAddUnit(false);
-      setUnitForm({ title: '', description: '', order: units.length + 1 });
-      await fetchData();
-    } catch (err) { console.error(err); }
+      fetchData();
+    } catch (err) { 
+      console.error(err); 
+      toast.error('Terjadi kesalahan jaringan.');
+    }
     finally { setSaving(false); }
   };
 
@@ -156,20 +129,22 @@ export default function CourseDetailPage() {
         }),
       });
       if (res.ok) {
+        setCourse((prev: any) => ({ ...prev, title: courseEditForm.title, description: courseEditForm.description }));
+        toast.success('Info kelas diperbarui!');
         setIsEditingCourse(false);
-        await fetchData();
+        fetchData();
       } else {
-        alert("Gagal memperbarui info kelas");
+        toast.error("Gagal memperbarui info kelas");
       }
     } catch (err) {
       console.error(err);
+      toast.error('Terjadi kesalahan jaringan.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleUpdateUnit = async (e: React.FormEvent, unitId: number) => {
-    e.preventDefault();
+  const handleUpdateUnit = async (data: UnitFormValues, unitId: number) => {
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/units/${unitId}`, {
@@ -178,33 +153,29 @@ export default function CourseDetailPage() {
           'Content-Type': 'application/json',
           'x-user-role': 'dosen'
         },
-        body: JSON.stringify(unitEditForm),
+        body: JSON.stringify(data),
       });
       if (res.ok) {
+        const updatedUnit = await res.json();
+        setUnits(prev => prev.map(u => u.id === unitId ? { ...u, ...updatedUnit } : u).sort((a, b) => a.order - b.order));
+        toast.success('Unit berhasil diperbarui!');
         setEditingUnitId(null);
-        await fetchData();
+        fetchData();
       } else {
-        alert("Gagal memperbarui unit");
+        toast.error("Gagal memperbarui unit");
       }
     } catch (err) {
       console.error(err);
+      toast.error('Terjadi kesalahan jaringan.');
     } finally {
       setSaving(false);
     }
   };
 
-  const startEditUnit = (unit: any) => {
-    setUnitEditForm({
-      title: unit.title,
-      description: unit.description,
-      order: unit.order || 1
-    });
-    setEditingUnitId(unit.id);
-  };
+
 
   // --- LESSON CRUD ---
-  const handleSaveLesson = async (e: React.FormEvent, unitId: number) => {
-    e.preventDefault();
+  const handleSaveLesson = async (data: LessonForm, unitId: number) => {
     setSaving(true);
     try {
       const url = editingLessonId
@@ -212,26 +183,43 @@ export default function CourseDetailPage() {
         : '/api/admin/lessons';
       const method = editingLessonId ? 'PUT' : 'POST';
 
-      const durationNum = lessonForm.duration ? lessonForm.duration.replace(/\D/g, '') : '';
+      const durationNum = data.duration ? data.duration.replace(/\D/g, '') : '';
       const formattedDuration = durationNum ? `${durationNum} menit` : '';
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', 'x-user-role': 'dosen' },
         body: JSON.stringify({
-          ...lessonForm,
+          ...data,
           duration: formattedDuration,
-          materialFiles: JSON.stringify(lessonForm.materialFiles),
+          materialFiles: JSON.stringify(data.materialFiles),
           unitId
         }),
       });
-      if (!res.ok) { const err = await res.json(); alert(`Gagal: ${err.error}`); return; }
+      if (!res.ok) { const err = await res.json(); toast.error(`Gagal: ${err.error}`); return; }
 
+      const returnedLesson = await res.json();
+      setUnits(prev => prev.map(u => {
+        if (u.id !== unitId) return u;
+        let newLessons = u.lessons || [];
+        if (editingLessonId) {
+          newLessons = newLessons.map((l: any) => l.id === editingLessonId ? { ...l, ...returnedLesson } : l);
+        } else {
+          newLessons = [...newLessons, returnedLesson];
+        }
+        newLessons.sort((a: any, b: any) => a.order - b.order);
+        return { ...u, lessons: newLessons };
+      }));
+
+      toast.success(editingLessonId ? 'Lesson diperbarui!' : 'Lesson berhasil ditambahkan!');
       setShowAddLesson(null);
       setEditingLessonId(null);
       setLessonForm({ ...EMPTY_LESSON });
-      await fetchData();
-    } catch (err) { console.error(err); }
+      fetchData();
+    } catch (err) { 
+      console.error(err); 
+      toast.error('Terjadi kesalahan jaringan.');
+    }
     finally { setSaving(false); }
   };
 
@@ -241,13 +229,25 @@ export default function CourseDetailPage() {
 
   const handleConfirmDeleteLesson = async () => {
     if (deleteConfirmId === null) return;
+    const lessonToDelete = deleteConfirmId;
+    setDeleteConfirmId(null);
+
+    setUnits(prev => prev.map(u => ({
+      ...u,
+      lessons: (u.lessons || []).filter((l: any) => l.id !== lessonToDelete)
+    })));
+
     try {
-      await fetch(`/api/admin/lessons/${deleteConfirmId}`, {
+      await fetch(`/api/admin/lessons/${lessonToDelete}`, {
         method: 'DELETE',
         headers: { 'x-user-role': 'dosen' },
       });
-      await fetchData();
-    } catch (err) { console.error(err); }
+      toast.success('Lesson dihapus!');
+      fetchData();
+    } catch (err) { 
+      console.error(err); 
+      toast.error('Terjadi kesalahan jaringan.');
+    }
     setDeleteConfirmId(null);
   };
 
@@ -263,12 +263,47 @@ export default function CourseDetailPage() {
         headers: { 'x-user-role': 'dosen' },
       });
       if (res.ok) {
-        await fetchData();
+        setUnits(prev => prev.filter(u => u.id !== deleteUnitConfirmId));
+        toast.success('Unit berhasil dihapus!');
+        fetchData();
       } else {
-        alert("Gagal menghapus unit");
+        toast.error("Gagal menghapus unit");
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error(err); 
+      toast.error('Terjadi kesalahan jaringan.');
+    }
     setDeleteUnitConfirmId(null);
+  };
+
+  const handleReorderUnits = async (newOrderUnits: any[]) => {
+    setUnits(newOrderUnits);
+    const payload = newOrderUnits.map((u, idx) => ({ id: u.id, order: idx + 1 }));
+    try {
+      await fetch('/api/admin/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-user-role': 'dosen' },
+        body: JSON.stringify({ type: 'units', items: payload })
+      });
+    } catch (e) {
+      toast.error('Gagal mengurutkan unit');
+      fetchData();
+    }
+  };
+
+  const handleReorderLessons = async (unitId: number, newLessons: any[]) => {
+    setUnits(prev => prev.map(u => u.id === unitId ? { ...u, lessons: newLessons } : u));
+    const payload = newLessons.map((l, idx) => ({ id: l.id, order: idx + 1 }));
+    try {
+      await fetch('/api/admin/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-user-role': 'dosen' },
+        body: JSON.stringify({ type: 'lessons', items: payload })
+      });
+    } catch (e) {
+      toast.error('Gagal mengurutkan lesson');
+      fetchData();
+    }
   };
 
   const handleEditLesson = async (lesson: any) => {
@@ -315,232 +350,8 @@ export default function CourseDetailPage() {
     setShowAddLesson(lesson.unitId);
   };
 
-  // --- TEST CASE HELPERS ---
-  const addTestCase = () => {
-    setLessonForm(prev => ({
-      ...prev,
-      testCases: [...prev.testCases, { stdin: '', expected: '', hidden: false }],
-    }));
-  };
-  const removeTestCase = (idx: number) => {
-    setLessonForm(prev => ({
-      ...prev,
-      testCases: prev.testCases.filter((_, i) => i !== idx),
-    }));
-  };
-  const updateTestCase = (idx: number, field: keyof TestCaseForm, value: any) => {
-    setLessonForm(prev => ({
-      ...prev,
-      testCases: prev.testCases.map((tc, i) => i === idx ? { ...tc, [field]: value } : tc),
-    }));
-  };
-
-  const renderLessonForm = (unitId: number) => (
-    <Card className="p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 my-4">
-      <h4 className="text-lg font-bold mb-4">
-        {editingLessonId ? '✏️ Edit Lesson' : '➕ Tambah Lesson Baru'}
-      </h4>
-      <form onSubmit={(e) => handleSaveLesson(e, unitId)} className="space-y-4">
-
-        {/* Section: Basic Info */}
-        <SectionToggle id="basic" label="Informasi Dasar" icon={FileText} />
-        <AnimatePresence initial={false}>
-          {expandedSection === 'basic' && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden space-y-4 pl-2 border-l-4 border-blue-200 dark:border-blue-800 pt-2"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Judul Lesson *</Label>
-                  <Input value={lessonForm.title} onChange={e => setLessonForm({ ...lessonForm, title: e.target.value })} required className="h-11" placeholder="Playing With Characters" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Deskripsi Singkat</Label>
-                  <Input value={lessonForm.description} onChange={e => setLessonForm({ ...lessonForm, description: e.target.value })} className="h-11" placeholder="Tag & Element Dasar" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label>Durasi</Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={lessonForm.duration ? lessonForm.duration.replace(/\D/g, '') : ''}
-                      onChange={e => setLessonForm({ ...lessonForm, duration: e.target.value })}
-                      className="h-11 pr-16"
-                      placeholder="15"
-                      min="1"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-medium pointer-events-none select-none">
-                      menit
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Urutan</Label>
-                  <Input type="number" value={lessonForm.order} onChange={e => setLessonForm({ ...lessonForm, order: parseInt(e.target.value) })} className="h-11" min="1" />
-                </div>
-                <div className="space-y-2">
-                  <Label>XP Reward</Label>
-                  <Input type="number" value={lessonForm.xpReward} onChange={e => setLessonForm({ ...lessonForm, xpReward: parseInt(e.target.value) })} className="h-11" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Gem Reward</Label>
-                  <Input type="number" value={lessonForm.gemReward} onChange={e => setLessonForm({ ...lessonForm, gemReward: parseInt(e.target.value) })} className="h-11" />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Section: Video & Rangkuman */}
-        <SectionToggle id="content" label="Video & Rangkuman" icon={Video} />
-        <AnimatePresence initial={false}>
-          {expandedSection === 'content' && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden space-y-6 pl-2 border-l-4 border-green-200 dark:border-green-800 pt-2"
-            >
-              {/* Video URL with smart detection */}
-              <VideoUrlInput
-                value={lessonForm.videoUrl}
-                onChange={(val) => setLessonForm({ ...lessonForm, videoUrl: val })}
-              />
-
-              {/* Rich Text Editor for summary */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Rangkuman Materi
-                </Label>
-                <RichTextEditor
-                  value={lessonForm.summaryContent}
-                  onChange={(val) => setLessonForm({ ...lessonForm, summaryContent: val })}
-                  placeholder="Tulis rangkuman materi di sini..."
-                />
-              </div>
-
-              {/* File Upload for PDF/DOCX */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Paperclip className="w-4 h-4" />
-                  Lampiran Materi (PDF/DOCX)
-                </Label>
-                <MaterialUpload
-                  materials={lessonForm.materialFiles}
-                  onMaterialsChange={(mats) => setLessonForm({ ...lessonForm, materialFiles: mats })}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Section: Coding Problem */}
-        <SectionToggle id="coding" label="Soal Coding (Practice)" icon={Code} />
-        <AnimatePresence initial={false}>
-          {expandedSection === 'coding' && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden space-y-4 pl-2 border-l-4 border-purple-200 dark:border-purple-800 pt-2"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Judul Soal</Label>
-                  <Input value={lessonForm.problemTitle} onChange={e => setLessonForm({ ...lessonForm, problemTitle: e.target.value })} className="h-11" placeholder="Playing With Characters" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Kategori</Label>
-                  <Input value={lessonForm.problemCategory} onChange={e => setLessonForm({ ...lessonForm, problemCategory: e.target.value })} className="h-11" placeholder="Materi Dasar" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Deskripsi Soal</Label>
-                <Textarea value={lessonForm.problemDescription} onChange={e => setLessonForm({ ...lessonForm, problemDescription: e.target.value })} rows={4} placeholder="This challenge will help you..." />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Bahasa Default</Label>
-                  <select value={lessonForm.defaultLanguage} onChange={e => setLessonForm({ ...lessonForm, defaultLanguage: e.target.value })} className="w-full h-11 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-                    <option value="c">C</option>
-                    <option value="cpp">C++</option>
-                    <option value="javascript">JavaScript (Node.js)</option>
-                    <option value="python">Python</option>
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Starter Code</Label>
-                <Textarea value={lessonForm.starterCode} onChange={e => setLessonForm({ ...lessonForm, starterCode: e.target.value })} rows={8} className="font-mono text-sm" placeholder='#include <stdio.h>\n\nint main() {\n    return 0;\n}' />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Sample Input</Label>
-                  <Textarea value={lessonForm.sampleInput} onChange={e => setLessonForm({ ...lessonForm, sampleInput: e.target.value })} rows={3} className="font-mono text-sm" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sample Output</Label>
-                  <Textarea value={lessonForm.sampleOutput} onChange={e => setLessonForm({ ...lessonForm, sampleOutput: e.target.value })} rows={3} className="font-mono text-sm" />
-                </div>
-              </div>
-
-              {/* Test Cases */}
-              <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-bold">Test Cases</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={addTestCase}>
-                    <Plus className="w-3 h-3 mr-1" /> Tambah
-                  </Button>
-                </div>
-                {lessonForm.testCases.map((tc, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_1fr_auto_auto] gap-3 items-start p-3 bg-white dark:bg-zinc-900 rounded-lg border">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Input (stdin)</Label>
-                      <Textarea value={tc.stdin} onChange={e => updateTestCase(idx, 'stdin', e.target.value)} rows={2} className="font-mono text-xs" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Expected Output</Label>
-                      <Textarea value={tc.expected} onChange={e => updateTestCase(idx, 'expected', e.target.value)} rows={2} className="font-mono text-xs" />
-                    </div>
-                    <div className="flex flex-col items-center gap-1 pt-5">
-                      <Label className="text-xs">Hidden</Label>
-                      <input type="checkbox" checked={tc.hidden} onChange={e => updateTestCase(idx, 'hidden', e.target.checked)} className="w-4 h-4 accent-blue-600" />
-                    </div>
-                    <Button type="button" size="sm" variant="ghost" className="mt-5" onClick={() => removeTestCase(idx)} disabled={lessonForm.testCases.length <= 1}>
-                      <X className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Submit */}
-        <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 font-bold">
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            {editingLessonId ? 'Update Lesson' : 'Simpan Lesson'}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => { setShowAddLesson(null); setEditingLessonId(null); setLessonForm({ ...EMPTY_LESSON }); }}>
-            Batal
-          </Button>
-        </div>
-      </form>
-    </Card>
-  );
-
   // --- RENDER ---
-  if (loading) {
+  if (loading && !course) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -559,16 +370,7 @@ export default function CourseDetailPage() {
     );
   }
 
-  const SectionToggle = ({ id, label, icon: Icon }: { id: string, label: string, icon: any }) => (
-    <button
-      type="button"
-      onClick={() => setExpandedSection(expandedSection === id ? '' : id)}
-      className="flex items-center justify-between w-full py-3 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 font-bold text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-    >
-      <span className="flex items-center gap-2"><Icon className="w-4 h-4" />{label}</span>
-      {expandedSection === id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-    </button>
-  );
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
@@ -637,29 +439,13 @@ export default function CourseDetailPage() {
         {showAddUnit && (
           <Card className="p-6 rounded-2xl border-2 mb-6 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
             <h3 className="text-xl font-bold mb-4">Buat Unit Baru</h3>
-            <form onSubmit={handleCreateUnit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Judul Unit *</Label>
-                  <Input value={unitForm.title} onChange={e => setUnitForm({ ...unitForm, title: e.target.value })} required className="h-11" placeholder="Unit 1: Pendahuluan" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Deskripsi *</Label>
-                  <Input value={unitForm.description} onChange={e => setUnitForm({ ...unitForm, description: e.target.value })} required className="h-11" placeholder="Konsep dasar pemrograman" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Urutan</Label>
-                  <Input type="number" value={unitForm.order} onChange={e => setUnitForm({ ...unitForm, order: parseInt(e.target.value) })} className="h-11" min="1" />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 font-bold">
-                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  Simpan Unit
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowAddUnit(false)}>Batal</Button>
-              </div>
-            </form>
+            <UnitEditor
+              isEditing={false}
+              initialData={{ title: '', description: '', order: units.length + 1 }}
+              saving={saving}
+              onSubmit={handleCreateUnit}
+              onCancel={() => setShowAddUnit(false)}
+            />
           </Card>
         )}
 
@@ -670,45 +456,33 @@ export default function CourseDetailPage() {
             <p className="text-zinc-500 mb-4">Belum ada unit. Mulai dengan membuat unit pertama!</p>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <Reorder.Group axis="y" values={units} onReorder={handleReorderUnits} className="space-y-6">
             {units.map((unit: any) => (
-              <Card key={unit.id} className="p-6 rounded-2xl border-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
+              <DragHandleItem key={unit.id} value={unit} className="list-none">
+                {(unitControls) => (
+                  <Card className="p-6 rounded-2xl border-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm shadow-sm relative">
                 <div className="flex items-center justify-between mb-4">
                   {editingUnitId === unit.id ? (
-                    <form onSubmit={(e) => handleUpdateUnit(e, unit.id)} className="flex-1 space-y-3 mr-4 p-4 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Judul Unit *</Label>
-                          <Input value={unitEditForm.title} onChange={e => setUnitEditForm({ ...unitEditForm, title: e.target.value })} required className="h-9" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Deskripsi *</Label>
-                          <Input value={unitEditForm.description} onChange={e => setUnitEditForm({ ...unitEditForm, description: e.target.value })} required className="h-9" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Urutan</Label>
-                          <Input type="number" value={unitEditForm.order} onChange={e => setUnitEditForm({ ...unitEditForm, order: parseInt(e.target.value) })} className="h-9" min="1" />
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button type="submit" disabled={saving} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-8 px-3 text-xs rounded-md">
-                          Simpan
-                        </Button>
-                        <Button type="button" size="sm" variant="outline" className="h-8 px-3 text-xs rounded-md" onClick={() => setEditingUnitId(null)}>
-                          Batal
-                        </Button>
-                      </div>
-                    </form>
+                    <UnitEditor
+                      isEditing={true}
+                      initialData={{ title: unit.title, description: unit.description || '', order: unit.order || 1 }}
+                      saving={saving}
+                      onSubmit={(data) => handleUpdateUnit(data, unit.id)}
+                      onCancel={() => setEditingUnitId(null)}
+                    />
                   ) : (
                     <div className="flex-1 group flex items-start gap-2">
-                      <div>
+                      <div onPointerDown={(e) => unitControls.start(e)} className="cursor-grab active:cursor-grabbing p-1.5 mt-0.5 text-zinc-400 hover:text-zinc-600 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                        <GripVertical className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{unit.title}</h3>
                           <Button
                             size="sm"
                             variant="ghost"
                             className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0"
-                            onClick={() => startEditUnit(unit)}
+                            onClick={() => setEditingUnitId(unit.id)}
                           >
                             <Edit className="w-3.5 h-3.5 text-blue-600" />
                           </Button>
@@ -721,7 +495,7 @@ export default function CourseDetailPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => startEditUnit(unit)}
+                      onClick={() => setEditingUnitId(unit.id)}
                       className="border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                     >
                       <Edit className="w-4 h-4 mr-1" /> Edit
@@ -753,14 +527,23 @@ export default function CourseDetailPage() {
                 </div>
 
                 {/* Lesson List */}
-                <div className="space-y-2">
+                <Reorder.Group axis="y" values={unit.lessons || []} onReorder={(newLessons) => handleReorderLessons(unit.id, newLessons)} className="space-y-2">
                   {(unit.lessons || []).map((lesson: any, idx: number) => (
-                    <div key={lesson.id} className="space-y-2">
-                      <div
-                        onClick={() => handleEditLesson(lesson)}
-                        className="flex items-center gap-4 p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all bg-white dark:bg-zinc-900 group cursor-pointer select-none"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 font-bold text-sm text-zinc-500">
+                    <DragHandleItem key={lesson.id} value={lesson} className="space-y-2 list-none">
+                      {(lessonControls) => (
+                        <>
+                          <div
+                            onClick={() => handleEditLesson(lesson)}
+                            className="flex items-center gap-4 p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all bg-white dark:bg-zinc-900 group cursor-pointer select-none"
+                          >
+                            <div 
+                              onPointerDown={(e) => lessonControls.start(e)} 
+                              className="cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 flex items-center justify-center p-1 -ml-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <GripVertical className="w-5 h-5" />
+                            </div>
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 font-bold text-sm text-zinc-500">
                           {idx + 1}
                         </div>
                         <div className="flex-1">
@@ -793,12 +576,22 @@ export default function CourseDetailPage() {
                             transition={{ duration: 0.25, ease: "easeInOut" }}
                             className="pl-4 border-l-2 border-blue-500 my-2 overflow-hidden"
                           >
-                            {renderLessonForm(unit.id)}
+                            <LessonEditor 
+                              unitId={unit.id} 
+                              initialData={lessonForm} 
+                              saving={saving} 
+                              onSubmit={handleSaveLesson} 
+                              onCancel={() => { setShowAddLesson(null); setEditingLessonId(null); setLessonForm({ ...EMPTY_LESSON }); }} 
+                              isEditing={editingLessonId === lesson.id} 
+                            />
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>
+                        </>
+                      )}
+                    </DragHandleItem>
                   ))}
+                </Reorder.Group>
 
                   {/* Inline Form if adding a new lesson at the bottom of the unit */}
                   <AnimatePresence initial={false}>
@@ -810,14 +603,22 @@ export default function CourseDetailPage() {
                         transition={{ duration: 0.25, ease: "easeInOut" }}
                         className="pl-4 border-l-2 border-green-500 my-2 overflow-hidden"
                       >
-                        {renderLessonForm(unit.id)}
+                        <LessonEditor 
+                          unitId={unit.id} 
+                          initialData={lessonForm} 
+                          saving={saving} 
+                          onSubmit={handleSaveLesson} 
+                          onCancel={() => { setShowAddLesson(null); setEditingLessonId(null); setLessonForm({ ...EMPTY_LESSON }); }} 
+                          isEditing={false} 
+                        />
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
               </Card>
+                )}
+              </DragHandleItem>
             ))}
-          </div>
+          </Reorder.Group>
         )}
       </div>
       <ConfirmModal

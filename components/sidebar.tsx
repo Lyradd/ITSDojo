@@ -9,14 +9,14 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { 
-  Home, 
-  BookOpen, 
-  CalendarDays, 
-  Target, 
-  Trophy, 
-  Swords, 
-  User, 
+import {
+  Home,
+  BookOpen,
+  CalendarDays,
+  Target,
+  Trophy,
+  Swords,
+  User,
   MoreHorizontal,
   GraduationCap,
   ClipboardCheck,
@@ -48,18 +48,16 @@ const studentMenuItems = [
 const dosenMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/dosen" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/dosen/courses" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/dosen/enrollments" },
   { icon: Users, label: "Mahasiswa", href: "/dosen/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
   { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
   { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
 ];
 
-// Menu untuk Asisten Dosen (same as dosen but no Settings)
+// Menu untuk Asisten Dosen
 const asdosMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/asdos" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/asdos/courses" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/asdos/enrollments" },
   { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/asdos/evaluations" },
   { icon: Trophy, label: "Papan Peringkat", href: "/asdos/leaderboard" },
@@ -70,34 +68,32 @@ const asdosMenuItems = [
 const superAdminMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/admin" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/admin/courses" },
-  { icon: UserCheck, label: "Permintaan Kelas", href: "/admin/enrollments" },
   { icon: Users, label: "Kelola Pengguna", href: "/admin/users" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/admin/evaluations" },
   { icon: BarChart3, label: "Analitik", href: "/admin/analytics" },
-  { icon: Settings, label: "Pengaturan Sistem", href: "/admin/settings" },
 ];
 
 export function Sidebar({ onToggle }: { onToggle?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { name, role, level, xp, xpToNextLevel, gems, logout } = useUserStore(); 
+  const { name, role, level, xp, xpToNextLevel, gems, logout } = useUserStore();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);  
+  useEffect(() => setMounted(true), []);
   const xpPercentage = Math.min((xp / xpToNextLevel) * 100, 100);
   // Pilih menu berdasarkan role
   const sidebarItems = role === 'admin'
     ? superAdminMenuItems
-    : role === 'dosen' 
-      ? dosenMenuItems 
-      : role === 'asdos' 
-        ? asdosMenuItems 
+    : role === 'dosen'
+      ? dosenMenuItems
+      : role === 'asdos'
+        ? asdosMenuItems
         : studentMenuItems;
 
   const handleLogout = () => {
     logout();
     router.push('/login');
-  }; 
+  };
 
   return (
     <div className="flex flex-col h-full border-r bg-card text-card-foreground">
@@ -110,7 +106,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
             <span className="text-blue-600 dark:text-white">Dojo</span>
           </span>
         </Link>
-        
+
         {/* Toggle Button - Only shown when onToggle is provided */}
         {onToggle && (
           <button
@@ -127,12 +123,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
       <div className="flex-1 flex flex-col gap-2 px-3 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
         {sidebarItems.map((item, index) => {
           const isActive = pathname === item.href;
-          
+
           // Unified colors for both roles (Blue/Cyan theme)
           const activeColors = "bg-linear-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-300 border-2 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-400 dark:border-blue-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30";
-          
+
           const hoverColors = "hover:bg-linear-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 hover:border-blue-200 dark:hover:border-blue-800";
-          
+
           return (
             <motion.div
               key={item.href}
@@ -144,34 +140,34 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group border border-transparent",
-                  isActive 
+                  isActive
                     ? activeColors
                     : cn("text-zinc-600 dark:text-zinc-400", hoverColors)
                 )}
               >
-              <div className={cn(
-                "p-2 rounded-lg transition-all duration-300",
-                isActive 
-                  ? "bg-blue-200 dark:bg-blue-800/50"
-                  : "bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
-              )}>
-                <item.icon className={cn(
-                  "w-5 h-5 transition-all duration-300",
-                  isActive && "text-blue-700 dark:text-blue-400"
-                )} />
-              </div>
-              
-              <span className={cn(
-                "block font-bold text-sm tracking-wide transition-all duration-300",
-                isActive && "scale-105"
-              )}>
-                {item.label}
-              </span>
+                <div className={cn(
+                  "p-2 rounded-lg transition-all duration-300",
+                  isActive
+                    ? "bg-blue-200 dark:bg-blue-800/50"
+                    : "bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                )}>
+                  <item.icon className={cn(
+                    "w-5 h-5 transition-all duration-300",
+                    isActive && "text-blue-700 dark:text-blue-400"
+                  )} />
+                </div>
 
-              {isActive && (
-                <div className="ml-auto w-2 h-2 rounded-full animate-pulse bg-blue-600" />
-              )}
-            </Link>
+                <span className={cn(
+                  "block font-bold text-sm tracking-wide transition-all duration-300",
+                  isActive && "scale-105"
+                )}>
+                  {item.label}
+                </span>
+
+                {isActive && (
+                  <div className="ml-auto w-2 h-2 rounded-full animate-pulse bg-blue-600" />
+                )}
+              </Link>
             </motion.div>
           );
         })}
@@ -204,7 +200,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
                 </div>
                 {/* XP Progress Bar */}
                 <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${xpPercentage}%` }}
                     className="h-full bg-linear-to-r from-blue-500 to-cyan-400"
@@ -218,8 +214,8 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
           </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link 
-              href={role === 'dosen' ? '/dosen/settings' : role === 'admin' ? '/admin/settings' : '/settings'} 
+            <Link
+              href={role === 'dosen' ? '/dosen/settings' : role === 'admin' ? '/admin/settings' : '/settings'}
               className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
             >
               <MoreVertical className="w-4 h-4" />

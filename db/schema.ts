@@ -99,6 +99,14 @@ export const testCases = pgTable('test_cases', {
   order: integer('order').default(1).notNull(),
 });
 
+export const lessonDiscussions = pgTable('lesson_discussions', {
+  id: serial('id').primaryKey(),
+  lessonId: integer('lesson_id').references(() => lessons.id, { onDelete: 'cascade' }).notNull(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // ==========================================
 // 3. TABEL ENROLLMENTS & PROGRESS
 // ==========================================

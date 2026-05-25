@@ -23,7 +23,9 @@ import {
   PlayCircle,
   Maximize2,
   Minimize2,
-  Paperclip
+  Paperclip,
+  MessageSquare,
+  Send
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -31,6 +33,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 import Editor from "@monaco-editor/react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import 'react-quill-new/dist/quill.snow.css';
@@ -40,7 +44,8 @@ type LessonStep = 'video' | 'summary' | 'practice';
 const LANGUAGE_TEMPLATES: Record<string, string> = {
   c: `#include <stdio.h>\n\nint main() {\n    // Tulis kode C Anda di sini\n    printf("Hello, World!\\n");\n    return 0;\n}`,
   cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Tulis kode C++ Anda di sini\n    cout << "Hello, World!" << endl;\n    return 0;\n}`,
-  javascript: `// Tulis kode JavaScript Anda di sini\nconsole.log("Hello, World!");`
+  javascript: `// Tulis kode JavaScript Anda di sini\nconsole.log("Hello, World!");`,
+  python: `# Tulis kode Python Anda di sini\nprint("Hello, World!")`
 };
 
 export default function LessonIDEPage() {
@@ -48,7 +53,7 @@ export default function LessonIDEPage() {
   const params = useParams();
   const lessonId = params?.id as string;
 
-  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn } = useUserStore();
+  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<any>(null);
@@ -65,7 +70,115 @@ export default function LessonIDEPage() {
   const [customInput, setCustomInput] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
+  const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch diskusi dari Database berdasarkan lessonId
+  const fetchDiscussions = useCallback(async () => {
+    if (!lessonId) return;
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}/discussions`);
+      if (res.ok) {
+        const data = await res.json();
+        const formatted = data.map((d: any) => ({
+          id: d.id,
+          sender: d.userName,
+          content: d.content,
+          timestamp: new Date(d.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        setMessages(formatted);
+      }
+    } catch (e) {
+      console.error("Failed to fetch discussions", e);
+    }
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (isMounted) fetchDiscussions();
+  }, [isMounted, fetchDiscussions]);
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!chatInput.trim()) return;
+
+    // Optimistic Update
+    const optimisticMsg = {
+      id: Date.now(),
+      sender: name || "You",
+      content: chatInput,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+    setChatInput("");
+
+    // POST to Database
+    try {
+      // Catatan: Karena kita tidak punya userStore.id di komponen ini, 
+      // kita mock userId "current_user_1" atau ambil dari store jika ada
+      const res = await fetch(`/api/lessons/${lessonId}/discussions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: chatInput,
+          userId: "1" // Di versi asli ini harus diisi dari session auth
+        })
+      });
+      if (res.ok) {
+        fetchDiscussions(); // Refresh untuk mendapatkan ID asli
+      }
+    } catch (e) {
+      console.error("Failed to post discussion", e);
+    }
+  };
+
+  const renderDiscussionSheet = () => (
+    <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col p-0">
+      <SheetHeader className="p-6 border-b shrink-0">
+        <SheetTitle className="flex items-center gap-2 text-xl">
+          <MessageSquare className="w-5 h-5 text-blue-500" /> Diskusi Modul
+        </SheetTitle>
+        <SheetDescription>
+          Tanyakan materi yang membingungkan atau diskusikan solusi Anda.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950 flex flex-col gap-4">
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center opacity-70">
+             <MessageSquare className="w-16 h-16 text-zinc-300 dark:text-zinc-700 mb-4" />
+             <h4 className="font-bold text-lg text-zinc-600 dark:text-zinc-400">Belum Ada Diskusi</h4>
+             <p className="text-sm text-zinc-500 max-w-sm mt-2">Jadilah yang pertama memulai diskusi mengenai materi ini!</p>
+          </div>
+        ) : (
+          messages.map(msg => (
+            <div key={msg.id} className="flex flex-col gap-1 max-w-[85%] self-end">
+              <div className="flex items-center justify-end gap-2 text-xs text-zinc-500">
+                <span className="font-bold text-zinc-700 dark:text-zinc-300">{msg.sender}</span>
+                <span>{msg.timestamp}</span>
+              </div>
+              <div className="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-sm shadow-sm text-sm text-left">
+                {msg.content}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="p-4 bg-white dark:bg-zinc-900 border-t shrink-0">
+         <form onSubmit={handleSendMessage} className="flex gap-2">
+            <Input 
+              placeholder="Ketik pesan Anda di sini..." 
+              className="flex-1" 
+              value={chatInput} 
+              onChange={e => setChatInput(e.target.value)} 
+            />
+            <Button type="submit" disabled={!chatInput.trim()} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+              <Send className="w-4 h-4" />
+            </Button>
+         </form>
+      </div>
+    </SheetContent>
+  );
 
   const handleLanguageChange = (newLang: string) => {
     // Save current code to codes map
@@ -201,7 +314,8 @@ export default function LessonIDEPage() {
     setIsError(false);
 
     try {
-      const data = await executeCode(showCustomInput ? customInput : undefined);
+      const inputToUse = showCustomInput ? customInput : (lesson?.sampleInput || "");
+      const data = await executeCode(inputToUse);
       
       if (data.run && data.run.output !== undefined) {
         setExecutionResult(data.run.output || "Program finished with no output.");
@@ -303,10 +417,16 @@ export default function LessonIDEPage() {
     const isVideo = step === 'video';
 
     return (
+      <>
       <div className="container mx-auto max-w-5xl px-4 py-8">
-        <Link href="/learn" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors font-bold mb-6">
-          <ArrowLeft className="w-4 h-4" /> Kembali ke Peta Pembelajaran
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/learn" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors font-bold">
+            <ArrowLeft className="w-4 h-4" /> Kembali ke Peta Pembelajaran
+          </Link>
+          <Button variant="outline" size="sm" className="font-bold border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 shadow-sm" onClick={() => setIsDiscussionOpen(true)}>
+             <MessageSquare className="w-4 h-4 mr-2" /> Diskusi Modul
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -476,9 +596,13 @@ export default function LessonIDEPage() {
               )}
             </Card>
           </div>
-
         </div>
       </div>
+      {/* DISCUSSION SHEET */}
+      <Sheet open={isDiscussionOpen} onOpenChange={setIsDiscussionOpen}>
+        {renderDiscussionSheet()}
+      </Sheet>
+      </>
     );
   }
 
@@ -500,6 +624,9 @@ export default function LessonIDEPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="font-bold border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 shadow-sm" onClick={() => setIsDiscussionOpen(true)}>
+             <MessageSquare className="w-4 h-4 mr-2" /> Diskusi
+          </Button>
           <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
             <CheckCircle className="w-3 h-3" /> Practice Phase
           </span>
@@ -586,6 +713,7 @@ export default function LessonIDEPage() {
                 <option className="bg-zinc-900" value="c">C</option>
                 <option className="bg-zinc-900" value="cpp">C++</option>
                 <option className="bg-zinc-900" value="javascript">Javascript (Node.js)</option>
+                <option className="bg-zinc-900" value="python">Python</option>
               </select>
             </div>
 
@@ -723,22 +851,26 @@ export default function LessonIDEPage() {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      <ConfirmModal
-        isOpen={isConfirmResetOpen}
-        onClose={() => setIsConfirmResetOpen(false)}
-        onConfirm={() => {
-          const resetCode = language === lesson?.defaultLanguage
-            ? (lesson?.starterCode || '')
-            : (LANGUAGE_TEMPLATES[language] || '');
-          setCode(resetCode);
-          setCodes(prev => ({ ...prev, [language]: resetCode }));
-        }}
-        title="Setel Ulang Kode?"
-        message="Apakah Anda yakin ingin menyetel ulang kode ke kondisi awal? Seluruh perubahan kode yang Anda tulis akan hilang."
-        confirmText="Ya, Setel Ulang"
-        cancelText="Batal"
-        variant="warning"
-      />
-    </div>
+        <ConfirmModal
+          isOpen={isConfirmResetOpen}
+          onClose={() => setIsConfirmResetOpen(false)}
+          onConfirm={() => {
+            setCode(lesson?.starterCode || '');
+            setExecutionResult(null);
+            setIsError(false);
+            setIsConfirmResetOpen(false);
+          }}
+          title="Reset Kode?"
+          message="Kode yang sudah Anda tulis akan dihapus dan dikembalikan ke kondisi awal (template). Aksi ini tidak dapat dibatalkan."
+          confirmText="Ya, Reset"
+          cancelText="Batal"
+          variant="danger"
+        />
+
+        {/* DISCUSSION SHEET (IDE Context) */}
+        <Sheet open={isDiscussionOpen} onOpenChange={setIsDiscussionOpen}>
+          {renderDiscussionSheet()}
+        </Sheet>
+      </div>
   );
 }

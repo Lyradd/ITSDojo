@@ -90,7 +90,7 @@ export function normalizeQuestion(raw: any): Question {
   };
 }
 
-export function normalizeEvaluation<T extends { questions?: any[] }>(raw: T): T & { questions: Question[] } {
+export function normalizeEvaluation<T extends Record<string, any>>(raw: T): T & { questions: Question[] } {
   const questions = Array.isArray(raw?.questions) ? raw.questions.map(normalizeQuestion) : [];
   return { ...(raw as any), questions };
 }

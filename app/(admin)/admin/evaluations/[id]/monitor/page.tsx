@@ -17,95 +17,11 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  Eye,
-  Filter,
   Zap
 } from "lucide-react";
 import { useEvaluationStore } from "@/lib/evaluation-store";
 
 import { cn } from "@/lib/utils";
-
-// Mock live data with groups (in real app, this would come from WebSocket/polling)
-const MOCK_GROUPS = [
-  { id: "group_a", name: "Kelompok A", color: "#3B82F6" },
-  { id: "group_b", name: "Kelompok B", color: "#22C55E" },
-  { id: "group_c", name: "Kelompok C", color: "#A855F7" },
-];
-
-const MOCK_LIVE_STUDENTS = [
-  {
-    id: "s1",
-    name: "Ahmad Zaky",
-    avatar: "AZ",
-    currentQuestion: 8,
-    totalQuestions: 10,
-    score: 85,
-    timeElapsed: 420,
-    status: "active" as const,
-    groupId: "group_a",
-    groupName: "Kelompok A",
-  },
-  {
-    id: "s2",
-    name: "Siti Nurhaliza",
-    avatar: "SN",
-    currentQuestion: 10,
-    totalQuestions: 10,
-    score: 95,
-    timeElapsed: 380,
-    status: "completed" as const,
-    groupId: "group_a",
-    groupName: "Kelompok A",
-  },
-  {
-    id: "s3",
-    name: "Budi Santoso",
-    avatar: "BS",
-    currentQuestion: 6,
-    totalQuestions: 10,
-    score: 70,
-    timeElapsed: 450,
-    status: "active" as const,
-    groupId: "group_b",
-    groupName: "Kelompok B",
-  },
-  {
-    id: "s4",
-    name: "Dewi Lestari",
-    avatar: "DL",
-    currentQuestion: 5,
-    totalQuestions: 10,
-    score: 60,
-    timeElapsed: 500,
-    status: "stuck" as const,
-    groupId: "group_b",
-    groupName: "Kelompok B",
-  },
-  {
-    id: "s5",
-    name: "Rizky Pratama",
-    avatar: "RP",
-    currentQuestion: 10,
-    totalQuestions: 10,
-    score: 90,
-    timeElapsed: 400,
-    status: "completed" as const,
-    groupId: "group_c",
-    groupName: "Kelompok C",
-  },
-  {
-    id: "s6",
-    name: "Ayu Putri",
-    avatar: "AP",
-    currentQuestion: 7,
-    totalQuestions: 10,
-    score: 75,
-    timeElapsed: 430,
-    status: "active" as const,
-    groupId: "group_c",
-    groupName: "Kelompok C",
-  },
-];
 
 export default function MonitorEvaluationPage() {
   const params = useParams();
@@ -115,8 +31,6 @@ export default function MonitorEvaluationPage() {
   const [liveStudents, setLiveStudents] = useState<any[]>([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // null = all groups
-  const [enableGroups] = useState(true); // In real app, this comes from evaluation settings
 
   const { isWaitingRoomActive, initiateStartSequence, countdownEndTime } = useEvaluationStore();
   const isStarting = countdownEndTime !== null;
@@ -144,7 +58,7 @@ export default function MonitorEvaluationPage() {
     const fetchLiveData = async () => {
       try {
         const liveData = await getLiveEvaluationProgress(evaluationId);
-        const mappedData = liveData.map((d: any, index: number) => ({
+        const mappedData = liveData.map((d: any) => ({
           id: d.studentName,
           name: d.studentName,
           avatar: d.studentName.substring(0, 2).toUpperCase(),
@@ -153,8 +67,6 @@ export default function MonitorEvaluationPage() {
           score: d.score,
           timeElapsed: d.timeElapsed,
           status: d.status as 'active' | 'completed' | 'stuck',
-          groupId: (index % 3 === 0) ? 'group_a' : (index % 3 === 1) ? 'group_b' : 'group_c', // Dummy group for now
-          groupName: (index % 3 === 0) ? 'Kelompok A' : (index % 3 === 1) ? 'Kelompok B' : 'Kelompok C',
         }));
         setLiveStudents(mappedData);
         setLastUpdate(new Date());
@@ -184,36 +96,18 @@ export default function MonitorEvaluationPage() {
     );
   }
 
-  // Filter students by group
-  const filteredStudents = selectedGroup 
-    ? liveStudents.filter(s => s.groupId === selectedGroup)
-    : liveStudents;
-
-  const activeStudents = filteredStudents.filter((s) => s.status === "active").length;
-  const completedStudents = filteredStudents.filter((s) => s.status === "completed").length;
+  const activeStudents = liveStudents.filter((s) => s.status === "active").length;
+  const completedStudents = liveStudents.filter((s) => s.status === "completed").length;
   const avgScore = Math.round(
-    filteredStudents.reduce((sum, s) => sum + s.score, 0) / (filteredStudents.length || 1)
+    liveStudents.reduce((sum, s) => sum + s.score, 0) / (liveStudents.length || 1)
   );
   const avgProgress = Math.round(
-    filteredStudents.reduce((sum, s) => sum + (s.currentQuestion / s.totalQuestions) * 100, 0) /
-      (filteredStudents.length || 1)
+    liveStudents.reduce((sum, s) => sum + (s.currentQuestion / s.totalQuestions) * 100, 0) /
+      (liveStudents.length || 1)
   );
 
   // Sorted leaderboard
-  const leaderboard = [...filteredStudents].sort((a, b) => b.score - a.score);
-
-  // Calculate group scores
-  const groupScores = MOCK_GROUPS.map(group => {
-    const members = liveStudents.filter(s => s.groupId === group.id);
-    const totalScore = members.reduce((sum, s) => sum + s.score, 0);
-    const avgScore = members.length > 0 ? Math.round(totalScore / members.length) : 0;
-    return {
-      ...group,
-      totalScore,
-      avgScore,
-      memberCount: members.length,
-    };
-  }).sort((a, b) => b.totalScore - a.totalScore);
+  const leaderboard = [...liveStudents].sort((a, b) => b.score - a.score);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">
@@ -287,98 +181,6 @@ export default function MonitorEvaluationPage() {
             </div>
           </div>
         </div>
-
-        {/* Group Filter (if groups enabled) */}
-        {enableGroups && (
-          <div className="mb-6 flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-zinc-500" />
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">Filter Kelompok:</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setSelectedGroup(null)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-                  selectedGroup === null
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                )}
-              >
-                Semua ({liveStudents.length})
-              </button>
-              {MOCK_GROUPS.map(group => {
-                const count = liveStudents.filter(s => s.groupId === group.id).length;
-                return (
-                  <button
-                    key={group.id}
-                    onClick={() => setSelectedGroup(group.id)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2",
-                      selectedGroup === group.id
-                        ? "text-white"
-                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                    )}
-                    style={selectedGroup === group.id ? { backgroundColor: group.color } : {}}
-                  >
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
-                    {group.name} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Group Scores Comparison */}
-        {enableGroups && !selectedGroup && (
-          <Card className="p-4 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 border-2 mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-yellow-600" />
-              <h3 className="font-bold text-zinc-900 dark:text-white">Perbandingan Kelompok</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {groupScores.map((group, index) => (
-                <div
-                  key={group.id}
-                  className={cn(
-                    "p-4 rounded-lg border-2 bg-white dark:bg-zinc-800",
-                    index === 0 && "border-yellow-400 ring-2 ring-yellow-200 dark:ring-yellow-800"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
-                      <span className="font-bold text-zinc-900 dark:text-white">{group.name}</span>
-                    </div>
-                    {index === 0 && <span className="text-lg">🏆</span>}
-                    {index === 1 && <span className="text-lg">🥈</span>}
-                    {index === 2 && <span className="text-lg">🥉</span>}
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <div className="text-2xl font-bold" style={{ color: group.color }}>
-                        {group.totalScore}
-                      </div>
-                      <div className="text-xs text-zinc-500">Total Skor</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-zinc-700 dark:text-zinc-300">
-                        {group.avgScore}
-                      </div>
-                      <div className="text-xs text-zinc-500">Rata-rata</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                        {group.memberCount} orang
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -575,7 +377,18 @@ export default function MonitorEvaluationPage() {
   );
 }
 
-function StudentProgressCard({ student }: { student: typeof MOCK_LIVE_STUDENTS[0] }) {
+type LiveStudent = {
+  id: string;
+  name: string;
+  avatar: string;
+  currentQuestion: number;
+  totalQuestions: number;
+  score: number;
+  timeElapsed: number;
+  status: 'active' | 'completed' | 'stuck';
+};
+
+function StudentProgressCard({ student }: { student: LiveStudent }) {
   const progressPercentage = (student.currentQuestion / student.totalQuestions) * 100;
   const timeMinutes = Math.floor(student.timeElapsed / 60);
   const timeSeconds = student.timeElapsed % 60;

@@ -8,6 +8,7 @@ import { LeaderboardEntry } from '@/lib/evaluation-store';
 import { getAngkatanFromSemester } from '@/lib/academic-utils';
 import { getLeaderboardData } from '@/actions/leaderboard';
 import { wsClient } from '@/lib/websocket-client';
+import { COURSES } from '@/lib/dummydata';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntryComponent } from '@/components/leaderboard/leaderboard-entry';
@@ -31,7 +32,6 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
   const [subScope, setSubScope] = useState<string>(getAngkatanFromSemester(6).toString());
-  const [evalScope, setEvalScope] = useState<string>('all');
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -48,27 +48,31 @@ export default function LeaderboardPage() {
 
     const loadRealtimeData = async () => {
       try {
-        const dbLeaderboard = await getLeaderboardData();
-        
+        // Pakai filter courseId hanya saat scopeFilter == 'course' dan subScope berisi course id valid
+        const filter = scopeFilter === 'course' && subScope
+          ? { courseId: subScope }
+          : undefined;
+        const dbLeaderboard = await getLeaderboardData(filter);
+
         // Inject current user stats if they exist, otherwise append
         const hasCurrentUser = dbLeaderboard.some(u => u.name === name || u.name.includes(name));
-        
+
         const currentUserEntry: LeaderboardEntry = {
           userId: 'current-user',
           name: `${name} (You)`,
           avatar: 'bg-blue-200 text-blue-700',
           score: xp,
-          totalQuestions: 50,
-          answeredQuestions: 35,
-          accuracy: 85,
+          totalQuestions: 0,
+          answeredQuestions: 0,
+          accuracy: 0,
           rank: 0,
           lastUpdate: Date.now(),
           isCurrentUser: true,
-          batch: getAngkatanFromSemester(6).toString(), // Mock current user's batch
-          coursesTaken: 4,
+          batch: getAngkatanFromSemester(6).toString(),
+          coursesTaken: 0,
         };
 
-        const finalData = hasCurrentUser 
+        const finalData = hasCurrentUser
           ? dbLeaderboard.map(u => (u.name === name || u.name.includes(name)) ? { ...u, isCurrentUser: true, name: `${name} (You)` } : u)
           : [...dbLeaderboard, currentUserEntry];
 
@@ -87,16 +91,20 @@ export default function LeaderboardPage() {
 
     loadRealtimeData();
 
-    // Setup websocket for live status only (disabled dummy injections)
+    // Setup WebSocket: track connection status & re-fetch saat ada broadcast leaderboard:update
     wsClient.connect();
     const unsubscribeStatus = wsClient.onConnectionStatus((connected) => {
       setIsConnected(connected);
     });
+    const unsubscribeUpdate = wsClient.onLeaderboardUpdate(() => {
+      loadRealtimeData();
+    });
 
     return () => {
       unsubscribeStatus();
+      unsubscribeUpdate();
     };
-  }, [isMounted, isLoggedIn, name, xp]);
+  }, [isMounted, isLoggedIn, name, xp, scopeFilter, subScope]);
 
   // Simulate filtering the leaderboard based on the chosen scope
   const filteredLeaderboard = useMemo(() => {
@@ -219,12 +227,12 @@ export default function LeaderboardPage() {
                   onClick={() => {
                       setScopeFilter(filter);
                       if (filter === 'angkatan') setSubScope(getAngkatanFromSemester(6).toString());
-                      else setSubScope('web');
+                      else setSubScope(COURSES[0]?.id ?? '');
                   }}
                   className={cn(
                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors",
-                    scopeFilter === filter 
-                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100" 
+                    scopeFilter === filter
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                       : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                   )}
                 >
@@ -235,7 +243,7 @@ export default function LeaderboardPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[13px] text-zinc-500 dark:text-zinc-400">Filter:</span>
-              <select 
+              <select
                 className="flex-1 max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
                 value={subScope}
                 onChange={(e) => setSubScope(e.target.value)}
@@ -248,42 +256,10 @@ export default function LeaderboardPage() {
                     <option value={getAngkatanFromSemester(2).toString()}>Angkatan {getAngkatanFromSemester(2)} (Maba)</option>
                   </>
                 )}
-                {scopeFilter === 'course' && (
-                  <>
-                    <option value="web">Pemrograman Web</option>
-                    <option value="pbo">Pemrograman Berorientasi Objek</option>
-                    <option value="sbd">Sistem Basis Data</option>
-                  </>
-                )}
+                {scopeFilter === 'course' && COURSES.map(course => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+                ))}
               </select>
-              {scopeFilter === 'course' && (
-                <select 
-                  className="flex-1 max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
-                  value={evalScope}
-                  onChange={(e) => setEvalScope(e.target.value)}
-                >
-                  <option value="all">Semua Evaluasi</option>
-                  {subScope === 'web' && (
-                    <>
-                      <option value="eval-html">Quiz: HTML & CSS Fundamentals</option>
-                      <option value="eval-js">Quiz: JavaScript Basics</option>
-                      <option value="eval-react">Quiz: React Components</option>
-                    </>
-                  )}
-                  {subScope === 'pbo' && (
-                    <>
-                      <option value="eval-oop">Quiz: Konsep Dasar OOP</option>
-                      <option value="eval-java">Quiz: Java Inheritance</option>
-                    </>
-                  )}
-                  {subScope === 'sbd' && (
-                    <>
-                      <option value="eval-sql">Quiz: SQL Joins & Queries</option>
-                      <option value="eval-erd">Quiz: Relational Database Design</option>
-                    </>
-                  )}
-                </select>
-              )}
             </div>
           </div>
 

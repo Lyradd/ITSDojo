@@ -58,7 +58,7 @@ export default function CreateEvaluationPage() {
   const totalPoints = calculateTotalPoints(questions);
   const bloomDistribution = calculateBloomDistribution(questions);
 
-  const canProceedToStep2 = metadata.title.trim().length > 0 && metadata.duration > 0;
+  const canProceedToStep2 = metadata.title.trim().length > 0 && metadata.duration > 0 && !!metadata.courseId;
   const canProceedToStep3 = questions.length > 0;
   const canPublish = canProceedToStep2 && canProceedToStep3;
 
@@ -69,12 +69,10 @@ export default function CreateEvaluationPage() {
         totalPoints,
         questions,
         bloomDistribution,
-        // Optional tracking if needed later
-        // groupSettings: { enableGroups, groups },
       };
-      
+
       const res = await createEvaluation(evaluationData);
-      
+
       if (res.success) {
         // Clear draft
         localStorage.removeItem(STORAGE_KEY);

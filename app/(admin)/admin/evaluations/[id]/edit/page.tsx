@@ -2,12 +2,12 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { SAMPLE_EVALUATIONS } from "@/lib/evaluation-data";
-import { EvaluationMetadata, Question, DifficultyLevel } from "@/lib/evaluation-types";
+import { getEvaluationById, updateEvaluation } from "@/actions/evaluations";
+import { EvaluationMetadata, Question, DifficultyLevel, calculateTotalPoints } from "@/lib/evaluation-types";
 import { EvaluationForm } from "@/components/admin/evaluation-form";
 import { QuestionBuilder } from "@/components/admin/question-builder";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Eye } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function EditEvaluationPage() {
@@ -15,76 +15,98 @@ export default function EditEvaluationPage() {
   const router = useRouter();
   const evaluationId = params.id as string;
 
-  // Find the evaluation to edit
-  const existingEvaluation = SAMPLE_EVALUATIONS.find((e) => e.id === evaluationId);
-
   const [currentStep, setCurrentStep] = useState(1);
   const [metadata, setMetadata] = useState<EvaluationMetadata>({
-    title: existingEvaluation?.title || "",
-    description: existingEvaluation?.description || "",
-    duration: existingEvaluation?.duration || 60,
-    totalPoints: existingEvaluation?.totalPoints || 0,
+    title: "",
+    description: "",
+    duration: 60,
+    totalPoints: 0,
     difficulty: 'medium' as DifficultyLevel,
     tags: [],
   });
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [originalCourseId, setOriginalCourseId] = useState<string | undefined>(undefined);
 
-  const [questions, setQuestions] = useState<Question[]>(
-    (existingEvaluation?.questions as any as Question[]) || []
-  );
-
-  // Auto-save to localStorage
+  // Fetch evaluasi dari DB saat mount
   useEffect(() => {
-    const saveData = {
-      metadata,
-      questions,
-      lastSaved: new Date().toISOString(),
+    let cancelled = false;
+    (async () => {
+      const data = await getEvaluationById(evaluationId);
+      if (cancelled) return;
+      if (!data) {
+        setNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+      setMetadata({
+        title: data.title || "",
+        description: data.description || "",
+        duration: data.duration || 60,
+        totalPoints: data.totalPoints || 0,
+        difficulty: 'medium' as DifficultyLevel,
+        tags: [],
+      });
+      setQuestions(Array.isArray(data.questions) ? (data.questions as Question[]) : []);
+      setOriginalCourseId(data.courseId);
+      setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
     };
-    localStorage.setItem(`evaluation-edit-${evaluationId}`, JSON.stringify(saveData));
-  }, [metadata, questions, evaluationId]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(`evaluation-edit-${evaluationId}`);
-    if (saved) {
-      const data = JSON.parse(saved);
-      toast.success("Loaded auto-saved changes!", { duration: 2000 });
-    }
   }, [evaluationId]);
 
-  if (!existingEvaluation) {
+  const totalPoints = calculateTotalPoints(questions);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const res = await updateEvaluation(evaluationId, {
+      title: metadata.title,
+      description: metadata.description,
+      duration: metadata.duration,
+      totalPoints,
+      questions,
+      courseId: originalCourseId,
+    });
+    setIsSaving(false);
+
+    if (res.success) {
+      toast.success("Perubahan berhasil disimpan");
+      router.push("/admin/evaluations");
+    } else {
+      toast.error("Gagal menyimpan perubahan");
+    }
+  };
+
+  const handleCancel = () => {
+    router.back();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8 text-center">
+        <p className="text-zinc-500">Memuat evaluasi...</p>
+      </div>
+    );
+  }
+
+  if (notFound) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">
-            Evaluation Not Found
+            Evaluasi tidak ditemukan
           </h1>
           <Button onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Go Back
+            Kembali
           </Button>
         </div>
       </div>
     );
   }
-
-  const handleSave = () => {
-    // In real app: PUT /api/evaluations/:id
-    toast.success("Changes saved successfully!");
-    console.log("Saving evaluation:", { metadata, questions });
-    // Navigate back after save
-    setTimeout(() => {
-      router.push("/admin/evaluations");
-    }, 1000);
-  };
-
-  const handleCancel = () => {
-    if (confirm("Discard changes and go back?")) {
-      localStorage.removeItem(`evaluation-edit-${evaluationId}`);
-      router.back();
-    }
-  };
-
-  const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">
@@ -93,31 +115,29 @@ export default function EditEvaluationPage() {
         <div className="mb-8">
           <Button variant="ghost" onClick={handleCancel} className="mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Cancel
+            Kembali
           </Button>
 
           <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">
-            Edit Evaluation
+            Edit Evaluasi
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">
-            Update your quiz. Changes are auto-saved locally.
+            Ubah konten kuis. Klik Simpan setelah selesai.
           </p>
         </div>
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-12">
           {[
-            { num: 1, label: 'Details' },
-            { num: 2, label: 'Questions' },
-            { num: 3, label: 'Preview' },
+            { num: 1, label: 'Detail' },
+            { num: 2, label: 'Soal' },
+            { num: 3, label: 'Pratinjau' },
           ].map((step, index) => (
             <div key={step.num} className="flex items-center">
               <button
                 onClick={() => setCurrentStep(step.num)}
                 className={`flex items-center gap-3 transition-all ${
-                  currentStep >= step.num
-                    ? 'opacity-100'
-                    : 'opacity-50'
+                  currentStep >= step.num ? 'opacity-100' : 'opacity-50'
                 }`}
               >
                 <div
@@ -144,9 +164,7 @@ export default function EditEvaluationPage() {
               {index < 2 && (
                 <div
                   className={`h-1 w-24 mx-4 rounded-full transition-all ${
-                    currentStep > step.num
-                      ? 'bg-green-600'
-                      : 'bg-zinc-200 dark:bg-zinc-700'
+                    currentStep > step.num ? 'bg-green-600' : 'bg-zinc-200 dark:bg-zinc-700'
                   }`}
                 />
               )}
@@ -159,7 +177,7 @@ export default function EditEvaluationPage() {
           {currentStep === 1 && (
             <div>
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-                Evaluation Details
+                Detail Evaluasi
               </h2>
               <EvaluationForm
                 metadata={metadata}
@@ -172,7 +190,7 @@ export default function EditEvaluationPage() {
           {currentStep === 2 && (
             <div>
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-                Build Questions
+                Bangun Soal
               </h2>
               <QuestionBuilder questions={questions} onChange={setQuestions} />
             </div>
@@ -181,7 +199,7 @@ export default function EditEvaluationPage() {
           {currentStep === 3 && (
             <div>
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-                Preview & Save
+                Pratinjau & Simpan
               </h2>
               <PreviewSection
                 metadata={metadata}
@@ -194,25 +212,22 @@ export default function EditEvaluationPage() {
 
         {/* Navigation */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-zinc-500">
-            <Save className="w-4 h-4" />
-            <span>Auto-saved</span>
-          </div>
+          <div />
 
           <div className="flex gap-3">
             {currentStep > 1 && (
               <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                Previous
+                Sebelumnya
               </Button>
             )}
             {currentStep < 3 ? (
               <Button onClick={() => setCurrentStep(currentStep + 1)}>
-                Continue
+                Lanjut
               </Button>
             ) : (
-              <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleSave} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
                 <Save className="w-4 h-4 mr-2" />
-                Save Changes
+                {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
               </Button>
             )}
           </div>
@@ -233,51 +248,32 @@ function PreviewSection({
 }) {
   return (
     <div className="space-y-6">
-      {/* Metadata Preview */}
       <div className="p-6 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
         <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-4">
-          {metadata.title || "Untitled Evaluation"}
+          {metadata.title || "Tanpa Judul"}
         </h3>
         <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-          {metadata.description || "No description"}
+          {metadata.description || "Tidak ada deskripsi"}
         </p>
 
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <span className="font-semibold">Duration:</span>
-            <span className="text-zinc-600 dark:text-zinc-400">{metadata.duration} minutes</span>
+            <span className="font-semibold">Durasi:</span>
+            <span className="text-zinc-600 dark:text-zinc-400">{metadata.duration} menit</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-semibold">Questions:</span>
+            <span className="font-semibold">Soal:</span>
             <span className="text-zinc-600 dark:text-zinc-400">{questions.length}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-semibold">Total Points:</span>
+            <span className="font-semibold">Total Poin:</span>
             <span className="text-zinc-600 dark:text-zinc-400">{totalPoints}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Difficulty:</span>
-            <span className="text-zinc-600 dark:text-zinc-400 capitalize">{metadata.difficulty}</span>
-          </div>
         </div>
-
-        {metadata.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {metadata.tags.map((tag, i) => (
-              <span
-                key={i}
-                className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs font-semibold"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Questions Preview */}
       <div className="space-y-3">
-        <h4 className="font-semibold text-zinc-900 dark:text-white">Questions:</h4>
+        <h4 className="font-semibold text-zinc-900 dark:text-white">Daftar Soal:</h4>
         {questions.map((q, index) => (
           <div
             key={q.id}
@@ -289,14 +285,14 @@ function PreviewSection({
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-zinc-900 dark:text-white">
-                  {q.question || "No question text"}
+                  {q.question || "Tanpa teks soal"}
                 </p>
                 <div className="mt-2 text-xs text-zinc-500 flex flex-wrap gap-2">
                   <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
                     {q.type.replace('_', ' ')}
                   </span>
                   <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
-                    {q.points} pts
+                    {q.points} poin
                   </span>
                   {q.bloomLevel && (
                     <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">

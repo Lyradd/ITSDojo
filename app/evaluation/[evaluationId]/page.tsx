@@ -11,7 +11,7 @@ import {
   addCurrentUserToLeaderboard,
   addBotsIfNeeded,
 } from '@/lib/evaluation-data';
-import { getEvaluationById, upsertEvaluationProgress, getEvaluationSessionStatus, startEvaluationSession, submitEvaluationResult } from '@/actions/evaluations';
+import { getEvaluationById, upsertEvaluationProgress, getEvaluationSessionStatus, startEvaluationSession, submitEvaluationResult, getLiveEvaluationProgress } from '@/actions/evaluations';
 import { QuestionCard } from '@/components/evaluation/question-card';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
 import { Button } from '@/components/ui/button';
@@ -382,17 +382,15 @@ export default function EvaluationFullscreenPage() {
       const normalized = normalizeEvaluation(dbEvaluation);
       startEvaluation(normalized as any);
 
-      // Initialize leaderboard with current user
-      let initialLeaderboard = addCurrentUserToLeaderboard(
-        INITIAL_LEADERBOARD,
+      // Inisialisasi leaderboard dengan current user saja — peserta lain akan masuk
+      // lewat polling getLiveEvaluationProgress di useEffect berikutnya.
+      const initialLeaderboard = addCurrentUserToLeaderboard(
+        [],
         name,
         0,
         normalized.questions?.length || 0,
         0
       );
-
-      // Inject bots if threshold not met
-      initialLeaderboard = addBotsIfNeeded(initialLeaderboard, 15, normalized.questions?.length || 0);
 
       updateLeaderboard(initialLeaderboard);
     }
@@ -400,34 +398,56 @@ export default function EvaluationFullscreenPage() {
     setIsInitialized(true);
   }, [dbEvaluation, currentEvaluation, evaluationId, startEvaluation, name, updateLeaderboard]);
 
-  // Live leaderboard updates simulation
+  // Polling live leaderboard dari evaluation_progress
   useEffect(() => {
     if (!isLiveUpdateActive || !currentEvaluation) return;
 
-    const interval = setInterval(() => {
-      const currentLeaderboard = useEvaluationStore.getState().leaderboard;
+    const fetchLiveLeaderboard = async () => {
+      const liveData = await getLiveEvaluationProgress(currentEvaluation.id);
 
-      const updatedMockUsers = generateMockLeaderboardUpdate(
-        currentLeaderboard.filter((e) => !e.isCurrentUser)
-      );
+      // Convert progress entries jadi LeaderboardEntry
+      const otherUsers = liveData
+        .filter((d: any) => d.studentName !== name)
+        .map((d: any, idx: number) => {
+          const accuracy = d.totalQuestions > 0
+            ? Math.round((d.score / (d.totalQuestions * 10)) * 100)
+            : 0;
+          const palette = ['bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700', 'bg-green-200 text-green-700', 'bg-purple-200 text-purple-700', 'bg-orange-200 text-orange-700'];
+          return {
+            userId: `progress-${d.studentName}`,
+            name: d.studentName,
+            avatar: palette[idx % palette.length],
+            score: d.score,
+            totalQuestions: d.totalQuestions,
+            answeredQuestions: d.currentQuestion,
+            accuracy: Math.min(accuracy, 100),
+            rank: 0,
+            lastUpdate: new Date(d.updatedAt ?? Date.now()).getTime(),
+          };
+        });
 
-      const currentUserEntry = currentLeaderboard.find((e) => e.isCurrentUser);
-      if (currentUserEntry) {
-        const updatedCurrentUser = {
-          ...currentUserEntry,
-          score: useEvaluationStore.getState().score,
-          answeredQuestions: useEvaluationStore.getState().userAnswers.size,
-          accuracy: useEvaluationStore.getState().getAccuracy(),
-          lastUpdate: Date.now(),
-        };
-        useEvaluationStore.getState().updateLeaderboard([...updatedMockUsers, updatedCurrentUser]);
-      } else {
-        useEvaluationStore.getState().updateLeaderboard(updatedMockUsers);
-      }
-    }, 3000);
+      // Tambahkan current user dari store (data lokal selalu lebih fresh)
+      const state = useEvaluationStore.getState();
+      const currentUserEntry = {
+        userId: 'current-user',
+        name: `${name} (You)`,
+        avatar: 'bg-blue-200 text-blue-700',
+        score: state.score,
+        totalQuestions: currentEvaluation.questions.length,
+        answeredQuestions: state.userAnswers.size,
+        accuracy: state.getAccuracy(),
+        rank: 0,
+        lastUpdate: Date.now(),
+        isCurrentUser: true,
+      };
 
+      state.updateLeaderboard([...otherUsers, currentUserEntry]);
+    };
+
+    fetchLiveLeaderboard();
+    const interval = setInterval(fetchLiveLeaderboard, 3000);
     return () => clearInterval(interval);
-  }, [isLiveUpdateActive, currentEvaluation]);
+  }, [isLiveUpdateActive, currentEvaluation, name]);
 
   // Update current user's leaderboard entry when score changes
   useEffect(() => {

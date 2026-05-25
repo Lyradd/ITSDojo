@@ -7,27 +7,53 @@ import { Swords, ArrowLeft, Copy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-function generateRoomId() {
-  return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
+type Topic = {
+  id: string;
+  subjectname: string;
+  description?: string;
+};
+
+type LobbyRoom = {
+  id: number;
+  inviteCode: string;
+  topicId: number;
+  status: "waiting" | "joined" | "started" | "cancelled";
+  host: { id: string; name: string; email: string; role: string } | null;
+  guest: { id: string; name: string; email: string; role: string } | null;
+};
+
+const LOBBY_STATUS_TEXT: Record<LobbyRoom["status"], string> = {
+  waiting: "Menunggu pemain lain bergabung...",
+  joined: "Pemain kedua sudah bergabung.",
+  started: "Duel sudah dimulai.",
+  cancelled: "Lobby dibatalkan.",
+};
+
+async function readJsonError(response: Response) {
+  try {
+    const data = await response.json();
+    return typeof data?.error === "string" ? data.error : "Terjadi kesalahan.";
+  } catch {
+    return "Terjadi kesalahan.";
+  }
 }
 
 export default function DuelPage() {
   const router = useRouter();
-  const { isLoggedIn } = useUserStore();
+  const { isLoggedIn, name, email, role } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [hoveredTopic, setHoveredTopic] = useState<string | null>(null);
-  const [topics, setTopics] = useState<
-    { id: string; subjectname: string; description?: string }[]
-  >([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(true);
+  const [creatingLobby, setCreatingLobby] = useState(false);
 
   const [roomId, setRoomId] = useState<string | null>(null);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [lobbyStatus, setLobbyStatus] = useState<"idle" | "waiting" | "joined">("idle");
-  const [opponentName, setOpponentName] = useState<string | null>(null);
+  const [lobbyStatus, setLobbyStatus] = useState<LobbyRoom["status"]>("waiting");
+  const [room, setRoom] = useState<LobbyRoom | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,6 +88,67 @@ export default function DuelPage() {
       .finally(() => setLoadingTopics(false));
   }, []);
 
+  useEffect(() => {
+    if (!roomId) {
+      setRoom(null);
+      return;
+    }
+
+    let active = true;
+    let retryCount = 0;
+    const encodedRoomId = encodeURIComponent(roomId);
+
+    const syncLobby = async () => {
+      try {
+        const response = await fetch(`/api/duel/lobbies/${encodedRoomId}`);
+
+        if (!response.ok) {
+          if (response.status === 404 && retryCount < 3) {
+            retryCount += 1;
+            window.setTimeout(() => {
+              if (active) {
+                void syncLobby();
+              }
+            }, 400);
+            return;
+          }
+
+          if (active) {
+            setError(await readJsonError(response));
+            setLobbyStatus("cancelled");
+          }
+          return;
+        }
+
+        const data = (await response.json()) as LobbyRoom;
+
+        if (!active) {
+          return;
+        }
+
+        setRoom(data);
+        setLobbyStatus(data.status);
+        setError(null);
+
+        if (data.topicId && !selectedTopic) {
+          setSelectedTopic(String(data.topicId));
+        }
+      } catch {
+        if (active) {
+          setError("Gagal memuat status lobby.");
+        }
+      }
+    };
+
+    void syncLobby();
+    const interval = window.setInterval(syncLobby, 2000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [roomId, selectedTopic]);
+
   if (!isMounted || !isLoggedIn) return null;
 
   const activeTopicId = hoveredTopic ?? selectedTopic;
@@ -69,19 +156,41 @@ export default function DuelPage() {
 
   const handleTopicSelect = async (topicId: string) => {
     setError(null);
+    setCreatingLobby(true);
 
-    const newRoomId = generateRoomId();
-    const newInviteLink = `${window.location.origin}/duel/1v1/${topicId}?room=${newRoomId}`;
+    try {
+      const response = await fetch("/api/duel/lobbies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topicId,
+          hostId: email,
+          hostEmail: email,
+          hostName: name,
+          hostRole: role,
+        }),
+      });
 
-    setSelectedTopic(topicId);
-    setRoomId(newRoomId);
-    setInviteLink(newInviteLink);
-    setLobbyStatus("waiting");
+      if (!response.ok) {
+        setError(await readJsonError(response));
+        return;
+      }
 
-    setTimeout(() => {
-      setOpponentName("Wri Ting");
-      setLobbyStatus("joined");
-    }, 1500);
+      const data = await response.json();
+      const newRoomId = data.inviteCode as string;
+
+      setSelectedTopic(topicId);
+      setRoomId(newRoomId);
+      setInviteLink(`${window.location.origin}/duel/1v1/${topicId}?room=${newRoomId}`);
+      setLobbyStatus("waiting");
+      setRoom(null);
+    } catch {
+      setError("Gagal membuat lobby duel.");
+    } finally {
+      setCreatingLobby(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -94,19 +203,37 @@ export default function DuelPage() {
   const handleStartDuel = async () => {
     if (!roomId || !selectedTopic) return;
 
-    const encodedOpponent = opponentName
-      ? `&opponentName=${encodeURIComponent(opponentName)}`
-      : "";
+    if (lobbyStatus !== "joined" && lobbyStatus !== "started") {
+      setError("Tunggu lawan bergabung dulu.");
+      return;
+    }
 
-    router.push(`/duel/1v1/${selectedTopic}?room=${roomId}${encodedOpponent}`);
+    const response = await fetch(`/api/duel/lobbies/${roomId}/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ hostId: email, hostEmail: email }),
+    });
+
+    if (!response.ok) {
+      setError(await readJsonError(response));
+      return;
+    }
+
+    router.push(`/duel/1v1/${selectedTopic}?room=${roomId}`);
   };
 
   const handleCancelLobby = () => {
+    if (roomId) {
+      void fetch(`/api/duel/lobbies/${roomId}/cancel`, { method: "POST" });
+    }
+
     setSelectedTopic(null);
     setRoomId(null);
     setInviteLink(null);
-    setLobbyStatus("idle");
-    setOpponentName(null);
+    setLobbyStatus("waiting");
+    setRoom(null);
     setError(null);
   };
 
@@ -153,9 +280,10 @@ export default function DuelPage() {
                     onClick={() => handleTopicSelect(topic.id)}
                     onMouseEnter={() => setHoveredTopic(topic.id)}
                     onMouseLeave={() => setHoveredTopic(null)}
+                    disabled={creatingLobby}
                     className="w-full cursor-pointer"
                   >
-                    {topic.subjectname}
+                    {creatingLobby && selectedTopic === topic.id ? "Membuat lobby..." : topic.subjectname}
                   </Button>
                 ))}
               </div>
@@ -165,7 +293,7 @@ export default function DuelPage() {
               <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-blue-800 bg-zinc-50 dark:bg-blue-950 p-4">
                 <h3 className="text-lg font-semibold mb-3">Undang Temanmu</h3>
                 <p className="mb-3 text-sm">
-                  Bagikan link undangan ini agar temanmu bisa bergabung.
+                  Bagikan link undangan ini agar temanmu bisa masuk ke lobby ini.
                 </p>
 
                 <input
@@ -186,14 +314,12 @@ export default function DuelPage() {
 
                 <div className="mt-4 rounded-2xl bg-blue-50 dark:bg-blue-900 p-4 text-sm text-blue-900 dark:text-blue-100">
                   <p className="font-semibold">
-                    {lobbyStatus === "waiting"
-                      ? "Menunggu pemain lain bergabung..."
-                      : "Pemain sudah bergabung."}
+                    {LOBBY_STATUS_TEXT[lobbyStatus]}
                   </p>
-                  {opponentName ? (
-                    <p>Opponent: <b>{opponentName}</b></p>
+                  {room?.guest ? (
+                    <p>Lawanmu: <b>{room.guest.name}</b></p>
                   ) : (
-                    <p>Temanmu membuka link untuk join ke lobby.</p>
+                    <p>Belum ada pemain kedua di room ini.</p>
                   )}
                 </div>
 

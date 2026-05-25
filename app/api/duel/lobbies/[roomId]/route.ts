@@ -1,21 +1,55 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { duelRooms } from "@/db/schema";
+import { duelRooms, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(
   req: Request,
   { params }: { params: { roomId: string } }
 ) {
-  const room = await db
-    .select()
-    .from(duelRooms)
-    .where(eq(duelRooms.inviteCode, params.roomId))
-    .limit(1);
+  const resolvedParams = await Promise.resolve(params);
+  const requestedRoomId = resolvedParams.roomId;
 
-  if (room.length === 0) {
+  const rooms = await db.select().from(duelRooms);
+  const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+
+  if (!lobby) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
 
-  return NextResponse.json(room[0]);
+  const [host] = await db
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role })
+    .from(users)
+    .where(eq(users.id, lobby.hostId))
+    .limit(1);
+
+  const hostFallback = {
+    id: lobby.hostId,
+    name: lobby.hostId,
+    email: lobby.hostId,
+    role: "mahasiswa" as const,
+  };
+
+  const guest = lobby.guestId
+    ? await db
+        .select({ id: users.id, name: users.name, email: users.email, role: users.role })
+        .from(users)
+        .where(eq(users.id, lobby.guestId))
+        .limit(1)
+    : [];
+
+  const guestFallback = lobby.guestId
+    ? {
+        id: lobby.guestId,
+        name: lobby.guestId,
+        email: lobby.guestId,
+        role: "mahasiswa" as const,
+      }
+    : null;
+
+  return NextResponse.json({
+    ...lobby,
+    host: host ?? hostFallback,
+    guest: guest[0] ?? guestFallback,
+  });
 }

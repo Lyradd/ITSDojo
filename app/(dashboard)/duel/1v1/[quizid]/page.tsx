@@ -6,7 +6,17 @@ import { QuizQuestionCard } from "@/components/quiz/quiz-question-card";
 import { MOCK_WEB_DEV_QUESTIONS } from "@/lib/quiz-mock-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { LogOut, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, LogOut, Swords } from "lucide-react";
+import { useUserStore } from "@/lib/store";
+
+type LobbyRoom = {
+  id: number;
+  inviteCode: string;
+  topicId: number;
+  status: "waiting" | "joined" | "started" | "cancelled";
+  host: { id: string; name: string; email: string; role: string } | null;
+  guest: { id: string; name: string; email: string; role: string } | null;
+};
 
 const TOPIC_QUESTION_MAP: Record<string, string[]> = {
   1: ["q1", "q5", "q8"],
@@ -25,9 +35,13 @@ export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const opponentName = searchParams.get("opponentName");
-  const topicId = params.quizid;
+  const { email, name, role } = useUserStore();
+  const roomId = searchParams.get("room");
+  const topicId = typeof params.quizid === "string" ? params.quizid : undefined;
   const [topicName, setTopicName] = useState<string | null>(null);
+  const [room, setRoom] = useState<LobbyRoom | null>(null);
+  const [roomError, setRoomError] = useState<string | null>(null);
+  const [joinAttempted, setJoinAttempted] = useState(false);
 
   useEffect(() => {
     if (!topicId) {
@@ -46,13 +60,103 @@ export default function QuizPage() {
       });
   }, [topicId]);
 
-const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
+  useEffect(() => {
+    if (!roomId) {
+      setRoom(null);
+      setRoomError(null);
+      setJoinAttempted(false);
+      return;
+    }
+
+    let active = true;
+    let retryCount = 0;
+    const encodedRoomId = encodeURIComponent(roomId);
+
+    const syncRoom = async () => {
+      try {
+        const response = await fetch(`/api/duel/lobbies/${encodedRoomId}`);
+
+        if (!response.ok) {
+          if (response.status === 404 && retryCount < 3) {
+            retryCount += 1;
+            window.setTimeout(() => {
+              if (active) {
+                void syncRoom();
+              }
+            }, 400);
+            return;
+          }
+
+          if (active) {
+            setRoomError("Lobby tidak ditemukan.");
+          }
+          return;
+        }
+
+        const data = (await response.json()) as LobbyRoom;
+
+        if (!active) {
+          return;
+        }
+
+        setRoom(data);
+        setRoomError(null);
+
+        const shouldJoin =
+          data.status === "waiting" &&
+          data.host?.id !== email &&
+          data.guest?.id !== email;
+
+        if (shouldJoin && !joinAttempted) {
+          setJoinAttempted(true);
+          const joinResponse = await fetch(`/api/duel/lobbies/${encodedRoomId}/join`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              guestId: email,
+              guestEmail: email,
+              guestName: name,
+              guestRole: role,
+            }),
+          });
+
+          if (!joinResponse.ok && active) {
+            setRoomError("Gagal bergabung ke lobby.");
+            setJoinAttempted(false);
+          }
+        }
+      } catch {
+        if (active) {
+          setRoomError("Gagal memuat lobby.");
+          setJoinAttempted(false);
+        }
+      }
+    };
+
+    void syncRoom();
+    const interval = window.setInterval(syncRoom, 2000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [roomId, email, name, role, joinAttempted]);
+
+  const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, { answer: string | number; correct: boolean; points: number }>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(questions[0]?.timeLimit ?? 30);
   const [finished, setFinished] = useState(false);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+
+  const isHost = room?.host?.id === email;
+  const opponentName = room
+    ? (isHost ? room.guest?.name : room.host?.name)
+    : searchParams.get("opponentName");
+  const waitingForLobby = Boolean(roomId) && (!room || room.status !== "started");
 
   const resetQuizState = () => {
     setCurrentIndex(0);
@@ -77,7 +181,7 @@ const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
   }, [questions]);
 
   useEffect(() => {
-    if (finished || questions.length === 0) return;
+    if (finished || questions.length === 0 || waitingForLobby) return;
 
     const timer = window.setInterval(() => {
       setTimeRemaining((prev) => {
@@ -90,7 +194,7 @@ const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [finished, currentIndex, questions.length]);
+  }, [finished, currentIndex, questions.length, waitingForLobby]);
 
   const currentQuestion = questions[currentIndex];
   const totalScore = Object.values(answers).reduce((sum, item) => sum + item.points, 0);
@@ -122,6 +226,71 @@ const questions = useMemo(() => getQuestionsForTopic(topicId), [topicId]);
       setFinished(true);
     }
   };
+
+  if (roomId && roomError) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center max-w-xl">
+          <h1 className="text-2xl font-bold mb-3">Lobby tidak tersedia</h1>
+          <p className="text-zinc-600 dark:text-zinc-400 mb-6">{roomError}</p>
+          <Button onClick={() => router.push("/duel/1v1")}>Kembali ke duel</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (roomId && !room && !roomError) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex items-center justify-center">
+        <Card className="w-full p-8 text-center">
+          <Swords className="mx-auto mb-4 h-10 w-10 text-blue-600" />
+          <h1 className="text-2xl font-bold mb-2">Menghubungkan ke lobby</h1>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Kami sedang mengambil status room dari Neon dan menyiapkan duelmu.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (roomId && room && room.status !== "started") {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex items-center justify-center">
+        <Card className="w-full p-8">
+          <div className="mb-4 flex items-center gap-3">
+            <Swords className="h-6 w-6 text-blue-600" />
+            <div>
+              <h1 className="text-2xl font-bold">Lobby Duel 1v1</h1>
+              <p className="text-zinc-600 dark:text-zinc-400">
+                {room.status === "joined"
+                  ? "Pemain kedua sudah masuk. Menunggu host memulai duel."
+                  : "Menunggu pemain lain bergabung."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-zinc-200 p-4">
+              <p className="text-sm text-zinc-500">Host</p>
+              <p className="text-lg font-semibold">{room.host?.name ?? "-"}</p>
+            </div>
+            <div className="rounded-2xl border border-zinc-200 p-4">
+              <p className="text-sm text-zinc-500">Lawan</p>
+              <p className="text-lg font-semibold">{opponentName ?? "Menunggu..."}</p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900">
+            {room.status === "waiting"
+              ? "Room sudah aktif di Neon dan akan update otomatis saat lawan bergabung."
+              : "Lobby siap. Host bisa memulai duel kapan saja."}
+          </div>
+
+          <Button className="mt-6" variant="outline" onClick={() => router.push("/duel/1v1")}>Keluar</Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-16 py-8">

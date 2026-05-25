@@ -9,6 +9,8 @@ import { GroupManager } from "@/components/admin/group-manager";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Eye, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createEvaluation } from "@/actions/evaluations";
+import { toast } from "react-hot-toast";
 
 const STORAGE_KEY = 'draft_evaluation';
 
@@ -56,36 +58,33 @@ export default function CreateEvaluationPage() {
   const totalPoints = calculateTotalPoints(questions);
   const bloomDistribution = calculateBloomDistribution(questions);
 
-  const canProceedToStep2 = metadata.title.trim().length > 0 && metadata.duration > 0;
+  const canProceedToStep2 = metadata.title.trim().length > 0 && metadata.duration > 0 && !!metadata.courseId;
   const canProceedToStep3 = questions.length > 0;
   const canPublish = canProceedToStep2 && canProceedToStep3;
 
-  const handlePublish = () => {
-    // TODO: API call to save evaluation
-    const evaluation = {
-      ...metadata,
-      totalPoints,
-      questions,
-      bloomDistribution,
-      // Group settings
-      groupSettings: {
-        enableGroups,
-        groups,
-      },
-      isActive: true,
-      createdBy: 'current-user-id',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    console.log('Publishing evaluation:', evaluation);
-    
-    // Clear draft
-    localStorage.removeItem(STORAGE_KEY);
-    
-    // Redirect to manage page
-    alert('Evaluation published successfully! (API not connected yet)');
-    router.push('/admin/evaluations');
+  const handlePublish = async () => {
+    try {
+      const evaluationData = {
+        ...metadata,
+        totalPoints,
+        questions,
+        bloomDistribution,
+      };
+
+      const res = await createEvaluation(evaluationData);
+
+      if (res.success) {
+        // Clear draft
+        localStorage.removeItem(STORAGE_KEY);
+        toast.success('Arena Evaluasi berhasil diterbitkan secara live!');
+        router.push('/admin/evaluations');
+      } else {
+        toast.error('Gagal menerbitkan evaluasi: Server Error');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menerbitkan evaluasi');
+    }
   };
 
   return (
@@ -102,7 +101,7 @@ export default function CreateEvaluationPage() {
             Back
           </Button>
           
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">
             Create New Evaluation
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">

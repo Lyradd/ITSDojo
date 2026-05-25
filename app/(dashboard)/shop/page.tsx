@@ -150,12 +150,12 @@ export default function ShopPage() {
 
           {/* Saldo Gems - Clickable for Cheat in Dev/Testing */}
           <div 
-            onClick={() => {
+            onClick={process.env.NODE_ENV === 'development' ? () => {
               addGems(500);
               triggerConfetti();
-            }}
-            className="relative z-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg cursor-pointer hover:bg-white/30 transition-colors group"
-            title="Klik untuk Cheat +500 Gems (Testing)"
+            } : undefined}
+            className={`relative z-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg transition-colors group ${process.env.NODE_ENV === 'development' ? 'cursor-pointer hover:bg-white/30' : ''}`}
+            title={process.env.NODE_ENV === 'development' ? "Klik untuk Cheat +500 Gems (Testing)" : undefined}
           >
              <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
                 <Gem className="w-7 h-7 text-cyan-200 fill-current animate-pulse" />
@@ -163,7 +163,14 @@ export default function ShopPage() {
              <div>
                 <div className="text-3xl font-black tracking-tight flex items-center gap-2">
                   <AnimatedNumber value={gems} />
-                  <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">TEST +500</span>
+                  {process.env.NODE_ENV === 'development' && (
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">TEST +500</span>
+                  )}
+                  {hasGemMiner && (
+                    <span className="text-[10px] font-extrabold uppercase bg-amber-500 text-amber-950 px-2 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1 border border-amber-400">
+                      <Crown className="w-3 h-3 fill-current" /> 2x
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs font-bold uppercase tracking-widest text-blue-100">Gems Tersedia</div>
              </div>
@@ -377,7 +384,12 @@ export default function ShopPage() {
       {/* GRID ITEM STORE */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
          {storeItems.map((item) => (
-           <Card key={item.id} className="flex flex-col rounded-3xl border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all shadow-md hover:shadow-xl overflow-hidden bg-white dark:bg-zinc-900">
+           <Card key={item.id} className="relative flex flex-col rounded-3xl border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all shadow-md hover:shadow-xl overflow-hidden bg-white dark:bg-zinc-900">
+              {item.isActive && item.id === 'gem-miner' && (
+                <div className="absolute top-4 right-4 bg-linear-to-r from-amber-500 to-yellow-400 text-amber-950 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md animate-pulse uppercase tracking-wider flex items-center gap-1 border border-amber-300 z-10">
+                  <Crown className="w-3 h-3 fill-current" /> Aktif Permanen
+                </div>
+              )}
               <div className="p-6 md:p-8 flex-1 flex flex-col items-center text-center">
                  <div className={`w-24 h-24 rounded-full bg-linear-to-b ${item.color} flex items-center justify-center mb-6 shadow-sm border border-zinc-100 dark:border-zinc-800 relative`}>
                     {item.icon}

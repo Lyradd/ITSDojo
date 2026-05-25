@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       gemReward: body.gemReward || 10,
       videoUrl: body.videoUrl || null,
       summaryContent: body.summaryContent || null,
+      materialFiles: body.materialFiles || null,
       problemTitle: body.problemTitle || null,
       problemDescription: body.problemDescription || null,
       problemCategory: body.problemCategory || null,

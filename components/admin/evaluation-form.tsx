@@ -1,6 +1,7 @@
 "use client";
 
 import { EvaluationMetadata, DifficultyLevel } from "@/lib/evaluation-types";
+import { COURSES } from "@/lib/dummydata";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -23,26 +24,44 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
       {/* Title */}
       <div>
         <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-          Evaluation Title *
+          Judul Evaluasi *
         </label>
         <Input
           type="text"
           value={metadata.title}
           onChange={(e) => updateField('title', e.target.value)}
-          placeholder="e.g., Quiz: HTML & CSS Fundamentals"
+          placeholder="Contoh: Quiz: HTML & CSS Fundamentals"
           className="text-lg"
         />
+      </div>
+
+      {/* Course */}
+      <div>
+        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Mata Kuliah *
+        </label>
+        <select
+          value={metadata.courseId || ''}
+          onChange={(e) => updateField('courseId', e.target.value)}
+          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+        >
+          <option value="">— Pilih Kursus —</option>
+          {COURSES.map(course => (
+            <option key={course.id} value={course.id}>{course.title}</option>
+          ))}
+        </select>
+        <p className="text-xs text-zinc-500 mt-1">Evaluasi akan tampil di mahasiswa yang enrolled di kursus ini.</p>
       </div>
 
       {/* Description */}
       <div>
         <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-          Description
+          Deskripsi
         </label>
         <Textarea
           value={metadata.description}
           onChange={(e) => updateField('description', e.target.value)}
-          placeholder="Describe what this evaluation covers..."
+          placeholder="Jelaskan apa yang dievaluasi..."
           rows={3}
         />
       </div>
@@ -52,7 +71,7 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
         {/* Duration */}
         <div>
           <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Duration (minutes) *
+            Durasi (menit) *
           </label>
           <Input
             type="number"
@@ -66,35 +85,35 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
         {/* Difficulty */}
         <div>
           <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Difficulty Level
+            Tingkat Kesulitan
           </label>
           <select
             value={metadata.difficulty}
             onChange={(e) => updateField('difficulty', e.target.value as DifficultyLevel)}
             className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
           >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
+            <option value="easy">Mudah</option>
+            <option value="medium">Sedang</option>
+            <option value="hard">Sulit</option>
           </select>
         </div>
 
         {/* Total Points (Read-only, calculated from questions) */}
         <div>
           <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Total Points
+            Total Poin
           </label>
           <div className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-white font-bold text-center">
             {totalPointsFromQuestions} pts
           </div>
-          <p className="text-xs text-zinc-500 mt-1">Auto-calculated from questions</p>
+          <p className="text-xs text-zinc-500 mt-1">Otomatis dari soal</p>
         </div>
       </div>
 
       {/* Tags */}
       <div>
         <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-          Tags (comma-separated)
+          Tags (dipisahkan koma)
         </label>
         <Input
           type="text"
@@ -106,7 +125,7 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
               .filter((t) => t.length > 0);
             updateField('tags', tags);
           }}
-          placeholder="e.g., HTML, CSS, Web Development"
+          placeholder="Contoh: HTML, CSS, Web Development"
         />
         <div className="flex flex-wrap gap-2 mt-2">
           {metadata.tags.map((tag, index) => (

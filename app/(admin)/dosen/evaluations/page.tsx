@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
+import { toast } from 'react-hot-toast';
 import { COURSES } from '@/lib/dummydata';
+import { getActiveEvaluations, finishEvaluationSession, getEvaluationStats } from '@/actions/evaluations';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -30,18 +30,37 @@ export default function DosenEvaluationsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
 
+  const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+  const [stats, setStats] = useState<{
+    totalParticipants: number;
+    avgAccuracy: number;
+    perEvaluationParticipants: Record<string, number>;
+  }>({ totalParticipants: 0, avgAccuracy: 0, perEvaluationParticipants: {} });
+
+  const loadEvals = async () => {
+    const [data, statsData] = await Promise.all([
+      getActiveEvaluations(),
+      getEvaluationStats(),
+    ]);
+    setEvaluationsList(data);
+    setStats(statsData);
+  };
+
   useEffect(() => {
     setIsMounted(true);
-    if (isMounted && role !== 'dosen' && role !== 'asdos') {
+    if (role !== 'dosen' && role !== 'asdos') {
       router.push('/login');
+      return;
     }
-  }, [isMounted, role, router]);
+
+    loadEvals();
+  }, [role, router]);
 
   if (!isMounted || (role !== 'dosen' && role !== 'asdos')) return null;
 
   const filteredEvaluations = selectedCourse === 'all'
-    ? SAMPLE_EVALUATIONS
-    : SAMPLE_EVALUATIONS.filter(e => e.courseId === selectedCourse);
+    ? evaluationsList
+    : evaluationsList.filter(e => e.courseId === selectedCourse);
 
   const getCourseName = (courseId: string) => COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
   
@@ -56,11 +75,14 @@ export default function DosenEvaluationsPage() {
                 <Swords className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Manajemen Arena</h1>
+                <h1 className="text-3xl font-bold text-blue-700 dark:text-white">Manajemen Arena</h1>
                 <p className="text-zinc-600 dark:text-zinc-400">Atur evaluasi dan pantau pertandingan mahasiswa</p>
               </div>
             </div>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/25 px-6">
+            <Button 
+              onClick={() => router.push('/admin/evaluations/create')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/25 px-6"
+            >
               <Plus className="w-5 h-5 mr-2" /> Buat Arena Baru
             </Button>
           </div>
@@ -74,7 +96,7 @@ export default function DosenEvaluationsPage() {
                 <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{SAMPLE_EVALUATIONS.filter(e => e.isActive).length}</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{evaluationsList.filter(e => e.isActive).length}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Arena Aktif</div>
               </div>
             </div>
@@ -85,7 +107,7 @@ export default function DosenEvaluationsPage() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{SAMPLE_EVALUATIONS.filter(e => !e.isActive).length}</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{evaluationsList.filter(e => !e.isActive).length}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Selesai</div>
               </div>
             </div>
@@ -96,7 +118,7 @@ export default function DosenEvaluationsPage() {
                 <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">45</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{stats.totalParticipants}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Partisipan</div>
               </div>
             </div>
@@ -107,8 +129,8 @@ export default function DosenEvaluationsPage() {
                 <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">82%</div>
-                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Rata-rata Skor</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{stats.avgAccuracy}%</div>
+                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Rata-rata Akurasi</div>
               </div>
             </div>
           </Card>
@@ -146,6 +168,8 @@ export default function DosenEvaluationsPage() {
               key={evaluation.id}
               evaluation={evaluation}
               getCourseName={getCourseName}
+              participantCount={stats.perEvaluationParticipants[evaluation.id] ?? 0}
+              onClosed={loadEvals}
             />
           ))}
         </div>
@@ -154,12 +178,16 @@ export default function DosenEvaluationsPage() {
   );
 }
 
-function AdminEvaluationCard({ evaluation, getCourseName }: {
-  evaluation: typeof SAMPLE_EVALUATIONS[0];
+function AdminEvaluationCard({ evaluation, getCourseName, participantCount, onClosed }: {
+  evaluation: any;
   getCourseName: (id: string) => string;
+  participantCount: number;
+  onClosed?: () => void;
 }) {
   const router = useRouter();
   const isActive = evaluation.isActive;
+  const [isClosing, setIsClosing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handlePantauLive = () => {
     router.push(`/admin/evaluations/${evaluation.id}/monitor`);
@@ -171,6 +199,19 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
 
   const handleEdit = () => {
     router.push(`/admin/evaluations/${evaluation.id}/edit`);
+  };
+
+  const handleConfirmClose = async () => {
+    setIsClosing(true);
+    const res = await finishEvaluationSession(evaluation.id);
+    setIsClosing(false);
+    setShowConfirm(false);
+    if (res.success) {
+      toast.success('Arena berhasil ditutup');
+      onClosed?.();
+    } else {
+      toast.error('Gagal menutup arena');
+    }
   };
 
   return (
@@ -219,7 +260,7 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <ClipboardCheck className="w-5 h-5 mx-auto mb-1 text-emerald-500 dark:text-emerald-400" />
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{evaluation.questions.length}</div>
+            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{Array.isArray(evaluation.questions) ? evaluation.questions.length : 0}</div>
             <div className="text-[10px] uppercase font-bold text-zinc-500">Soal</div>
           </div>
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
@@ -229,7 +270,7 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
           </div>
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-orange-500 dark:text-orange-400" />
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{isActive ? '12' : '45'}</div>
+            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{participantCount}</div>
             <div className="text-[10px] uppercase font-bold text-zinc-500">Peserta</div>
           </div>
         </div>
@@ -237,8 +278,13 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
         <div className="mt-auto flex gap-2">
           {isActive ? (
             <>
-              <Button variant="outline" className="flex-1 font-bold border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">
-                <XCircle className="w-4 h-4 mr-1.5" /> Tutup Arena
+              <Button
+                onClick={() => setShowConfirm(true)}
+                disabled={isClosing}
+                variant="outline"
+                className="flex-1 font-bold border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
+                <XCircle className="w-4 h-4 mr-1.5" /> {isClosing ? 'Menutup...' : 'Tutup Arena'}
               </Button>
               <Button onClick={handlePantauLive} className="flex-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
                 <Eye className="w-4 h-4 mr-1.5" /> Pantau Live
@@ -256,6 +302,41 @@ function AdminEvaluationCard({ evaluation, getCourseName }: {
           )}
         </div>
       </div>
+
+      {/* Modal Konfirmasi Tutup Arena */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4 text-red-600 dark:text-red-500">
+                <XCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-zinc-900 dark:text-white">Tutup Arena?</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
+                Mahasiswa tidak dapat lagi mengikuti evaluasi <span className="font-bold">{evaluation.title}</span> setelah ditutup. Lanjutkan?
+              </p>
+              <div className="flex gap-3 w-full">
+                <Button
+                  variant="outline"
+                  className="flex-1 font-bold rounded-xl"
+                  onClick={() => setShowConfirm(false)}
+                  disabled={isClosing}
+                >
+                  Batal
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 font-bold rounded-xl"
+                  onClick={handleConfirmClose}
+                  disabled={isClosing}
+                >
+                  {isClosing ? 'Menutup...' : 'Ya, Tutup'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

@@ -9,13 +9,12 @@ export default function AdminSettingsPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-16">
       <Card className="p-12 rounded-2xl border-2 text-center">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full mb-6">
-          <Settings className="w-10 h-10 text-zinc-600 dark:text-zinc-400" />
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <Settings className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
+            Admin Settings
+          </h1>
         </div>
-        
-        <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100 mb-3">
-          Admin Settings
-        </h1>
         <p className="text-zinc-600 dark:text-zinc-400 mb-8 max-w-md mx-auto">
           Halaman pengaturan admin akan segera hadir!
         </p>

@@ -4,9 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { INITIAL_LEADERBOARD } from '@/lib/evaluation-data';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
+import { getAngkatanFromSemester } from '@/lib/academic-utils';
+import { getLeaderboardData } from '@/actions/leaderboard';
 import { wsClient } from '@/lib/websocket-client';
+import { COURSES } from '@/lib/dummydata';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntryComponent } from '@/components/leaderboard/leaderboard-entry';
@@ -27,9 +29,9 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { isLoggedIn, name, xp, level } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
-  const [subScope, setSubScope] = useState<string>('2023');
+  const [subScope, setSubScope] = useState<string>(getAngkatanFromSemester(6).toString());
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -40,72 +42,69 @@ export default function LeaderboardPage() {
     }
   }, [isLoggedIn, router, isMounted]);
 
-  // Initialize WebSocket connection
+  // Fetch real data from database
   useEffect(() => {
     if (!isMounted || !isLoggedIn) return;
 
+    const loadRealtimeData = async () => {
+      try {
+        // Pakai filter courseId hanya saat scopeFilter == 'course' dan subScope berisi course id valid
+        const filter = scopeFilter === 'course' && subScope
+          ? { courseId: subScope }
+          : undefined;
+        const dbLeaderboard = await getLeaderboardData(filter);
+
+        // Inject current user stats if they exist, otherwise append
+        const hasCurrentUser = dbLeaderboard.some(u => u.name === name || u.name.includes(name));
+
+        const currentUserEntry: LeaderboardEntry = {
+          userId: 'current-user',
+          name: `${name} (You)`,
+          avatar: 'bg-blue-200 text-blue-700',
+          score: xp,
+          totalQuestions: 0,
+          answeredQuestions: 0,
+          accuracy: 0,
+          rank: 0,
+          lastUpdate: Date.now(),
+          isCurrentUser: true,
+          batch: getAngkatanFromSemester(6).toString(),
+          coursesTaken: 0,
+        };
+
+        const finalData = hasCurrentUser
+          ? dbLeaderboard.map(u => (u.name === name || u.name.includes(name)) ? { ...u, isCurrentUser: true, name: `${name} (You)` } : u)
+          : [...dbLeaderboard, currentUserEntry];
+
+        // Sort and rank
+        const sorted = finalData.sort((a, b) => b.score - a.score);
+        const ranked = sorted.map((entry, index) => ({
+          ...entry,
+          rank: index + 1,
+        }));
+
+        setLeaderboard(ranked);
+      } catch (error) {
+        console.error("Failed to load leaderboard:", error);
+      }
+    };
+
+    loadRealtimeData();
+
+    // Setup WebSocket: track connection status & re-fetch saat ada broadcast leaderboard:update
     wsClient.connect();
     const unsubscribeStatus = wsClient.onConnectionStatus((connected) => {
       setIsConnected(connected);
     });
-
-    const unsubscribeLeaderboard = wsClient.onLeaderboardUpdate((data) => {
-      if (!data || data.length === 0) return;
-
-      const otherUsers = data.filter(entry => entry.userId !== 'current-user');
-      const liveUserIds = new Set(otherUsers.map(u => u.userId));
-      const filteredMockData = INITIAL_LEADERBOARD.filter(u => !liveUserIds.has(u.userId) && u.userId !== 'current-user');
-
-      const currentUserEntry: LeaderboardEntry = {
-        userId: 'current-user',
-        name: `${name} (You)`,
-        avatar: 'bg-blue-200 text-blue-700',
-        score: xp,
-        totalQuestions: 50,
-        answeredQuestions: 35,
-        accuracy: 85,
-        rank: 0,
-        lastUpdate: Date.now(),
-        isCurrentUser: true,
-        batch: '2023',
-        coursesTaken: 4,
-      };
-
-      const allEntries = [...otherUsers, ...filteredMockData, currentUserEntry];
-      const sorted = allEntries.sort((a, b) => b.score - a.score);
-      const ranked = sorted.map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }));
-
-      setLeaderboard(ranked);
+    const unsubscribeUpdate = wsClient.onLeaderboardUpdate(() => {
+      loadRealtimeData();
     });
 
-    const currentUserEntry: LeaderboardEntry = {
-      userId: 'current-user',
-      name: `${name} (You)`,
-      avatar: 'bg-blue-200 text-blue-700',
-      score: xp,
-      totalQuestions: 50,
-      answeredQuestions: 35,
-      accuracy: 85,
-      rank: 0,
-      lastUpdate: Date.now(),
-      isCurrentUser: true,
-      batch: '2023',
-      coursesTaken: 4,
-    };
-    
-    const timeout = setTimeout(() => {
-      wsClient.addUser(currentUserEntry);
-    }, 500);
-
     return () => {
-      clearTimeout(timeout);
       unsubscribeStatus();
-      unsubscribeLeaderboard();
+      unsubscribeUpdate();
     };
-  }, [isMounted, isLoggedIn, name, xp]);
+  }, [isMounted, isLoggedIn, name, xp, scopeFilter, subScope]);
 
   // Simulate filtering the leaderboard based on the chosen scope
   const filteredLeaderboard = useMemo(() => {
@@ -135,8 +134,8 @@ export default function LeaderboardPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/10 rounded-2xl border-2 border-yellow-500/20 shadow-xl shadow-yellow-500/5">
-              <Trophy className="w-8 h-8 text-yellow-600" fill="currentColor" />
+            <div>
+              <Trophy className="w-8 h-8 text-blue-600" />
             </div>
             <div>
               <h1 className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
@@ -227,13 +226,13 @@ export default function LeaderboardPage() {
                   key={filter}
                   onClick={() => {
                       setScopeFilter(filter);
-                      if (filter === 'angkatan') setSubScope('2023');
-                      else setSubScope('web');
+                      if (filter === 'angkatan') setSubScope(getAngkatanFromSemester(6).toString());
+                      else setSubScope(COURSES[0]?.id ?? '');
                   }}
                   className={cn(
                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors",
-                    scopeFilter === filter 
-                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100" 
+                    scopeFilter === filter
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                       : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                   )}
                 >
@@ -244,25 +243,22 @@ export default function LeaderboardPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[13px] text-zinc-500 dark:text-zinc-400">Filter:</span>
-              <select 
+              <select
                 className="flex-1 max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
                 value={subScope}
                 onChange={(e) => setSubScope(e.target.value)}
               >
                 {scopeFilter === 'angkatan' && (
                   <>
-                    <option value="2023">Angkatan 2023 (Aktif)</option>
-                    <option value="2022">Angkatan 2022</option>
-                    <option value="2021">Angkatan 2021</option>
+                    <option value={getAngkatanFromSemester(6).toString()}>Angkatan {getAngkatanFromSemester(6)} (Aktif)</option>
+                    <option value={getAngkatanFromSemester(8).toString()}>Angkatan {getAngkatanFromSemester(8)} (Tingkat Akhir)</option>
+                    <option value={getAngkatanFromSemester(4).toString()}>Angkatan {getAngkatanFromSemester(4)}</option>
+                    <option value={getAngkatanFromSemester(2).toString()}>Angkatan {getAngkatanFromSemester(2)} (Maba)</option>
                   </>
                 )}
-                {scopeFilter === 'course' && (
-                  <>
-                    <option value="web">Pemrograman Web</option>
-                    <option value="pbo">Pemrograman Berorientasi Objek</option>
-                    <option value="sbd">Sistem Basis Data</option>
-                  </>
-                )}
+                {scopeFilter === 'course' && COURSES.map(course => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+                ))}
               </select>
             </div>
           </div>

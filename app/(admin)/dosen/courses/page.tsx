@@ -9,14 +9,14 @@ import { useUserStore } from "@/lib/store";
 
 export default function DosenCoursesPage() {
   const router = useRouter();
-  const { role, name, id: userId } = useUserStore(); // Anggap `id` tersimpan di Zustand saat Dosen login dummy
+  const { role, name } = useUserStore();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageErrorIds, setImageErrorIds] = useState<string[]>([]);
 
-  // Karena ini sistem dummy login, kita asumsikan ID dosen adalah 'dosen-1' jika role-nya dosen
+  // Karena ini sistem dummy login, kita asumsikan ID dosen adalah 'dosen-1'
   // (Nanti saat NextAuth aktif, kita ambil langsung session-nya)
-  const dosenId = role === 'dosen' ? 'dosen-1' : userId;
+  const dosenId = 'dosen-1';
 
   useEffect(() => {
     async function fetchMyCourses() {
@@ -31,7 +31,7 @@ export default function DosenCoursesPage() {
         setLoading(false);
       }
     }
-    
+
     if (dosenId) {
       fetchMyCourses();
     }
@@ -49,8 +49,11 @@ export default function DosenCoursesPage() {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Daftar Kelas Anda</h1>
-          <p className="text-zinc-500 mt-1">Kelola materi, evaluasi, dan pantau mahasiswa pada kelas yang Anda ampu.</p>
+          <div className="flex items-center gap-3 mb-1">
+            <BookOpen className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold tracking-tight text-blue-700 dark:text-white">Daftar Kelas</h1>
+          </div>
+          <p className="text-zinc-500 mt-1">Kelola materi pada kelas yang Anda ampu.</p>
         </div>
       </div>
 
@@ -67,20 +70,20 @@ export default function DosenCoursesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
-            <div 
-              key={course.id} 
-              className="group flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-500/50 overflow-hidden cursor-pointer"
+            <div
+              key={course.id}
+              className="group flex flex-col h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/25 hover:-translate-y-2 hover:border-blue-500 dark:hover:border-blue-500 overflow-hidden cursor-pointer"
               onClick={() => router.push(`/dosen/courses/${course.id}`)}
             >
               {/* Header Gambar */}
               <div className="h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300">
                 <div className={`absolute inset-0 ${course.color || 'bg-blue-500'} opacity-20`} />
-                {!imageErrorIds.includes(course.id) ? (
-                  <Image 
-                    src={course.imageSrc || `/images/courses/${course.id}.png`} 
-                    alt={course.title} 
-                    fill 
-                    className="object-cover" 
+                {course.imageSrc && !imageErrorIds.includes(course.id) ? (
+                  <Image
+                    src={course.imageSrc}
+                    alt={course.title}
+                    fill
+                    className="object-cover"
                     onError={() => setImageErrorIds(prev => [...prev, course.id])}
                   />
                 ) : (
@@ -100,7 +103,7 @@ export default function DosenCoursesPage() {
                 <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">
                   {course.title}
                 </h3>
-                
+
                 <p className="text-sm text-zinc-500 line-clamp-2 mb-4">
                   {course.description}
                 </p>

@@ -53,7 +53,6 @@ const dosenMenuItems = [
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
   { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
   { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
-  { icon: Settings, label: "Pengaturan", href: "/dosen/settings" },
 ];
 
 // Menu untuk Asisten Dosen (same as dosen but no Settings)
@@ -219,7 +218,10 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
           </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Link href="/settings" className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer">
+            <Link 
+              href={role === 'dosen' ? '/dosen/settings' : role === 'admin' ? '/admin/settings' : '/settings'} 
+              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
+            >
               <MoreVertical className="w-4 h-4" />
             </Link>
           </div>

@@ -17,7 +17,8 @@ export async function GET() {
       return {
         ...course,
         unitsCount: courseUnits.length,
-        lessonsCount: courseLessons.length
+        lessonsCount: courseLessons.length,
+        lessonIds: courseLessons.map(l => String(l.id))
       };
     });
 

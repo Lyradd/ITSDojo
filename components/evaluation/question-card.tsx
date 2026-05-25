@@ -8,15 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 
 interface QuestionCardProps {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
-  onSubmit: (answer: string | number | boolean) => void;
+  onSubmit: (answer: string | number | boolean | string[]) => void;
   isSubmitted?: boolean;
-  userAnswer?: string | number | boolean;
+  userAnswer?: string | number | boolean | string[];
 }
 
 export function QuestionCard({
@@ -27,11 +27,11 @@ export function QuestionCard({
   isSubmitted = false,
   userAnswer,
 }: QuestionCardProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | number | boolean | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | number | boolean | string[] | null>(null);
+  const [puzzleItems, setPuzzleItems] = useState<{id: string, text: string}[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  // Reset state when question changes
   useEffect(() => {
     if (userAnswer !== undefined) {
       setSelectedAnswer(userAnswer);
@@ -42,17 +42,35 @@ export function QuestionCard({
       setSelectedAnswer(null);
       setShowFeedback(false);
       setIsCorrect(false);
+      
+      if (question.type === 'puzzle' && question.puzzlePairs) {
+        // Create a copy to shuffle
+        const shuffled = [...question.puzzlePairs].sort(() => Math.random() - 0.5);
+        setPuzzleItems(shuffled);
+        setSelectedAnswer(shuffled.map(p => p.id));
+      }
     }
   }, [question.id, userAnswer]); // Reset when question ID changes
 
-  const checkAnswer = (answer: string | number | boolean) => {
+  const checkAnswer = (answer: string | number | boolean | string[]) => {
     if (question.type === 'multiple-choice' || question.type === 'true-false') {
       setIsCorrect(answer === question.correctAnswer);
     } else if (question.type === 'short-answer') {
       const userAns = String(answer).toLowerCase().trim();
       const correctAns = String(question.correctAnswer).toLowerCase().trim();
       setIsCorrect(userAns === correctAns);
+    } else if (question.type === 'puzzle') {
+      const userSequence = Array.isArray(answer) ? answer : [];
+      const correctSequence = question.puzzlePairs?.map(p => p.id) || [];
+      setIsCorrect(userSequence.length === correctSequence.length && 
+                  userSequence.every((val, index) => val === correctSequence[index]));
     }
+  };
+
+  const handleReorder = (newItems: {id: string, text: string}[]) => {
+    if (showFeedback) return;
+    setPuzzleItems(newItems);
+    setSelectedAnswer(newItems.map(item => item.id));
   };
 
   const handleSubmit = () => {
@@ -163,12 +181,68 @@ export function QuestionCard({
         )}
       />
       {showFeedback && !isCorrect && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
           Jawaban yang benar: <span className="font-bold text-green-600">{question.correctAnswer}</span>
         </p>
       )}
     </div>
   );
+
+  const renderPuzzle = () => {
+    const correctSequence = question.puzzlePairs?.map(p => p.id) || [];
+    
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-zinc-500 mb-4 font-medium">💡 Urutkan item di bawah ini dengan menggeser (drag & drop) ke posisi yang benar.</p>
+        <Reorder.Group axis="y" values={puzzleItems} onReorder={handleReorder} className="space-y-2">
+          {puzzleItems.map((item, index) => {
+            const isCorrectPosition = item.id === correctSequence[index];
+            const showPositionFeedback = showFeedback;
+            
+            return (
+              <Reorder.Item 
+                key={item.id} 
+                value={item}
+                dragListener={!showFeedback}
+                className={cn(
+                  "p-4 rounded-xl border-2 flex items-center gap-4 transition-colors",
+                  !showFeedback && "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-blue-400 cursor-grab active:cursor-grabbing shadow-sm",
+                  showPositionFeedback && isCorrectPosition && "border-green-500 bg-green-50 dark:bg-green-950/30 cursor-default",
+                  showPositionFeedback && !isCorrectPosition && "border-red-500 bg-red-50 dark:bg-red-950/30 cursor-default"
+                )}
+              >
+                {!showFeedback && (
+                  <div className="flex flex-col gap-1 items-center justify-center w-6 text-zinc-400 hover:text-zinc-600">
+                    <div className="w-4 h-0.5 bg-current rounded-full"></div>
+                    <div className="w-4 h-0.5 bg-current rounded-full"></div>
+                    <div className="w-4 h-0.5 bg-current rounded-full"></div>
+                  </div>
+                )}
+                
+                <div className="flex-1 font-semibold text-zinc-800 dark:text-zinc-200">{item.text}</div>
+                
+                {showPositionFeedback && isCorrectPosition && <CheckCircle className="w-5 h-5 text-green-600" />}
+                {showPositionFeedback && !isCorrectPosition && <XCircle className="w-5 h-5 text-red-600" />}
+              </Reorder.Item>
+            );
+          })}
+        </Reorder.Group>
+        
+        {showFeedback && !isCorrect && (
+          <div className="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-900/50">
+            <p className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> Urutan yang Benar:
+            </p>
+            <ol className="list-decimal list-inside space-y-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              {question.puzzlePairs?.map((item) => (
+                <li key={`correct-${item.id}`} className="pl-2">{item.text}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <motion.div
@@ -212,17 +286,16 @@ export function QuestionCard({
             {question.type === 'multiple-choice' && 'Pilihan Ganda'}
             {question.type === 'true-false' && 'Benar / Salah'}
             {question.type === 'short-answer' && 'Isian Singkat'}
+            {question.type === 'puzzle' && 'Puzzle Urutan (Drag & Drop)'}
           </span>
         </div>
       </div>
 
       {/* Question Content */}
-      <div className="mb-6">
         {question.type === 'multiple-choice' && renderMultipleChoice()}
         {question.type === 'true-false' && renderTrueFalse()}
         {question.type === 'short-answer' && renderShortAnswer()}
-      </div>
-
+        {question.type === 'puzzle' && renderPuzzle()}
       {/* Feedback */}
       {showFeedback && (
         <div className={cn(

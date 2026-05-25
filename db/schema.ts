@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, boolean, timestamp, pgEnum, jsonb, unique } from 'drizzle-orm/pg-core';
 import { desc, relations } from 'drizzle-orm';
 
 // ==========================================
@@ -67,8 +67,9 @@ export const lessons = pgTable('lessons', {
   gemReward: integer('gem_reward').default(10).notNull(),
 
   // Konten Pembelajaran
-  videoUrl: text('video_url'),                    // YouTube embed URL
+  videoUrl: text('video_url'),                    // YouTube/Google Drive embed URL
   summaryContent: text('summary_content'),        // HTML content untuk rangkuman materi
+  materialFiles: text('material_files'),          // JSON array of uploaded files [{url, fileName, fileSize, fileType}]
 
   // Soal Coding (Practice)
   problemTitle: text('problem_title'),
@@ -144,6 +145,10 @@ export const evaluations = pgTable('evaluations', {
   duration: integer('duration').notNull(), // dalam menit
   isActive: boolean('is_active').default(true).notNull(),
   totalPoints: integer('total_points').default(100).notNull(),
+  questions: jsonb('questions').default([]).notNull(),
+  // Session lifecycle: 'waiting' (default, menunggu dosen mulai) | 'active' (sedang berjalan) | 'finished'
+  sessionStatus: text('session_status').default('waiting').notNull(),
+  sessionStartedAt: timestamp('session_started_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -156,6 +161,20 @@ export const evaluationResults = pgTable('evaluation_results', {
   timeSpent: integer('time_spent').notNull(), // dalam detik
   completedAt: timestamp('completed_at').defaultNow().notNull(),
 });
+
+export const evaluationProgress = pgTable('evaluation_progress', {
+  id: serial('id').primaryKey(),
+  evaluationId: text('evaluation_id').notNull(),
+  studentName: text('student_name').notNull(),
+  currentQuestion: integer('current_question').default(0).notNull(),
+  totalQuestions: integer('total_questions').notNull(),
+  score: integer('score').default(0).notNull(),
+  status: text('status').default('active').notNull(), // 'active', 'completed', 'stuck'
+  timeElapsed: integer('time_elapsed').default(0).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => ({
+  unq: unique().on(t.evaluationId, t.studentName),
+}));
 
 // ==========================================
 // 5. TABEL ACTIVITY & LOGS

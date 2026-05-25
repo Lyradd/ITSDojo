@@ -1,397 +1,82 @@
+# ITSDojo 🎓
 
-# ITSDojo
-
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app), designed as a Gamified Learning Management System.
-
-## Project Setup & Installation (Important)
-
-Before running the development server, ensure you have installed all necessary dependencies and UI components used in this project.
-
-### 1. Install Core Dependencies
-Run this command to install state management, utility libraries, icons, and visualization tools:
-
-```bash
-npm install zustand clsx tailwind-merge lucide-react class-variance-authority reactflow
-
-```
-
-### 2. Initialize Shadcn UI
-
-If you haven't initialized Shadcn UI yet, run:
-
-```bash
-npx shadcn@latest init
-
-```
-
-### 3. Install Required UI Components
-
-This project relies on specific Shadcn UI components. Install them using the following command:
-
-```bash
-npx shadcn@latest add button card input label progress separator
-
-```
+ITSDojo adalah platform **Gamified Learning Management System (LMS)** modern yang dikembangkan menggunakan **Next.js 15 (App Router)**, **Socket.io (WebSockets)**, dan **Drizzle ORM** dengan **Neon PostgreSQL**. Platform ini dirancang untuk menghadirkan pengalaman belajar yang interaktif dan kompetitif bagi mahasiswa melalui fitur gamifikasi, evaluasi coding secara langsung, duel real-time, dan pemisahan hak akses yang jelas antara Mahasiswa, Asisten Dosen, Dosen, dan Admin.
 
 ---
 
-## Database Setup (Neon & Drizzle)
-This project uses Neon (Serverless PostgreSQL) as the database and Drizzle ORM for type-safe database interactions.
+## 🛠️ Tech Stack Utama
 
-### 1. Install Database Dependencies
-Install the ORM, Neon driver, and development tools for migrations:
+*   **Framework:** Next.js 15 (App Router) dengan TypeScript & Turbopack
+*   **Database:** Serverless PostgreSQL (Neon) & Drizzle ORM
+*   **Real-time & WebSockets:** Socket.io (server kustom `server.js` terintegrasi)
+*   **Styling:** Tailwind CSS & Shadcn UI
+*   **State Management:** Zustand
+*   **Rich Text Editor:** `react-quill-new` (WYSIWYG editor materi)
 
-```Bash
-npm install drizzle-orm @neondatabase/serverless dotenv
-npm install -D drizzle-kit
-```
-### 2. Configure Environment Variables
-Create a .env file in the root directory. You need to add your Neon connection string here.
+---
 
-Important: Use the "Pooled" connection string from your Neon Dashboard. Ensure there are no psql prefixes or single quotes '.
+## 🚀 Langkah-Langkah Menjalankan Project (Lokal)
 
-Cuplikan kode
+Ikuti instruksi langkah demi langkah berikut secara berurutan untuk memasang dan menjalankan proyek ITSDojo di komputer lokal Anda:
 
-#### .env
+### 1. Prasyarat (Prerequisites)
+Pastikan Anda sudah menginstal:
+*   [Node.js](https://nodejs.org/) (versi LTS terbaru direkomendasikan)
+*   Akun [Neon Console](https://neon.tech/) (atau instansi database PostgreSQL lokal yang aktif)
+
+### 2. Kloning & Instalasi Dependensi
+Buka terminal Anda, masuk ke direktori proyek, lalu pasang paket dependensi yang dibutuhkan:
 ```bash
-DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-your-endpoint.aws.neon.tech/neondb?sslmode=require"
+# Install seluruh package dependensi proyek
+npm install
+```
+*Penting: Seluruh dependensi utama (seperti `three.js`, `socket.io`, `react-quill-new`, `zustand`, `framer-motion`, dan komponen `shadcn/ui`) sudah terdaftar lengkap di `package.json` sehingga perintah di atas akan menginstal semuanya secara otomatis.*
+
+### 3. Konfigurasi Variabel Lingkungan (`.env`)
+Buat sebuah berkas bernama `.env` di direktori utama (root) proyek, kemudian masukkan konfigurasi database Anda. 
+
+*Catatan: Sangat disarankan untuk menggunakan **Pooled Connection String** jika Anda menggunakan Neon Database.*
+
+```env
+# Contoh isi berkas .env
+DATABASE_URL="postgresql://neondb_owner:PASSWORD_ANDA@endpoint-aws-neon.tech/neondb?sslmode=require"
 ```
 
-## 3. Sync Database Schema
-Whenever you make changes to db/schema.ts, you must push the changes to the Neon database:
-
+### 4. Sinkronisasi Skema Database (Drizzle Push)
+Setelah kredensial database terpasang dengan benar di `.env`, jalankan perintah berikut untuk mensinkronisasikan berkas skema di `db/schema.ts` ke database PostgreSQL Anda secara otomatis:
 ```bash
 npx drizzle-kit push
 ```
 
-## 4. Manage Data (Drizzle Studio)
-To view, edit, or add dummy data to your database using a GUI (similar to phpMyAdmin):
+### 5. Jalankan Server Pengembangan (Development Server)
+Jalankan server Next.js lokal terintegrasi dengan WebSocket:
+```bash
+npm run dev
+```
+Setelah berjalan, buka tautan **[http://localhost:3000](http://localhost:3000)** di browser Anda.
 
+---
+
+## 👥 Panduan Pengujian & Akun Demo
+
+Untuk memudahkan eksplorasi fitur dan alur kerja di ITSDojo, sistem login menggunakan mode simulasi instan (Demo Mode). Anda cukup mengeklik tombol masuk tanpa perlu memasukkan kata sandi rumit:
+
+1.  **Mahasiswa (👨‍🎓 Student View):**
+    *   **Akses:** Pilih role **Mahasiswa** saat login.
+    *   **Fitur:** Menjelajahi roadmap pembelajaran dinamis, melakukan duel 1v1 secara *real-time* via WebSocket, mengumpulkan XP dan Gems, serta mengerjakan soal coding terintegrasi.
+2.  **Dosen (👨‍🏫 Instructor View):**
+    *   **Akses:** Pilih role **Dosen** saat login.
+    *   **Fitur:** Mengelola materi secara detail (menambah modul, menulis rangkuman pelajaran dengan editor rich-text, menempelkan URL YouTube/Google Drive dengan auto-preview, mengunggah lampiran PDF/DOCX, dan merancang soal coding latihan beserta test cases-nya).
+3.  **Super Admin (🛠️ Admin View):**
+    *   **Akses:** Klik tombol jalan pintas developer **"Bypass to Super Admin (Dev Only)"** di bagian bawah kartu login.
+    *   **Fitur:** Membuat kelas global baru secara keseluruhan, memantau data performa pengguna, serta melakukan **Ploting Dosen** (menugaskan dosen pengampu ke kelas-kelas yang aktif).
+
+---
+
+## 📊 Manajemen Database Visual (Drizzle Studio)
+
+Jika Anda ingin melihat, menambah, atau memanipulasi data di database secara visual melalui antarmuka web (mirip dengan phpMyAdmin), jalankan perintah berikut di terminal baru:
 ```bash
 npx drizzle-kit studio
 ```
-
-This will open a local web interface to interact with your live Neon database.
-
----
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-
-```
-
-Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
----
-
-## 🆕 Version History & Changelog
-
-### Version 1.5 - Advanced Gamification, Dynamic Roadmap & Dark Mode (Current)
-**Release Date:** April 2026
-
-#### 🎨 Native Dark Mode Implementation
-- ✅ Integrasi `next-themes` untuk Native Dark Mode.
-- ✅ *Minimalist Theme Toggle* dengan animasi pergantian ikon Sun/Moon.
-- ✅ *Hydration mismatch fix* pada `layout.tsx`.
-- ✅ Optimasi palet warna untuk memastikan teks tetap terbaca dengan jelas (*high contrast*) di latar gelap (termasuk *unit desc* dan *leaderboard active state*).
-
-#### 🗺️ Dynamic Roadmap & Prerequisite Lock
-- ✅ Mengubah sistem kunci level menjadi **Prerequisite-based Lock** (Beginner ➡️ Intermediate ➡️ Advanced).
-- ✅ Mengeliminasi *hardcode* statis, kini *Router* dan status visual node (Completed/Active/Locked) 100% dinamis terhubung dengan `useUserStore`.
-- ✅ Efek visual *Fog of War* untuk menyembunyikan rute yang masih terkunci rapat.
-- ✅ Menambahkan filter pengurutan cerdas "Highest Progress" di halaman *Course List*.
-
-#### 📅 GitHub-Style Activity Heatmap
-- ✅ Implementasi grid *Heatmap* interaktif pada profil pengguna untuk memvisualisasikan 105 hari terakhir aktivitas.
-- ✅ Integrasi langsung dengan `useUserStore` (Zustand): menyimpan *timestamp* tanggal selesai secara permanen.
-- ✅ Dinamika intensitas warna: makin sering mengerjakan soal di hari tersebut, lampu kotak akan menyala makin biru/neon.
-
----
-
-### Version 1.4 - WebSocket Live Leaderboard
-**Release Date:** 4 Januari 2026
-
-#### 🌐 Real-Time WebSocket Integration
-**✅ Live Leaderboard Updates**
-- Real-time synchronization via WebSocket (Socket.io)
-- Zero database polling - event-driven architecture
-- In-memory cache for instant updates
-- 99.5% bandwidth reduction vs polling approach
-
-**✅ Connection Status Indicator**
-- Live indicator badge (green "Live" / red "Offline")
-- Auto-reconnection up to 5 attempts
-- Visual feedback untuk connection state
-- Graceful degradation pada network issues
-
-**✅ Custom Next.js Server**
-- Custom server dengan Socket.io integration
-- Event handlers: `leaderboard:initial`, `leaderboard:update`, `leaderboard:add-user`
-- In-memory cache management
-- Broadcast system untuk multi-client sync
-
-#### 🎯 Balanced Scoring System
-**Before:**
-- Rank #1: 300 XP
-- Rank #2-10: 62-95 XP (gap terlalu besar ❌)
-
-**After:**
-- Rank #1: 300 XP
-- Rank #2-10: 120-280 XP (progression lebih realistic ✅)
-
-#### 🐛 Critical Bug Fixes
-**✅ Duplicate User Bug**
-- Fixed: Current user muncul 2x di leaderboard
-- Solution: Filter existing user before re-adding
-- Impact: Clean leaderboard display
-
-**✅ State Synchronization**
-- Fixed: User entry sync between client & server
-- Proper cleanup on component unmount
-- No memory leaks
-
-#### 📊 Performance Improvements
-**Network Efficiency:**
-- Before: 720 requests/hour (polling every 5s)
-- After: Event-driven (only on changes)
-- Bandwidth saved: ~10MB → ~50KB per hour
-
-**Responsiveness:**
-- WebSocket connection: ~200ms
-- Update broadcast: <50ms
-- UI update latency: <100ms
-
-#### 🛠️ Technical Implementation
-**New Files:**
-- `server.js` - Custom Next.js server with WebSocket
-- `lib/websocket-client.ts` - Client wrapper dengan auto-reconnect
-- `lib/leaderboard-cache.ts` - In-memory cache manager
-- `lib/websocket-server.ts` - Server-side Socket.io setup
-
-**Modified Files:**
-- `app/(dashboard)/leaderboard/page.tsx` - WebSocket integration + live indicator
-- `lib/evaluation-data.ts` - Balanced mock data (120-280 range)
-- `package.json` - Added Socket.io dependencies
-
-**Dependencies Added:**
-```json
-{
-  "socket.io": "^4.8.3",
-  "socket.io-client": "^4.8.3"
-}
-```
-
-#### 📈 Architecture
-```
-Client Browser ←→ Socket.io ←→ Custom Server ←→ In-Memory Cache
-                                      ↓
-                                  Database (event-driven only)
-```
-
-#### 🎮 User Experience Enhancements
-- **Visual Feedback:** Instant rank updates tanpa refresh
-- **Live Badge:** Shows when connected to real-time server
-- **Offline Mode:** Graceful fallback saat disconnected
-- **Auto-sync:** Multiple tabs auto-update simultaneously
-
----
-
-### Version 1.3 - UI/UX Refinement & Critical Bug Fixes
-**Release Date:** 28 Desember 2025
-
-#### 🎨 Sidebar Improvements
-- ✅ Simplified navigation (removed redundant Profile/More menu)
-- ✅ Scrollable navigation dengan custom scrollbar
-- ✅ Cleaner interface tanpa bottom profile section
-- ✅ Optimized menu items (essential only)
-
-#### 🔐 Login Enhancements
-- ✅ "Remember Me" checkbox functionality restored
-- ✅ Better UX positioning (antara password & login button)
-- ✅ Consistent styling dengan design system
-
-#### 🐛 Critical Bug Fixes
-**Quiz State Bug (Major):**
-- ✅ Fixed: Selecting answer di Q1 mempengaruhi semua soal
-- ✅ Independent state per question
-- ✅ Proper state persistence untuk answered questions
-- ✅ Fresh state untuk unanswered questions
-
-**Quiz Answer Visibility:**
-- ✅ No spoilers: Correct answer tidak ter-highlight before submit
-- ✅ Proper feedback flow (hanya after submission)
-- ✅ Conditional hover effects
-
-#### 📱 Mobile Responsiveness
-- ✅ Fixed bottom navbar overlap (pb-24 md:pb-8)
-- ✅ Sticky navigation properly positioned
-- ✅ All content accessible & scrollable di mobile
-
-#### 🧹 UI Cleanup
-- ✅ Removed unnecessary tips sections (Leaderboard, Evaluation)
-- ✅ Cleaner layout tanpa distraction
-- ✅ Focus on core functionality
-
-#### 🛠️ Developer Experience
-- ✅ VSCode settings.json untuk Tailwind CSS
-- ✅ Suppressed CSS lint warnings untuk Tailwind directives
-- ✅ Enhanced IntelliSense & autocomplete
-
----
-
-### Version 1.2 - Admin Dashboard & Role-Based System
-**Release Date:** November 2025
-
-#### 🔐 Role-Based Authentication
-- ✅ Login sebagai Mahasiswa atau Dosen
-- ✅ Auto-redirect berdasarkan role
-- ✅ Route protection untuk admin pages
-- ✅ Role persistence di localStorage
-
-#### 👨‍🏫 Admin Dashboard (Dosen)
-**Dashboard Features:**
-- Stats overview (Total Mahasiswa, Aktif, Avg Akurasi, Evaluasi Aktif)
-- Recent activity feed dengan real-time updates
-- Active evaluations list
-- Quick action cards
-
-**Course Management:**
-- Create, edit, delete courses
-- Search functionality
-- Course stats & difficulty badges
-- Lesson management per course
-
-**Student Monitoring:**
-- 20 mock students dengan realistic data
-- Search & sort (by XP, accuracy, name)
-- Progress tracking & streak monitoring
-- Last active timestamps
-
-**Evaluations Management:**
-- List active & completed evaluations
-- Stats cards (submissions, avg score)
-- Create & edit evaluations
-- Close/archive functionality
-
-**Analytics & Reports:**
-- Activity trend charts (7 days)
-- Score distribution graphs
-- Course popularity metrics
-- Top 5 performers list
-- Export functionality (CSV/PDF)
-
-#### 🎨 Enhanced Navigation
-- Unified Blue/Cyan color scheme
-- Role-based menus
-- Gradient active states
-- Animated indicators
-- Profile section dengan role badge
-
-#### 📊 Mock Data System
-- 20 realistic mock students
-- Linked evaluation results
-- Activity logs
-- Charts data untuk visualization
-
-**New Pages:**
-- `/admin` - Dashboard home
-- `/admin/courses` - Course management
-- `/admin/students` - Student monitoring
-- `/admin/evaluations` - Evaluations management
-- `/admin/analytics` - Analytics & reports
-
----
-
-### Version 1.1 - Live Leaderboard Integration
-**Release Date:** Oktober 2025
-
-#### 🎯 Comprehensive Evaluation System
-- ✅ 3 Question Types: Multiple choice, Short answer, True/False
-- ✅ Instant Feedback: Visual response <500ms
-- ✅ Real-time Progress: Score, accuracy, timer
-- ✅ Question Navigation: Next/Previous dengan indicators
-- ✅ Results Page: Comprehensive review
-
-#### 🏆 Live Leaderboard (Octalysis Framework)
-- ✅ Real-time updates (3-second intervals)
-- ✅ Rank animations dengan smooth transitions
-- ✅ Social comparison (top performers + nearby ranks)
-- ✅ Current user highlight (blue glow + "YOU" badge)
-- ✅ Live indicator dengan pulsing dot
-- ✅ Medal system 🥇🥈🥉 untuk top 3
-
-#### 📊 Standalone Leaderboard Page
-- ✅ Top 3 podium dengan gradient colors
-- ✅ Stats overview cards
-- ✅ Full rankings dengan scroll
-- ✅ User progress tracking
-- ✅ Quick action shortcuts
-
-**New Pages:**
-- `/evaluation` - Evaluations list
-- `/evaluation/[id]` - Active evaluation
-- `/evaluation/[id]/results` - Results review
-- `/leaderboard` - Standalone leaderboard
-
-**New Components:**
-- `components/leaderboard/live-leaderboard.tsx`
-- `components/leaderboard/leaderboard-entry.tsx`
-- `components/evaluation/question-card.tsx`
-
----
-
-### Version 1.0 - Gamified LMS Foundation
-**Release Date:** September 2025
-
-#### Core Features
-- ✅ Learning path dengan skill tree visualization
-- ✅ Course management (Frontend, React, Backend)
-- ✅ Daily goals dengan XP rewards
-- ✅ Basic gamification (XP, levels, streak)
-- ✅ Profile page dengan stats
-- ✅ Static leaderboard preview
-
-**Pages:**
-- `/learn` - Main learning page
-- `/courses` - Course list
-- `/courses/[id]` - Course detail
-- `/goals` - Daily goals
-- `/profile` - User profile
-
-**Limitations:**
-- ❌ No evaluation/quiz system
-- ❌ Static leaderboard only
-- ❌ No real-time updates
-- ❌ No instant feedback
-- ❌ No competitive elements
-
----
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-* [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-* [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Lalu buka tautan lokal yang tertera di terminal (biasanya `https://local.drizzle.studio`) untuk mengelola tabel secara langsung.

@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "ITSDojo - Platform Belajar Coding & Gamifikasi",
+    default: "ITSDojo - Gamified Classroom",
     template: "%s | ITSDojo",
   },
   description: "ITSDojo menggabungkan pembelajaran coding intensif dengan elemen game yang adiktif. Tingkatkan level, raih lencana, dan taklukkan dunia pemrograman dengan cara yang menyenangkan.",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     url: "https://itsdojo.com",
-    title: "ITSDojo - Platform Belajar Coding & Gamifikasi",
+    title: "ITSDojo - Gamified Classroom",
     description: "Belajar pemrograman terasa seperti bermain game RPG. Tingkatkan level, raih badge, dan pelajari materi dengan mudah di ITSDojo.",
     siteName: "ITSDojo",
     images: [
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ITSDojo - Platform Belajar Coding & Gamifikasi",
+    title: "ITSDojo - Gamified Classroom",
     description: "Belajar pemrograman terasa seperti bermain game RPG. Tingkatkan level, raih badge, dan pelajari materi dengan mudah di ITSDojo.",
     images: ["/og-image.png"],
   },

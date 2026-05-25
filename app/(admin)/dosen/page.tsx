@@ -21,7 +21,8 @@ import {
   Plus,
   Zap,
   Target,
-  Award
+  Award,
+  LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -59,9 +60,12 @@ export default function DosenDashboardPage() {
         <div className="mb-8 relative">
           <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl"></div>
           <div className="relative">
-            <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Dashboard Dosen
-            </h1>
+            <div className="flex items-center gap-3 mb-2">
+              <LayoutDashboard className="w-8 h-8 text-blue-600" />
+              <h1 className="text-4xl font-bold text-blue-700 dark:text-white">
+                Dashboard Dosen
+              </h1>
+            </div>
             <p className="text-zinc-600 dark:text-zinc-400 text-lg">
               Selamat datang kembali, <span className="font-bold text-blue-600">{name}</span> 👋
             </p>

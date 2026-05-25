@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { INITIAL_LEADERBOARD } from '@/lib/evaluation-data';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
+import { getAngkatanFromSemester } from '@/lib/academic-utils';
+import { getLeaderboardData } from '@/actions/leaderboard';
 import { wsClient } from '@/lib/websocket-client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +28,9 @@ export default function AdminLeaderboardPage() {
   const router = useRouter();
   const { isLoggedIn, role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
-  const [subScope, setSubScope] = useState<string>('2023');
+  const [subScope, setSubScope] = useState<string>(getAngkatanFromSemester(6).toString());
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -40,37 +41,39 @@ export default function AdminLeaderboardPage() {
     }
   }, [isLoggedIn, role, router, isMounted]);
 
-  // Initialize WebSocket connection
+  // Fetch real data from database
   useEffect(() => {
-    if (!isMounted || !isLoggedIn) return;
+    if (!isMounted || (!isLoggedIn || (role !== 'dosen' && role !== 'asdos'))) return;
 
+    const loadRealtimeData = async () => {
+      try {
+        const dbLeaderboard = await getLeaderboardData();
+        
+        // Dosen doesn't have a "You" entry in the same way, so just rank them
+        const sorted = dbLeaderboard.sort((a, b) => b.score - a.score);
+        const ranked = sorted.map((entry, index) => ({
+          ...entry,
+          rank: index + 1,
+        }));
+
+        setLeaderboard(ranked);
+      } catch (error) {
+        console.error("Failed to load leaderboard:", error);
+      }
+    };
+
+    loadRealtimeData();
+
+    // Setup websocket for live status only
     wsClient.connect();
     const unsubscribeStatus = wsClient.onConnectionStatus((connected) => {
       setIsConnected(connected);
     });
 
-    const unsubscribeLeaderboard = wsClient.onLeaderboardUpdate((data) => {
-      if (!data || data.length === 0) return;
-
-      const otherUsers = data.filter(entry => entry.userId !== 'current-user');
-      const liveUserIds = new Set(otherUsers.map(u => u.userId));
-      const filteredMockData = INITIAL_LEADERBOARD.filter(u => !liveUserIds.has(u.userId) && u.userId !== 'current-user');
-
-      const allEntries = [...otherUsers, ...filteredMockData];
-      const sorted = allEntries.sort((a, b) => b.score - a.score);
-      const ranked = sorted.map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }));
-
-      setLeaderboard(ranked);
-    });
-
     return () => {
       unsubscribeStatus();
-      unsubscribeLeaderboard();
     };
-  }, [isMounted, isLoggedIn]);
+  }, [isMounted, isLoggedIn, role]);
 
   // Simulate filtering the leaderboard based on the chosen scope
   const filteredLeaderboard = useMemo(() => {
@@ -107,7 +110,7 @@ export default function AdminLeaderboardPage() {
               <Trophy className="w-8 h-8 text-indigo-600" fill="currentColor" />
             </div>
             <div>
-              <h1 className="text-4xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
+              <h1 className="text-4xl font-black tracking-tighter text-blue-700 dark:text-white">
                 Papan Peringkat
               </h1>
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-bold text-sm">
@@ -188,7 +191,7 @@ export default function AdminLeaderboardPage() {
                   key={filter}
                   onClick={() => {
                       setScopeFilter(filter);
-                      if (filter === 'angkatan') setSubScope('2023');
+                      if (filter === 'angkatan') setSubScope(getAngkatanFromSemester(6).toString());
                       else setSubScope('web');
                   }}
                   className={cn(
@@ -212,9 +215,10 @@ export default function AdminLeaderboardPage() {
               >
                 {scopeFilter === 'angkatan' && (
                   <>
-                    <option value="2023">Angkatan 2023 (Aktif)</option>
-                    <option value="2022">Angkatan 2022</option>
-                    <option value="2021">Angkatan 2021</option>
+                    <option value={getAngkatanFromSemester(6).toString()}>Angkatan {getAngkatanFromSemester(6)} (Aktif)</option>
+                    <option value={getAngkatanFromSemester(8).toString()}>Angkatan {getAngkatanFromSemester(8)} (Tingkat Akhir)</option>
+                    <option value={getAngkatanFromSemester(4).toString()}>Angkatan {getAngkatanFromSemester(4)}</option>
+                    <option value={getAngkatanFromSemester(2).toString()}>Angkatan {getAngkatanFromSemester(2)} (Maba)</option>
                   </>
                 )}
                 {scopeFilter === 'course' && (

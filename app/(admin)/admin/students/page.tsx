@@ -65,7 +65,7 @@ export default function StudentsPage() {
         <div className="relative">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-8 h-8 text-blue-600" />
-            <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold text-blue-700 dark:text-white">
               Monitoring Mahasiswa
             </h1>
           </div>

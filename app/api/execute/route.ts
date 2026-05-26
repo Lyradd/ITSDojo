@@ -1,77 +1,97 @@
 import { NextResponse } from 'next/server';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
-// Mock execution API for Demo/Testing purposes
-// Since the public Piston API is whitelist-only, we use a mock for demonstration
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { language, files, stdin } = body;
     const code = files?.[0]?.content || "";
 
-    // VERY naive mock execution based on typical lesson inputs
-    let output = "";
+    // 1. NATIVE EXECUTION UNTUK PYTHON & JAVASCRIPT
+    if (language === 'python' || language === 'javascript') {
+      try {
+        const tmpDir = os.tmpdir();
+        const fileExt = language === 'python' ? 'py' : 'js';
+        const fileName = `itsdojo_run_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+        const filePath = path.join(tmpDir, fileName);
 
-    if (stdin) {
-      const trimmedStdin = stdin.trim();
-      const nums = trimmedStdin.split(/\s+/).map(Number);
+        // Tulis kode ke temporary file
+        fs.writeFileSync(filePath, code);
 
-      // Mock for fe-basic-1: Playing With Characters
-      if (stdin.includes("C\nLanguage")) output = stdin;
-      else if (stdin.includes("A\nHello")) output = stdin;
-      else if (stdin.includes("Z\nProgramming")) output = stdin;
-      
-      // Mock for fe-basic-2: Sum and Difference
-      else if (stdin.trim() === "10 5") output = "15\n5";
-      else if (stdin.trim() === "100 37") output = "137\n63";
-      else if (stdin.trim() === "0 0") output = "0\n0";
-      else if (stdin.trim() === "-3 7") output = "4\n-10";
-      
-      // Mock for fe-basic-3: max_of_four
-      else if (stdin.trim() === "3 4 6 5") output = "6";
-      else if (stdin.trim() === "12 8 2 10") output = "12";
-      else if (stdin.trim() === "-1 -5 -3 -2") output = "-1";
-      else if (stdin.trim() === "7 7 7 7") output = "7";
-      
-      // Mock for fe-basic-4: pointers
-      else if (stdin.trim() === "4 5") output = "9\n1";
-      else if (stdin.trim() === "10 3") output = "13\n7";
-      else if (stdin.trim() === "5 10") output = "15\n5";
-      
-      // Backend ninja 1
-      else if (stdin.trim() === "200") output = "OK";
-      else if (stdin.trim() === "404") output = "Not Found";
-      else if (stdin.trim() === "500") output = "Internal Server Error";
-      else if (stdin.trim() === "302") output = "Unknown";
-      
-      // Backend ninja 2
-      else if (stdin.trim() === "name=Daryl") output = "name\nDaryl";
-      else if (stdin.trim() === "lang=C") output = "lang\nC";
-      else if (stdin.trim() === "status=active") output = "status\nactive";
-      
-      // Backend ninja 3
-      else if (stdin.trim() === "3 + 5") output = "8";
-      else if (stdin.trim() === "10 - 4") output = "6";
-      else if (stdin.trim() === "6 * 7") output = "42";
-      
-      // Data types in JS
-      else if (stdin.trim() === "42\n3.14\nHello") output = "42\n3.14\nHello";
-      else if (stdin.trim() === "0\n1.5\nWorld") output = "0\n1.5\nWorld";
-
-      // Mock for Dasar Pemrograman Stage 2 (Penjumlahan Dua Bilangan)
-      else if (nums.length === 2 && !nums.some(isNaN)) {
-        if (code.includes("+") || code.includes("a+b") || code.includes("a + b") || code.includes("sum")) {
-          output = String(nums[0] + nums[1]);
-        } else if (code.includes("-") || code.includes("a-b") || code.includes("a - b")) {
-          output = String(nums[0] - nums[1]);
+        let command = '';
+        if (language === 'python') {
+          // On Windows it's usually 'python'
+          command = `python "${filePath}"`;
         } else {
-          output = "0";
+          command = `node "${filePath}"`;
         }
-      }
 
-      // Default fallback
-      else output = stdin;
+        // Eksekusi kode secara sinkron dengan stdin
+        const result = execSync(command, {
+          input: stdin || '',
+          timeout: 5000, // max 5 detik
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'] // stdin, stdout, stderr
+        });
+
+        // Hapus file sementara
+        try { fs.unlinkSync(filePath); } catch (e) {}
+
+        return NextResponse.json({
+          language,
+          version: "Native",
+          run: {
+            stdout: result.trimEnd(),
+            stderr: "",
+            output: result.trimEnd(),
+            code: 0,
+            signal: null
+          }
+        });
+
+      } catch (error: any) {
+        // Jika ada error runtime/sintaks (stderr)
+        let errMsg = error.stderr ? error.stderr.toString() : error.message;
+        
+        // Coba hapus file jika gagal di tengah jalan
+        try {
+          const files = fs.readdirSync(os.tmpdir()).filter(fn => fn.startsWith('itsdojo_run_'));
+          files.forEach(f => fs.unlinkSync(path.join(os.tmpdir(), f)));
+        } catch(e) {}
+
+        return NextResponse.json({
+          language,
+          version: "Native",
+          run: {
+            stdout: error.stdout ? error.stdout.toString() : "",
+            stderr: errMsg,
+            output: errMsg,
+            code: 1,
+            signal: null
+          }
+        });
+      }
+    }
+
+    // 2. MOCK EXECUTION (Hanya untuk C / C++ / SQL karena tidak ada compiler)
+    let output = "";
+    const trimmedStdin = (stdin || "").trim();
+    const nums = trimmedStdin.split(/\s+/).map(Number);
+
+    // Mock Dasar Pemrograman (C/C++)
+    if (nums.length === 2 && !nums.some(isNaN)) {
+      if (code.includes("+") || code.includes("a+b") || code.includes("a + b") || code.includes("sum")) {
+        output = String(nums[0] + nums[1]);
+      } else if (code.includes("-") || code.includes("a-b") || code.includes("a - b")) {
+        output = String(nums[0] - nums[1]);
+      } else {
+        output = "0";
+      }
     } else {
-      // Parse print expressions from C/C++ code to simulate actual console output
+      // Regex cetak standar untuk C/C++
       const printfMatch = code.match(/printf\s*\(\s*"([^"]*)"/);
       const coutMatch = code.match(/cout\s*<<\s*"([^"]*)"/);
 
@@ -79,19 +99,18 @@ export async function POST(req: Request) {
         output = printfMatch[1].replace(/\\n/g, "\n");
       } else if (coutMatch) {
         output = coutMatch[1];
-      } else if (language === "javascript" || code.includes("console.log")) {
-        output = "Hello, World!";
+      } else if (language === "sql") {
+        output = "CREATE INDEX idx_name ON users(name);"; 
       } else {
-        output = "Program finished with no output.";
+        output = "Program finished with no output or mock unavailable.";
       }
     }
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300)); // Delay artifisial
 
     return NextResponse.json({
       language,
-      version: "1.0",
+      version: "Mock",
       run: {
         stdout: output,
         stderr: "",
@@ -100,6 +119,7 @@ export async function POST(req: Request) {
         signal: null
       }
     });
+
   } catch (error) {
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }

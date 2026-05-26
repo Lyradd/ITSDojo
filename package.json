@@ -5,13 +5,14 @@
   "scripts": {
     "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "cross-env NODE_ENV=production node server.js",
     "lint": "eslint",
     "db:studio": "npx drizzle-kit studio",
     "db:push": "npx drizzle-kit push:pg",
     "test": "vitest"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
     "@monaco-editor/react": "^4.7.0",
     "@neondatabase/auth": "^0.4.1-beta",
     "@neondatabase/neon-js": "^0.6.1-beta",
@@ -36,6 +37,7 @@
     "react": "19.2.3",
     "react-countup": "^6.5.3",
     "react-dom": "19.2.3",
+    "react-hook-form": "^7.76.1",
     "react-hot-toast": "^2.6.0",
     "react-quill-new": "^3.8.3",
     "react-resizable-panels": "^2.1.7",
@@ -46,6 +48,7 @@
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.5.0",
     "three": "^0.183.2",
+    "zod": "^4.4.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

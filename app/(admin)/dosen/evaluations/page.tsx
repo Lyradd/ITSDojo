@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { toast } from 'react-hot-toast';
-import { COURSES } from '@/lib/dummydata';
 import { getActiveEvaluations, finishEvaluationSession, getEvaluationStats } from '@/actions/evaluations';
+import { getAllCourses } from '@/actions/courses';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -31,6 +31,7 @@ export default function DosenEvaluationsPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
 
   const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+  const [coursesList, setCoursesList] = useState<{ id: string; title: string }[]>([]);
   const [stats, setStats] = useState<{
     totalParticipants: number;
     avgAccuracy: number;
@@ -38,12 +39,14 @@ export default function DosenEvaluationsPage() {
   }>({ totalParticipants: 0, avgAccuracy: 0, perEvaluationParticipants: {} });
 
   const loadEvals = async () => {
-    const [data, statsData] = await Promise.all([
+    const [data, statsData, courses] = await Promise.all([
       getActiveEvaluations(),
       getEvaluationStats(),
+      getAllCourses(),
     ]);
     setEvaluationsList(data);
     setStats(statsData);
+    setCoursesList(courses);
   };
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export default function DosenEvaluationsPage() {
     ? evaluationsList
     : evaluationsList.filter(e => e.courseId === selectedCourse);
 
-  const getCourseName = (courseId: string) => COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
+  const getCourseName = (courseId: string) => coursesList.find(c => c.id === courseId)?.title || 'Kelas Tidak Ditemukan';
   
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-purple-50 to-orange-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
@@ -145,9 +148,9 @@ export default function DosenEvaluationsPage() {
               onClick={() => setSelectedCourse('all')} 
               className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800 whitespace-nowrap", selectedCourse === 'all' && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
             >
-              Semua Kursus
+              Semua Kelas
             </Button>
-            {COURSES.map(course => (
+            {coursesList.map(course => (
               <Button 
                 key={course.id} 
                 size="sm" 

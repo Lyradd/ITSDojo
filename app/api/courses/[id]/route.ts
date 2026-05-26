@@ -3,6 +3,21 @@ import { db } from "@/db";
 import { courses } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+// GET /api/courses/[id] — Ambil detail satu kelas
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.id, id),
+    });
+
+    if (!course) return NextResponse.json({ error: "Kelas tidak ditemukan" }, { status: 404 });
+    return NextResponse.json(course);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 // PUT /api/courses/[id] — Update kelas
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

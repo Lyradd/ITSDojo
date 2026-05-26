@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import { Question, QuestionType, BloomLevel, DifficultyLevel, generateQuestionId } from "@/lib/evaluation-types";
 import { BloomSelector } from "./bloom-selector";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { 
-  Trash2, 
-  GripVertical, 
-  Copy, 
+import {
+  Trash2,
+  GripVertical,
+  Copy,
   Plus,
   ChevronDown,
   ChevronUp,
@@ -46,7 +47,8 @@ export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
         ]
       }),
       ...(type === 'true_false' && { correctAnswer: true }),
-      ...(type === 'essay' && { wordLimit: 500 }),
+      ...(type === 'short_answer' && { expectedAnswer: '' }),
+      ...(type === 'essay' && { wordLimit: 500, expectedAnswer: '' }),
       ...(type === 'puzzle' && {
         puzzlePairs: [
           { id: 'pair1', text: '' },
@@ -153,7 +155,7 @@ export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
       </div>
 
       {/* Questions List */}
-      <div className="space-y-3">
+      <Reorder.Group axis="y" values={questions} onReorder={onChange} className="space-y-3">
         {questions.map((question, index) => (
           <QuestionCard
             key={question.id}
@@ -169,7 +171,6 @@ export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
             onUpdate={(updates) => updateQuestion(question.id, updates)}
             onDelete={() => deleteQuestion(question.id)}
             onDuplicate={() => duplicateQuestion(question)}
-            onMove={moveQuestion}
           />
         ))}
 
@@ -180,7 +181,7 @@ export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
             </p>
           </div>
         )}
-      </div>
+      </Reorder.Group>
     </div>
   );
 }
@@ -194,7 +195,6 @@ interface QuestionCardProps {
   onUpdate: (updates: Partial<Question>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
-  onMove: (index: number, direction: 'up' | 'down') => void;
 }
 
 function QuestionCard({
@@ -206,12 +206,14 @@ function QuestionCard({
   onUpdate,
   onDelete,
   onDuplicate,
-  onMove,
 }: QuestionCardProps) {
+  const dragControls = useDragControls();
+
   const questionTypeLabels = {
     multiple_choice: 'Multiple Choice',
     true_false: 'True/False',
     short_answer: 'Short Answer',
+    essay: 'Essay',
     puzzle: '🧩 Puzzle',
   } as const;
 
@@ -224,15 +226,28 @@ function QuestionCard({
     : true; // essay and short answer don't need validation
 
   return (
-    <div className="border-2 border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 overflow-hidden">
+    <Reorder.Item
+      value={question}
+      dragListener={false}
+      dragControls={dragControls}
+      className="border-2 border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 overflow-hidden"
+    >
       {/* Header - Always Visible */}
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-        onClick={onToggleExpand}
+        className="flex items-center gap-3 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
       >
         {/* Drag Handle */}
-        <GripVertical className="w-5 h-5 text-zinc-400" />
+        <button
+          type="button"
+          onPointerDown={(e) => dragControls.start(e)}
+          className="touch-none cursor-grab active:cursor-grabbing p-1 -m-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+          aria-label="Drag untuk mengatur urutan"
+        >
+          <GripVertical className="w-5 h-5" />
+        </button>
 
+        {/* Clickable area to toggle expand */}
+        <div className="flex-1 flex items-center gap-3 cursor-pointer" onClick={onToggleExpand}>
         {/* Question Number */}
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">
           {index + 1}
@@ -258,6 +273,7 @@ function QuestionCard({
         ) : (
           <ChevronDown className="w-5 h-5 text-zinc-400" />
         )}
+        </div>
       </div>
 
       {/* Expanded Content */}
@@ -307,6 +323,13 @@ function QuestionCard({
             <PuzzleOptions
               pairs={question.puzzlePairs || []}
               onChange={(puzzlePairs) => onUpdate({ puzzlePairs })}
+            />
+          )}
+
+          {(question.type === 'short_answer' || question.type === 'essay') && (
+            <ShortAnswerField
+              question={question}
+              onUpdate={onUpdate}
             />
           )}
 
@@ -386,26 +409,6 @@ function QuestionCard({
             </div>
 
             <div className="flex gap-2">
-              {index > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onMove(index, 'up')}
-                >
-                  Move Up
-                </Button>
-              )}
-              {index < totalQuestions - 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onMove(index, 'down')}
-                >
-                  Move Down
-                </Button>
-              )}
               <Button
                 type="button"
                 variant="outline"
@@ -420,7 +423,7 @@ function QuestionCard({
           </div>
         </div>
       )}
-    </div>
+    </Reorder.Item>
   );
 }
 
@@ -645,6 +648,51 @@ function PuzzleOptions({ pairs, onChange }: PuzzleOptionsProps) {
         <span>💡</span>
         <span>The order you create is the CORRECT order. Students will drag to arrange randomly shuffled items.</span>
       </p>
+    </div>
+  );
+}
+
+// ShortAnswerField — input untuk dosen memasukkan jawaban benar (untuk validasi otomatis di mahasiswa)
+function ShortAnswerField({
+  question,
+  onUpdate,
+}: {
+  question: Question;
+  onUpdate: (updates: Partial<Question>) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Jawaban Benar *
+        </label>
+        <input
+          type="text"
+          value={question.expectedAnswer ?? ''}
+          onChange={(e) => onUpdate({ expectedAnswer: e.target.value })}
+          placeholder="Contoh: useState"
+          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <p className="text-xs text-zinc-500 mt-1">
+          Tidak case-sensitive. Spasi di awal/akhir akan diabaikan saat dicocokkan.
+        </p>
+      </div>
+
+      {question.type === 'short_answer' && (
+        <div>
+          <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+            Batas Karakter (opsional)
+          </label>
+          <input
+            type="number"
+            value={question.wordLimit ?? ''}
+            onChange={(e) => onUpdate({ wordLimit: parseInt(e.target.value) || undefined })}
+            placeholder="Kosongkan jika tidak dibatasi"
+            className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+            min={1}
+          />
+        </div>
+      )}
     </div>
   );
 }

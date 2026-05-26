@@ -22,7 +22,6 @@ export default function EditEvaluationPage() {
     duration: 60,
     totalPoints: 0,
     difficulty: 'medium' as DifficultyLevel,
-    tags: [],
   });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +46,6 @@ export default function EditEvaluationPage() {
         duration: data.duration || 60,
         totalPoints: data.totalPoints || 0,
         difficulty: 'medium' as DifficultyLevel,
-        tags: [],
       });
       setQuestions(Array.isArray(data.questions) ? (data.questions as Question[]) : []);
       setOriginalCourseId(data.courseId);

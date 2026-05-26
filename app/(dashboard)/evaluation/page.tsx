@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { COURSES } from '@/lib/dummydata';
 import { getActiveEvaluations } from '@/actions/evaluations';
+import { getAllCourses } from '@/actions/courses';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -109,19 +109,23 @@ export default function EvaluationPage() {
   useEffect(() => { setIsMounted(true); }, []);
 
   const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+  const [coursesList, setCoursesList] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
       router.push('/login');
       return;
     }
-    
+
     if (isMounted && isLoggedIn) {
-      const fetchEvals = async () => {
-        const data = await getActiveEvaluations();
+      (async () => {
+        const [data, courses] = await Promise.all([
+          getActiveEvaluations(),
+          getAllCourses(),
+        ]);
         setEvaluationsList(data);
-      };
-      fetchEvals();
+        setCoursesList(courses);
+      })();
     }
   }, [isLoggedIn, router, isMounted]);
 
@@ -132,7 +136,7 @@ export default function EvaluationPage() {
     ? enrolledEvaluations
     : enrolledEvaluations.filter(e => e.courseId === selectedCourse);
 
-  const getCourseName = (courseId: string) => COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
+  const getCourseName = (courseId: string) => coursesList.find(c => c.id === courseId)?.title || 'Kelas Tidak Ditemukan';
   
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-8">
@@ -291,9 +295,9 @@ export default function EvaluationPage() {
             onClick={() => setSelectedCourse('all')} 
             className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800", selectedCourse === 'all' && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
           >
-            Semua Kursus
+            Semua Kelas
           </Button>
-          {COURSES.filter(c => enrolledCourseIds.includes(c.id)).map(course => (
+          {coursesList.filter(c => enrolledCourseIds.includes(c.id)).map(course => (
             <Button 
               key={course.id} 
               size="sm" 

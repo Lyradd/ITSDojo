@@ -32,7 +32,7 @@ export default function MonitorEvaluationPage() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const { isWaitingRoomActive, initiateStartSequence, countdownEndTime } = useEvaluationStore();
+  const { isWaitingRoomActive, initiateStartSequence, countdownEndTime, startWaitingRoomSession } = useEvaluationStore();
   const isStarting = countdownEndTime !== null;
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,14 @@ export default function MonitorEvaluationPage() {
       try {
         const data = await getEvaluationById(evaluationId);
         setEvaluation(data as unknown as Evaluation);
+
+        // Sync local state with the actual DB status so we don't use stale persisted state
+        const status = (data as any)?.sessionStatus;
+        if (status === 'waiting') {
+          useEvaluationStore.setState({ isWaitingRoomActive: true, countdownEndTime: null });
+        } else if (status === 'active') {
+          useEvaluationStore.setState({ isWaitingRoomActive: false });
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -50,6 +58,21 @@ export default function MonitorEvaluationPage() {
     }
     loadEval();
   }, [evaluationId]);
+
+  useEffect(() => {
+    if (countdownEndTime !== null) {
+      const remaining = countdownEndTime - Date.now();
+      if (remaining > 0) {
+        const timer = setTimeout(() => {
+          startWaitingRoomSession();
+        }, remaining);
+        return () => clearTimeout(timer);
+      } else {
+        startWaitingRoomSession();
+      }
+    }
+  }, [countdownEndTime, startWaitingRoomSession]);
+
   // Simulate live updates (in real app, use WebSocket or polling)
   useEffect(() => {
     // Only auto-refresh if evaluation is active AND toggle is on

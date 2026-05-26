@@ -64,7 +64,7 @@ const asdosMenuItems = [
   { icon: BarChart3, label: "Analitik", href: "/asdos/analytics" },
 ];
 
-// Menu untuk Super Admin
+// Menu untuk Admin
 const superAdminMenuItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/admin" },
   { icon: BookOpen, label: "Daftar Kelas", href: "/admin/courses" },

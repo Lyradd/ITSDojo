@@ -47,7 +47,7 @@ export interface UserState {
   createdAt: string;
   login: () => void;
   logout: () => void;
-  updateProfile: (data: { name?: string, bio?: string, avatarUrl?: string | null }) => void;
+  updateProfile: (data: { name?: string, email?: string, bio?: string, avatarUrl?: string | null }) => void;
   addGems: (amount: number) => void;
   setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => void;
   setSemester: (semester: number) => void;

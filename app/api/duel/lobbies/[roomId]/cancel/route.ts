@@ -20,8 +20,8 @@ export async function POST(
   const result = await db
     .update(duelRooms)
     .set({
-      status: "started",
-      startedAt: new Date(),
+      status: "cancelled",
+      endedAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(duelRooms.id, lobby.id as any));
@@ -30,5 +30,5 @@ export async function POST(
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ status: "started" });
+  return NextResponse.json({ status: "cancelled" });
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore } from "@/lib/store";
+import { validateLogin } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,8 +28,8 @@ const LoginScene = dynamic(
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, setRole } = useUserStore();
-  
+  const { loginAsUser, login, setRole } = useUserStore();
+
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'asdos' | 'dosen' | null>(null);
   const [email, setEmail] = useState("");
@@ -36,6 +37,9 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [transitioningRole, setTransitioningRole] = useState<'mahasiswa' | 'asdos' | 'dosen' | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     // Hide splash screen after 2.5 seconds
@@ -47,14 +51,14 @@ export default function LoginPage() {
 
   const handleRoleSelect = (role: 'mahasiswa' | 'asdos' | 'dosen') => {
     setSelectedRole(role);
+    setErrorMsg(null);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole) return;
-    
-    setIsLoading(true);
 
+<<<<<<< Updated upstream
     setTimeout(() => {
       setRole(selectedRole);
       
@@ -69,20 +73,53 @@ export default function LoginPage() {
       });
 
       login();
+=======
+    setIsLoading(true);
+    setErrorMsg(null);
+
+    const res = await validateLogin(email, password);
+
+    if (!res.success || !res.user) {
+>>>>>>> Stashed changes
       setIsLoading(false);
-      setTransitioningRole(selectedRole); // Trigger full screen transition
-      
-      // Delay routing to let the full screen wipe finish and show the animation
-      setTimeout(() => {
-        if (selectedRole === 'dosen') {
-          router.push('/dosen');
-        } else if (selectedRole === 'asdos') {
-          router.push('/asdos');
-        } else {
-          router.push('/learn');
-        }
-      }, 1500);
-    }, 1000);
+      setErrorMsg(res.error || 'Login gagal');
+      return;
+    }
+
+    // Validasi role: pastikan user yang login pakai role yang dipilih
+    if (res.user.role !== selectedRole) {
+      setIsLoading(false);
+      setErrorMsg(`Email ini terdaftar sebagai ${res.user.role}, bukan ${selectedRole}`);
+      return;
+    }
+
+    // Hydrate Zustand store dengan data user dari DB
+    loginAsUser({
+      id: res.user.id,
+      name: res.user.name,
+      email: res.user.email,
+      role: res.user.role,
+      semester: res.user.semester,
+      level: res.user.level,
+      xp: res.user.xp,
+      accuracy: res.user.accuracy,
+      streak: res.user.streak,
+      avatar: res.user.avatar,
+    });
+
+    setIsLoading(false);
+    setTransitioningRole(selectedRole);
+
+    // Delay routing to let the full screen wipe finish and show the animation
+    setTimeout(() => {
+      if (selectedRole === 'dosen') {
+        router.push('/dosen');
+      } else if (selectedRole === 'asdos') {
+        router.push('/asdos');
+      } else {
+        router.push('/learn');
+      }
+    }, 1500);
   };
 
   return (
@@ -303,6 +340,10 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+<<<<<<< Updated upstream
+=======
+                  required
+>>>>>>> Stashed changes
                   placeholder={selectedRole === 'dosen' ? 'dosen@its.ac.id' : 'nrp@student.its.ac.id'}
                   className="h-11"
                   required
@@ -319,15 +360,25 @@ export default function LoginPage() {
                     Lupa password?
                   </Link>
                 </div>
-                <Input 
-                  id="password" 
+                <Input
+                  id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+<<<<<<< Updated upstream
+=======
+                  required
+>>>>>>> Stashed changes
                   className="h-11"
                   required
                 />
               </div>
+
+              {errorMsg && (
+                <div className="p-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30 text-red-700 dark:text-red-400 text-sm">
+                  {errorMsg}
+                </div>
+              )}
 
               {/* Remember Me Checkbox */}
               <div className="flex items-center gap-2">
@@ -372,7 +423,7 @@ export default function LoginPage() {
               </Button>
 
               <div className="text-center text-xs text-zinc-500 dark:text-zinc-400">
-                Demo mode - klik "Masuk" untuk melanjutkan
+                Demo: gunakan email user yang ada di DB, password <span className="font-mono font-bold">123456</span>
               </div>
             </motion.form>
           )}

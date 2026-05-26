@@ -46,6 +46,18 @@ export interface UserState {
   semester: number;
   createdAt: string;
   login: () => void;
+  loginAsUser: (data: {
+    id: string;
+    name: string;
+    email: string;
+    role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin';
+    semester: number;
+    level: number;
+    xp: number;
+    accuracy: number;
+    streak: number;
+    avatar: string;
+  }) => void;
   logout: () => void;
   updateProfile: (data: { name?: string, email?: string, bio?: string, avatarUrl?: string | null }) => void;
   addGems: (amount: number) => void;
@@ -190,7 +202,60 @@ export const useUserStore = create<UserState>()(
 
       // --- ACTIONS: PROFILE ---
       login: () => set({ isLoggedIn: true }),
-      logout: () => set({ isLoggedIn: false }),
+      loginAsUser: (data) => set({
+        isLoggedIn: true,
+        id: data.id as any,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        semester: data.semester,
+        level: data.level,
+        xp: data.xp,
+        accuracy: data.accuracy as any,
+        streak: data.streak,
+        avatarUrl: null,
+        // Reset progress sesi sebelumnya supaya tidak warisan data user lain
+        // di laptop yang sama. Field-field yang diatur di DB di-overwrite di atas;
+        // sisanya direset ke nilai netral.
+        weeklyXp: 0,
+        bio: '',
+        gems: 0,
+        enrolledCourseIds: [],
+        pendingCourseIds: [],
+        rejectedCourseIds: [],
+        acceptedCourseIds: [],
+        completedLessonIds: [],
+        activityHistory: [],
+        earnedBadges: [],
+        unlockedAchievements: [],
+        bookmarkedCourseIds: [],
+      } as any),
+      logout: () => {
+        // Reset state penuh agar user berikutnya yang login tidak warisan data.
+        set({
+          isLoggedIn: false,
+          name: '',
+          email: '',
+          bio: '',
+          avatarUrl: null,
+          gems: 0,
+          level: 1,
+          role: 'mahasiswa',
+          semester: 1,
+          xp: 0,
+          weeklyXp: 0,
+          streak: 0,
+          enrolledCourseIds: [],
+          pendingCourseIds: [],
+          rejectedCourseIds: [],
+          acceptedCourseIds: [],
+          completedLessonIds: [],
+          activityHistory: [],
+          earnedBadges: [],
+          unlockedAchievements: [],
+          bookmarkedCourseIds: [],
+        } as any);
+      },
       updateProfile: (data) => set((state) => ({ ...state, ...data })),
       addGems: (amount: number) => set((state) => ({ gems: state.gems + amount })),
       setRole: (role) => set({ role }),

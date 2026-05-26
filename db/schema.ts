@@ -202,6 +202,25 @@ export const duelSubject = pgTable('duelsubject', {
   description: text('description').notNull(),
 });
 
+export const duelQuestions = pgTable('duel_questions', {
+  id: serial('id').primaryKey(),
+  topicId: integer('topic_id')
+    .references(() => duelSubject.id, { onDelete: 'cascade' })
+    .notNull(),
+  questionText: text('question_text').notNull(),
+  questionType: text('question_type').notNull(),
+  options: text('options').array(),
+  correctAnswer: text('correct_answer').notNull(),
+  sliderMin: integer('slider_min'),
+  sliderMax: integer('slider_max'),
+  answerMargin: integer('answer_margin'),
+  bloomLevel: text('bloom_level').notNull(),
+  bloomCategory: text('bloom_category').notNull(),
+  bloomWeight: integer('bloom_weight').default(10).notNull(),
+  timeLimit: integer('time_limit').default(30).notNull(),
+  order: integer('order').notNull(),
+});
+
 export const duelRoomStatusEnum = pgEnum('duel_room_status', [
   'waiting',
   'joined',

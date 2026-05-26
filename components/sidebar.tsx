@@ -70,6 +70,7 @@ const superAdminMenuItems = [
   { icon: BookOpen, label: "Daftar Kelas", href: "/admin/courses" },
   { icon: Users, label: "Kelola Pengguna", href: "/admin/users" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/admin/evaluations" },
+  { icon: Swords, label: "Soal Duel", href: "/admin/duel-questions" },
   { icon: BarChart3, label: "Analitik", href: "/admin/analytics" },
 ];
 

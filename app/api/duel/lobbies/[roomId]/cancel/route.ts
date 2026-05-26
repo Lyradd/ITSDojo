@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { deleteDuelSession } from "@/lib/duel-session-store";
 
 export async function POST(
   req: Request,
@@ -29,6 +30,8 @@ export async function POST(
   if (result.rowCount === 0) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
+
+  deleteDuelSession(lobby.inviteCode);
 
   return NextResponse.json({ status: "cancelled" });
 }

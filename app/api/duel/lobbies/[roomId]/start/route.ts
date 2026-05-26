@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { upsertDuelSession } from "@/lib/duel-session-store";
+
+const MIN_DUEL_ROUNDS = 3;
 
 export async function POST(
   req: Request,
@@ -29,6 +32,19 @@ export async function POST(
   if (result.rowCount === 0) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
+
+  upsertDuelSession(lobby.inviteCode, () => ({
+    roomKey: lobby.inviteCode,
+    minRounds: MIN_DUEL_ROUNDS,
+    currentRound: 1,
+    currentTopicId: String(lobby.topicId),
+    status: "in_progress",
+    chooserId: null,
+    pendingScores: {},
+    roundResults: [],
+    winnerId: null,
+    updatedAt: new Date().toISOString(),
+  }));
 
   return NextResponse.json({ status: "started" });
 }

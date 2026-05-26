@@ -137,7 +137,6 @@ export interface EvaluationMetadata {
   duration: number; // minutes
   totalPoints: number;
   difficulty: DifficultyLevel;
-  tags: string[];
   courseId?: string; // course tempat evaluasi ini ditampilkan ke mahasiswa
 }
 

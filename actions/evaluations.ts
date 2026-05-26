@@ -40,6 +40,18 @@ export async function getActiveEvaluations() {
   }
 }
 
+export async function getAllEvaluations() {
+  try {
+    return await db
+      .select()
+      .from(evaluations)
+      .orderBy(desc(evaluations.createdAt));
+  } catch (error) {
+    console.error("Failed to fetch all evaluations:", error);
+    return [];
+  }
+}
+
 export async function getEvaluationById(id: string) {
   try {
     const result = await db.select().from(evaluations).where(eq(evaluations.id, id));
@@ -102,6 +114,55 @@ export async function finishEvaluationSession(evaluationId: string) {
     return { success: true };
   } catch (error) {
     console.error(`Failed to finish session ${evaluationId}:`, error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+export async function reopenEvaluationSession(evaluationId: string) {
+  try {
+    await db
+      .update(evaluations)
+      .set({ sessionStatus: 'waiting', isActive: true, sessionStartedAt: null })
+      .where(eq(evaluations.id, evaluationId));
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to reopen session ${evaluationId}:`, error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+export async function deleteEvaluation(evaluationId: string) {
+  try {
+    await db.delete(evaluations).where(eq(evaluations.id, evaluationId));
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to delete evaluation ${evaluationId}:`, error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+export async function duplicateEvaluation(evaluationId: string) {
+  try {
+    const original = await db.select().from(evaluations).where(eq(evaluations.id, evaluationId));
+    if (original.length === 0) {
+      return { success: false, error: "Evaluation not found" };
+    }
+    const e = original[0];
+    const newId = `eval-${Date.now()}`;
+    await db.insert(evaluations).values({
+      id: newId,
+      courseId: e.courseId,
+      title: `${e.title} (Copy)`,
+      description: e.description,
+      duration: e.duration,
+      isActive: false,
+      totalPoints: e.totalPoints,
+      questions: e.questions as any,
+      sessionStatus: 'waiting',
+    });
+    return { success: true, evaluationId: newId };
+  } catch (error) {
+    console.error(`Failed to duplicate evaluation ${evaluationId}:`, error);
     return { success: false, error: "Database error" };
   }
 }

@@ -7,8 +7,8 @@ import { useUserStore } from '@/lib/store';
 import { LeaderboardEntry } from '@/lib/evaluation-store';
 import { getAngkatanFromSemester } from '@/lib/academic-utils';
 import { getLeaderboardData } from '@/actions/leaderboard';
+import { getAllCourses } from '@/actions/courses';
 import { wsClient } from '@/lib/websocket-client';
-import { COURSES } from '@/lib/dummydata';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntryComponent } from '@/components/leaderboard/leaderboard-entry';
@@ -33,6 +33,7 @@ export default function LeaderboardPage() {
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
   const [subScope, setSubScope] = useState<string>(getAngkatanFromSemester(6).toString());
   const [isConnected, setIsConnected] = useState(false);
+  const [coursesList, setCoursesList] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -41,6 +42,12 @@ export default function LeaderboardPage() {
       router.push('/login');
     }
   }, [isLoggedIn, router, isMounted]);
+
+  // Load daftar kelas dari DB sekali untuk dropdown filter
+  useEffect(() => {
+    if (!isMounted) return;
+    getAllCourses().then((data) => setCoursesList(data));
+  }, [isMounted]);
 
   // Fetch real data from database
   useEffect(() => {
@@ -227,7 +234,7 @@ export default function LeaderboardPage() {
                   onClick={() => {
                       setScopeFilter(filter);
                       if (filter === 'angkatan') setSubScope(getAngkatanFromSemester(6).toString());
-                      else setSubScope(COURSES[0]?.id ?? '');
+                      else setSubScope(coursesList[0]?.id ?? '');
                   }}
                   className={cn(
                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors",
@@ -256,7 +263,7 @@ export default function LeaderboardPage() {
                     <option value={getAngkatanFromSemester(2).toString()}>Angkatan {getAngkatanFromSemester(2)} (Maba)</option>
                   </>
                 )}
-                {scopeFilter === 'course' && COURSES.map(course => (
+                {scopeFilter === 'course' && coursesList.map(course => (
                   <option key={course.id} value={course.id}>{course.title}</option>
                 ))}
               </select>

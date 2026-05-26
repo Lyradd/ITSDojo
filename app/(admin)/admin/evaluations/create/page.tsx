@@ -24,7 +24,6 @@ export default function CreateEvaluationPage() {
     duration: 60,
     totalPoints: 0,
     difficulty: 'medium',
-    tags: [],
   });
   
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -291,19 +290,6 @@ function PreviewSection({ metadata, questions, bloomDistribution, totalPoints }:
             <div className="text-xs text-zinc-600 dark:text-zinc-400">Difficulty</div>
           </div>
         </div>
-
-        {metadata.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {metadata.tags.map((tag: string, index: number) => (
-              <span
-                key={index}
-                className="px-3 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Bloom Distribution */}

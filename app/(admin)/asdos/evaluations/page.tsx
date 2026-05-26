@@ -2,49 +2,65 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
-import { COURSES } from '@/lib/dummydata';
+import { getActiveEvaluations, getEvaluationStats } from '@/actions/evaluations';
+import { getAllCourses } from '@/actions/courses';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  ClipboardCheck, 
-  Clock, 
-  Target, 
+import {
+  ClipboardCheck,
+  Clock,
+  Target,
   Users,
   Eye,
   CheckCircle2,
   Swords,
-  Plus,
-  Settings,
   MoreVertical,
   Activity,
-  XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AsdosEvaluationsPage() {
   const router = useRouter();
-  const { role, name } = useUserStore();
+  const { role } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
 
+  const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+  const [coursesList, setCoursesList] = useState<{ id: string; title: string }[]>([]);
+  const [stats, setStats] = useState<{
+    totalParticipants: number;
+    avgAccuracy: number;
+    perEvaluationParticipants: Record<string, number>;
+  }>({ totalParticipants: 0, avgAccuracy: 0, perEvaluationParticipants: {} });
+
   useEffect(() => {
     setIsMounted(true);
-    if (isMounted && role !== 'dosen' && role !== 'asdos') {
+    if (role !== 'dosen' && role !== 'asdos') {
       router.push('/login');
+      return;
     }
-  }, [isMounted, role, router]);
+
+    (async () => {
+      const [data, statsData, courses] = await Promise.all([
+        getActiveEvaluations(),
+        getEvaluationStats(),
+        getAllCourses(),
+      ]);
+      setEvaluationsList(data);
+      setStats(statsData);
+      setCoursesList(courses);
+    })();
+  }, [role, router]);
 
   if (!isMounted || (role !== 'dosen' && role !== 'asdos')) return null;
 
   const filteredEvaluations = selectedCourse === 'all'
-    ? SAMPLE_EVALUATIONS
-    : SAMPLE_EVALUATIONS.filter(e => e.courseId === selectedCourse);
+    ? evaluationsList
+    : evaluationsList.filter(e => e.courseId === selectedCourse);
 
-  const getCourseName = (courseId: string) => COURSES.find(c => c.id === courseId)?.title || 'Unknown Course';
-  
+  const getCourseName = (courseId: string) => coursesList.find(c => c.id === courseId)?.title || 'Kelas Tidak Ditemukan';
+
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-purple-50 to-orange-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-8">
@@ -52,19 +68,14 @@ export default function AsdosEvaluationsPage() {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded-2xl shadow-lg border border-indigo-200 dark:border-indigo-900/50">
-                <Swords className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+              <div>
+                <Swords className="w-8 h-8 text-blue-600" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-blue-700 dark:text-white">Monitoring Arena</h1>
                 <p className="text-zinc-600 dark:text-zinc-400">Pantau jalannya pertandingan dan evaluasi mahasiswa</p>
               </div>
             </div>
-            {role === 'dosen' && (
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/25 px-6">
-                <Plus className="w-5 h-5 mr-2" /> Buat Arena Baru
-              </Button>
-            )}
           </div>
         </div>
 
@@ -76,7 +87,7 @@ export default function AsdosEvaluationsPage() {
                 <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{SAMPLE_EVALUATIONS.filter(e => e.isActive).length}</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{evaluationsList.filter(e => e.isActive).length}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Arena Aktif</div>
               </div>
             </div>
@@ -87,7 +98,7 @@ export default function AsdosEvaluationsPage() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{SAMPLE_EVALUATIONS.filter(e => !e.isActive).length}</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{evaluationsList.filter(e => !e.isActive).length}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Selesai</div>
               </div>
             </div>
@@ -98,7 +109,7 @@ export default function AsdosEvaluationsPage() {
                 <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">45</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{stats.totalParticipants}</div>
                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Partisipan</div>
               </div>
             </div>
@@ -109,8 +120,8 @@ export default function AsdosEvaluationsPage() {
                 <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">82%</div>
-                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Rata-rata Skor</div>
+                <div className="text-2xl font-black text-zinc-800 dark:text-zinc-100">{stats.avgAccuracy}%</div>
+                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Rata-rata Akurasi</div>
               </div>
             </div>
           </Card>
@@ -119,20 +130,20 @@ export default function AsdosEvaluationsPage() {
         {/* Course Filter */}
         <div className="mb-6 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
-              onClick={() => setSelectedCourse('all')} 
+              onClick={() => setSelectedCourse('all')}
               className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800 whitespace-nowrap", selectedCourse === 'all' && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
             >
-              Semua Kursus
+              Semua Kelas
             </Button>
-            {COURSES.map(course => (
-              <Button 
-                key={course.id} 
-                size="sm" 
+            {coursesList.map(course => (
+              <Button
+                key={course.id}
+                size="sm"
                 variant="outline"
-                onClick={() => setSelectedCourse(course.id)} 
+                onClick={() => setSelectedCourse(course.id)}
                 className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800 whitespace-nowrap", selectedCourse === course.id && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
               >
                 {course.title}
@@ -144,11 +155,11 @@ export default function AsdosEvaluationsPage() {
         {/* Evaluations List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredEvaluations.map(evaluation => (
-            <AdminEvaluationCard
+            <AsdosEvaluationCard
               key={evaluation.id}
               evaluation={evaluation}
               getCourseName={getCourseName}
-              role={role}
+              participantCount={stats.perEvaluationParticipants[evaluation.id] ?? 0}
             />
           ))}
         </div>
@@ -157,10 +168,10 @@ export default function AsdosEvaluationsPage() {
   );
 }
 
-function AdminEvaluationCard({ evaluation, getCourseName, role }: {
-  evaluation: typeof SAMPLE_EVALUATIONS[0];
+function AsdosEvaluationCard({ evaluation, getCourseName, participantCount }: {
+  evaluation: any;
   getCourseName: (id: string) => string;
-  role: string | null;
+  participantCount: number;
 }) {
   const router = useRouter();
   const isActive = evaluation.isActive;
@@ -173,15 +184,11 @@ function AdminEvaluationCard({ evaluation, getCourseName, role }: {
     router.push(`/admin/evaluations/${evaluation.id}/results`);
   };
 
-  const handleEdit = () => {
-    router.push(`/admin/evaluations/${evaluation.id}/edit`);
-  };
-
   return (
     <Card className={cn(
       "rounded-3xl border-2 shadow-xl overflow-hidden flex flex-col transition-all hover:-translate-y-1",
-      isActive 
-        ? "border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-950" 
+      isActive
+        ? "border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-950"
         : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50"
     )}>
       {/* Top bar */}
@@ -191,8 +198,8 @@ function AdminEvaluationCard({ evaluation, getCourseName, role }: {
       )}>
         <span className={cn(
           "px-3 py-1 rounded-full text-xs font-bold border",
-          isActive 
-            ? "border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30" 
+          isActive
+            ? "border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
             : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-800"
         )}>
           {getCourseName(evaluation.courseId)}
@@ -223,7 +230,7 @@ function AdminEvaluationCard({ evaluation, getCourseName, role }: {
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <ClipboardCheck className="w-5 h-5 mx-auto mb-1 text-emerald-500 dark:text-emerald-400" />
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{evaluation.questions.length}</div>
+            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{Array.isArray(evaluation.questions) ? evaluation.questions.length : 0}</div>
             <div className="text-[10px] uppercase font-bold text-zinc-500">Soal</div>
           </div>
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
@@ -233,34 +240,20 @@ function AdminEvaluationCard({ evaluation, getCourseName, role }: {
           </div>
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-orange-500 dark:text-orange-400" />
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{isActive ? '12' : '45'}</div>
+            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{participantCount}</div>
             <div className="text-[10px] uppercase font-bold text-zinc-500">Peserta</div>
           </div>
         </div>
 
         <div className="mt-auto flex gap-2">
           {isActive ? (
-            <>
-              {role === 'dosen' && (
-                <Button variant="outline" className="flex-1 font-bold border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">
-                  <XCircle className="w-4 h-4 mr-1.5" /> Tutup Arena
-                </Button>
-              )}
-              <Button onClick={handlePantauLive} className="flex-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
-                <Eye className="w-4 h-4 mr-1.5" /> Pantau Live
-              </Button>
-            </>
+            <Button onClick={handlePantauLive} className="flex-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
+              <Eye className="w-4 h-4 mr-1.5" /> Pantau Live
+            </Button>
           ) : (
-            <>
-              {role === 'dosen' && (
-                <Button onClick={handleEdit} variant="outline" className="flex-1 font-bold">
-                  <Settings className="w-4 h-4 mr-2" /> Edit
-                </Button>
-              )}
-              <Button onClick={handleLihatHasil} className="flex-1 font-bold bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 shadow-md">
-                Lihat Hasil
-              </Button>
-            </>
+            <Button onClick={handleLihatHasil} className="flex-1 font-bold bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 shadow-md">
+              Lihat Hasil
+            </Button>
           )}
         </div>
       </div>

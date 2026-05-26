@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { EvaluationMetadata, DifficultyLevel } from "@/lib/evaluation-types";
-import { COURSES } from "@/lib/dummydata";
+import { getAllCourses } from "@/actions/courses";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -12,6 +13,12 @@ interface EvaluationFormProps {
 }
 
 export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }: EvaluationFormProps) {
+  const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
+
+  useEffect(() => {
+    getAllCourses().then((data) => setCourses(data));
+  }, []);
+
   const updateField = <K extends keyof EvaluationMetadata>(
     field: K,
     value: EvaluationMetadata[K]
@@ -46,7 +53,7 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
           className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
         >
           <option value="">— Pilih Kursus —</option>
-          {COURSES.map(course => (
+          {courses.map(course => (
             <option key={course.id} value={course.id}>{course.title}</option>
           ))}
         </select>
@@ -107,35 +114,6 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
             {totalPointsFromQuestions} pts
           </div>
           <p className="text-xs text-zinc-500 mt-1">Otomatis dari soal</p>
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div>
-        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-          Tags (dipisahkan koma)
-        </label>
-        <Input
-          type="text"
-          value={metadata.tags.join(', ')}
-          onChange={(e) => {
-            const tags = e.target.value
-              .split(',')
-              .map((t) => t.trim())
-              .filter((t) => t.length > 0);
-            updateField('tags', tags);
-          }}
-          placeholder="Contoh: HTML, CSS, Web Development"
-        />
-        <div className="flex flex-wrap gap-2 mt-2">
-          {metadata.tags.map((tag, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
         </div>
       </div>
     </div>

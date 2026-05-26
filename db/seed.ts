@@ -86,14 +86,14 @@ async function seed() {
   // Include users seeding logic here
   console.log("Seeding admin/users...");
   const dummyUsers = [
-    { name: 'Admin', email: 'admin@itsdojo.com', bio: 'Super Administrator ITSDojo', role: 'admin' },
-    { name: 'Dr. Dosen', email: 'dosen@itsdojo.com', bio: 'Dosen Pembina Mata Kuliah', role: 'dosen' },
-    { name: 'Kak Asdos', email: 'asdos@itsdojo.com', bio: 'Asisten Dosen ITSDojo', role: 'asdos' },
-    { name: 'Mahasiswa', email: 'student@itsdojo.com', bio: 'Mahasiswa Rajin ITSDojo', role: 'mahasiswa' }
+    { name: 'Admin', email: 'admin@itsdojo.com', role: 'admin' as const },
+    { name: 'Dr. Dosen', email: 'dosen@itsdojo.com', role: 'dosen' as const },
+    { name: 'Kak Asdos', email: 'asdos@itsdojo.com', role: 'asdos' as const },
+    { name: 'Mahasiswa', email: 'student@itsdojo.com', role: 'mahasiswa' as const }
   ];
   for (const u of dummyUsers) {
     try {
-      await db.insert(schema.users).values({ id: u.role + '-1', ...u, gems: 0, level: 1 }).onConflictDoNothing();
+      await db.insert(schema.users).values({ id: u.role + '-1', ...u, level: 1 }).onConflictDoNothing();
     } catch(e) {}
   }
 

@@ -41,17 +41,40 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 });
     }
 
-    // Since auth isn't fully integrated, we'll accept userId from body
+    // Since auth isn't fully integrated, we'll accept userId and userName from body
     const body = await req.json();
-    const { content, userId } = body;
+    const { content, userId, userName } = body;
 
     if (!content || !userId) {
       return NextResponse.json({ error: "Missing content or userId" }, { status: 400 });
     }
 
+    // Mock Auth: Ensure the user exists in the DB so foreign key constraint passes
+    let actualUserId = userId;
+    try {
+      const existingUser = await db.select().from(users).where(eq(users.email, userId)).limit(1);
+      
+      if (existingUser.length > 0) {
+        actualUserId = existingUser[0].id;
+      } else {
+        await db.insert(users).values({
+          id: userId,
+          name: userName || "User",
+          email: userId,
+          role: 'mahasiswa',
+          semester: 1,
+          level: 1,
+          xp: 0,
+          streak: 0,
+        }).onConflictDoNothing();
+      }
+    } catch (e) {
+      console.error("Failed to ensure user exists", e);
+    }
+
     const newDiscussion = await db.insert(lessonDiscussions).values({
       lessonId,
-      userId,
+      userId: actualUserId,
       content,
     }).returning();
 

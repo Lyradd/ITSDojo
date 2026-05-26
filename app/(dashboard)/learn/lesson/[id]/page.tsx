@@ -53,7 +53,7 @@ export default function LessonIDEPage() {
   const params = useParams();
   const lessonId = params?.id as string;
 
-  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name } = useUserStore();
+  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<any>(null);
@@ -122,7 +122,8 @@ export default function LessonIDEPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: chatInput,
-          userId: "1" // Di versi asli ini harus diisi dari session auth
+          userId: email || "1",
+          userName: name || "User"
         })
       });
       if (res.ok) {

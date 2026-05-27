@@ -186,6 +186,7 @@ export async function getEvaluationSessionStatus(evaluationId: string) {
 
 export async function upsertEvaluationProgress(data: {
   evaluationId: string;
+  studentId: string;
   studentName: string;
   currentQuestion: number;
   totalQuestions: number;
@@ -197,6 +198,7 @@ export async function upsertEvaluationProgress(data: {
     const { evaluationProgress } = await import("@/db/schema");
     await db.insert(evaluationProgress).values({
       evaluationId: data.evaluationId,
+      studentId: data.studentId,
       studentName: data.studentName,
       currentQuestion: data.currentQuestion,
       totalQuestions: data.totalQuestions,
@@ -205,8 +207,9 @@ export async function upsertEvaluationProgress(data: {
       timeElapsed: data.timeElapsed,
       updatedAt: new Date(),
     }).onConflictDoUpdate({
-      target: [evaluationProgress.evaluationId, evaluationProgress.studentName],
+      target: [evaluationProgress.evaluationId, evaluationProgress.studentId],
       set: {
+        studentName: data.studentName,
         currentQuestion: data.currentQuestion,
         totalQuestions: data.totalQuestions,
         score: data.score,
@@ -242,25 +245,13 @@ export async function getLiveEvaluationProgress(evaluationId: string) {
 
 export async function submitEvaluationResult(data: {
   evaluationId: string;
-  studentName: string;
+  studentId: string;
   score: number;
   accuracy: number;
   timeSpent: number; // dalam detik
 }) {
   try {
-    // Cari user berdasarkan name (best effort — kalau tidak ketemu, skip insert ke evaluationResults)
-    const userMatch = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.name, data.studentName))
-      .limit(1);
-
-    if (userMatch.length === 0) {
-      console.warn(`submitEvaluationResult: user "${data.studentName}" tidak ditemukan, hasil hanya tersimpan di evaluation_progress`);
-      return { success: true, persistedToResults: false };
-    }
-
-    const userId = userMatch[0].id;
+    const userId = data.studentId;
 
     // Cek apakah user sudah pernah submit hasil untuk evaluasi ini.
     // Kalau sudah, jangan tambah XP lagi (anti double-claim) tapi tetap insert hasil baru.
@@ -294,7 +285,6 @@ export async function submitEvaluationResult(data: {
         .where(eq(users.id, userId));
 
       // Broadcast leaderboard fresh ke semua client yang subscribe via Socket.IO.
-      // globalThis.__io di-set oleh server.js saat startup. Aman kalau tidak ada (mis. di test env).
       try {
         const io = (globalThis as any).__io;
         if (io) {
@@ -314,23 +304,15 @@ export async function submitEvaluationResult(data: {
   }
 }
 
-export async function getStudentEvaluationResult(evaluationId: string, studentName: string) {
+export async function getStudentEvaluationResult(evaluationId: string, studentId: string) {
   try {
-    const userMatch = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.name, studentName))
-      .limit(1);
-
-    if (userMatch.length === 0) return null;
-
     const result = await db
       .select()
       .from(evaluationResults)
       .where(
         and(
           eq(evaluationResults.evaluationId, evaluationId),
-          eq(evaluationResults.studentId, userMatch[0].id),
+          eq(evaluationResults.studentId, studentId),
         ),
       )
       .orderBy(desc(evaluationResults.completedAt))

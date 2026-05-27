@@ -285,7 +285,7 @@ export default function EvaluationFullscreenPage() {
   const params = useParams();
   const evaluationId = params.evaluationId as string;
 
-  const { isLoggedIn, name } = useUserStore();
+  const { isLoggedIn, name, id: userId } = useUserStore();
   const {
     currentEvaluation,
     startEvaluation,
@@ -481,12 +481,13 @@ export default function EvaluationFullscreenPage() {
   // Sync progress to DB. Harus dideklarasikan sebelum early return
   // agar urutan hook konsisten antar render (Rules of Hooks).
   useEffect(() => {
-    if (!currentEvaluation || !isEvaluationActive) return;
+    if (!currentEvaluation || !isEvaluationActive || !userId) return;
 
     const syncProgress = async () => {
       const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
       await upsertEvaluationProgress({
         evaluationId: currentEvaluation.id,
+        studentId: userId,
         studentName: name || 'Anonim',
         currentQuestion: userAnswers.size,
         totalQuestions: currentEvaluation.questions.length,
@@ -497,7 +498,7 @@ export default function EvaluationFullscreenPage() {
     };
 
     syncProgress();
-  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name]);
+  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name, userId]);
 
   if (!isMounted || !isLoggedIn || !isInitialized || !currentEvaluation) {
     return null;
@@ -518,9 +519,10 @@ export default function EvaluationFullscreenPage() {
 
   const handleFinish = async () => {
     const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-    if (currentEvaluation) {
+    if (currentEvaluation && userId) {
       await upsertEvaluationProgress({
         evaluationId: currentEvaluation.id,
+        studentId: userId,
         studentName: name || 'Anonim',
         currentQuestion: userAnswers.size,
         totalQuestions: currentEvaluation.questions.length,
@@ -532,7 +534,7 @@ export default function EvaluationFullscreenPage() {
       // Persist final hasil ke evaluation_results untuk halaman hasil & analitik.
       await submitEvaluationResult({
         evaluationId: currentEvaluation.id,
-        studentName: name || 'Anonim',
+        studentId: userId,
         score: score,
         accuracy: getAccuracy(),
         timeSpent: elapsed,

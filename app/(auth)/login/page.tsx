@@ -37,8 +37,6 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [transitioningRole, setTransitioningRole] = useState<'mahasiswa' | 'asdos' | 'dosen' | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,29 +56,12 @@ export default function LoginPage() {
     e.preventDefault();
     if (!selectedRole) return;
 
-<<<<<<< Updated upstream
-    setTimeout(() => {
-      setRole(selectedRole);
-      
-      // Use the entered email to set the name and email, fallback to default if empty
-      const finalEmail = email.trim() || (selectedRole === 'dosen' ? 'dosen@its.ac.id' : 'student@student.its.ac.id');
-      const namePart = finalEmail.split('@')[0];
-      const finalName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-      
-      useUserStore.getState().updateProfile({
-        name: finalName,
-        email: finalEmail,
-      });
-
-      login();
-=======
     setIsLoading(true);
     setErrorMsg(null);
 
     const res = await validateLogin(email, password);
 
     if (!res.success || !res.user) {
->>>>>>> Stashed changes
       setIsLoading(false);
       setErrorMsg(res.error || 'Login gagal');
       return;
@@ -340,10 +321,6 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-<<<<<<< Updated upstream
-=======
-                  required
->>>>>>> Stashed changes
                   placeholder={selectedRole === 'dosen' ? 'dosen@its.ac.id' : 'nrp@student.its.ac.id'}
                   className="h-11"
                   required
@@ -365,10 +342,6 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-<<<<<<< Updated upstream
-=======
-                  required
->>>>>>> Stashed changes
                   className="h-11"
                   required
                 />

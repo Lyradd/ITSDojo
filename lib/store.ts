@@ -36,6 +36,7 @@ const INITIAL_GOALS: DailyGoal[] = [
 export interface UserState {
   // 1. Profile & Account
   isLoggedIn: boolean;
+  id: string; // user id (matches users.id di DB)
   name: string;
   email: string;
   bio: string;
@@ -144,6 +145,7 @@ export const useUserStore = create<UserState>()(
     (set, get) => ({
       // --- INITIAL STATE ---
       isLoggedIn: false,
+      id: '',
       name: "Daryl",
       email: "daryl@student.its.ac.id",
       bio: "Belajar coding itu seru! 🚀",
@@ -204,7 +206,7 @@ export const useUserStore = create<UserState>()(
       login: () => set({ isLoggedIn: true }),
       loginAsUser: (data) => set({
         isLoggedIn: true,
-        id: data.id as any,
+        id: data.id,
         name: data.name,
         email: data.email,
         role: data.role,

@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { users, enrollments } from "@/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { MOCK_STUDENTS } from "@/lib/admin-data";
 
 const VALID_ROLES = new Set(["mahasiswa", "asdos", "dosen", "admin"]);
@@ -71,6 +71,19 @@ export async function validateLogin(email: string, password: string) {
     }
 
     const user = result[0];
+
+    // Fetch course IDs yang user sudah accepted di tabel enrollments
+    const enrolledRows = await db
+      .select({ courseId: enrollments.courseId })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.studentId, user.id),
+          eq(enrollments.status, 'accepted'),
+        ),
+      );
+    const enrolledCourseIds = enrolledRows.map((r) => r.courseId);
+
     return {
       success: true,
       user: {
@@ -81,9 +94,12 @@ export async function validateLogin(email: string, password: string) {
         semester: user.semester,
         level: user.level,
         xp: user.xp,
+        profileXp: user.profileXp,
+        gems: user.gems,
         accuracy: user.accuracy ?? 0,
         streak: user.streak,
         avatar: user.avatar ?? "bg-blue-200 text-blue-700",
+        enrolledCourseIds,
       },
     };
   } catch (error) {

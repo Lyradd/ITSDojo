@@ -276,13 +276,43 @@ export async function submitEvaluationResult(data: {
       completedAt: new Date(),
     });
 
-    // Tambahkan XP ke profil user agar papan peringkat global ter-update.
-    // Hanya pada submission pertama untuk evaluasi ini.
-    if (isFirstSubmission && data.score > 0) {
-      await db
-        .update(users)
-        .set({ xp: sql`${users.xp} + ${data.score}` })
-        .where(eq(users.id, userId));
+    // Tambahkan reward ke profil user. Hanya pada submission pertama untuk evaluasi ini.
+    // Mapping reward (skripsi: dual-XP system):
+    //   - Per soal benar: +10 leaderboard XP (sudah dihandle saat sesi via score)
+    //   - Selesai evaluasi (≥60% akurasi): +30 profile_xp, +5 gems
+    //   - Bonus akurasi ≥80%: +20 profile_xp, +5 gems
+    let xpAdded = 0;
+    let profileXpAdded = 0;
+    let gemsAdded = 0;
+
+    if (isFirstSubmission) {
+      // Leaderboard XP (kompetitif) — score absolut yang didapat dari menjawab benar
+      if (data.score > 0) {
+        xpAdded = data.score;
+      }
+
+      // Profile XP & Gems (status/growth) — milestone-based
+      const passed = data.accuracy >= 60;
+      const excellent = data.accuracy >= 80;
+      if (passed) {
+        profileXpAdded += 30;
+        gemsAdded += 5;
+      }
+      if (excellent) {
+        profileXpAdded += 20;
+        gemsAdded += 5;
+      }
+
+      if (xpAdded > 0 || profileXpAdded > 0 || gemsAdded > 0) {
+        await db
+          .update(users)
+          .set({
+            xp: sql`${users.xp} + ${xpAdded}`,
+            profileXp: sql`${users.profileXp} + ${profileXpAdded}`,
+            gems: sql`${users.gems} + ${gemsAdded}`,
+          })
+          .where(eq(users.id, userId));
+      }
 
       // Broadcast leaderboard fresh ke semua client yang subscribe via Socket.IO.
       try {
@@ -297,7 +327,13 @@ export async function submitEvaluationResult(data: {
       }
     }
 
-    return { success: true, persistedToResults: true, xpAdded: isFirstSubmission ? data.score : 0 };
+    return {
+      success: true,
+      persistedToResults: true,
+      xpAdded,
+      profileXpAdded,
+      gemsAdded,
+    };
   } catch (error) {
     console.error("Failed to submit evaluation result:", error);
     return { success: false, error: "Database error" };

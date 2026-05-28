@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useUserStore } from '@/lib/store';
 import { useEvaluationStore, normalizeEvaluation } from '@/lib/evaluation-store';
@@ -13,6 +13,7 @@ import {
 } from '@/lib/evaluation-data';
 import { getEvaluationById, upsertEvaluationProgress, getEvaluationSessionStatus, startEvaluationSession, submitEvaluationResult, getLiveEvaluationProgress } from '@/actions/evaluations';
 import { QuestionCard } from '@/components/evaluation/question-card';
+import { FeedbackToast } from '@/components/evaluation/feedback-toast';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
 import { Button } from '@/components/ui/button';
 import {
@@ -316,6 +317,16 @@ export default function EvaluationFullscreenPage() {
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(true);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
 
+  // Toast feedback state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    isCorrect: boolean;
+    points: number;
+    streak: number;
+    streakBonus: number;
+  }>({ show: false, isCorrect: false, points: 0, streak: 0, streakBonus: 0 });
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Calculate remaining time
   const getRemainingTime = () => {
     if (!startTime || !currentEvaluation) return '00:00';
@@ -514,7 +525,33 @@ export default function EvaluationFullscreenPage() {
 
   const handleSubmitAnswer = (answer: string | number | boolean | string[]) => {
     if (!currentQuestion) return;
+    const beforeStreak = currentStreak;
     submitAnswer(currentQuestion.id, answer);
+
+    // Tampilkan toast feedback. Pakai snapshot fresh dari store karena submitAnswer di atas
+    // sudah update state (currentStreak, score) — tapi local var currentStreak masih nilai lama.
+    setTimeout(() => {
+      const state = useEvaluationStore.getState();
+      const userAnswer = state.userAnswers.get(currentQuestion.id);
+      const isCorrect = userAnswer?.isCorrect ?? false;
+      const newStreak = state.currentStreak;
+      const streakBonus = isCorrect && beforeStreak > 0 ? beforeStreak * 2 : 0;
+      const earnedPoints = userAnswer?.pointsEarned ?? (isCorrect ? currentQuestion.points : 0);
+
+      setToast({
+        show: true,
+        isCorrect,
+        points: earnedPoints,
+        streak: newStreak,
+        streakBonus,
+      });
+
+      // Auto-hide toast after 2.5s
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => {
+        setToast((t) => ({ ...t, show: false }));
+      }, 2500);
+    }, 50);
   };
 
   const handleFinish = async () => {
@@ -897,6 +934,15 @@ export default function EvaluationFullscreenPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Feedback Toast — popup bottom-center setelah jawab */}
+      <FeedbackToast
+        show={toast.show}
+        isCorrect={toast.isCorrect}
+        points={toast.points}
+        streak={toast.streak}
+        streakBonus={toast.streakBonus}
+      />
     </div>
   );
 }

@@ -83,9 +83,12 @@ export default function LoginPage() {
       semester: res.user.semester,
       level: res.user.level,
       xp: res.user.xp,
+      profileXp: res.user.profileXp,
+      gems: res.user.gems,
       accuracy: res.user.accuracy,
       streak: res.user.streak,
       avatar: res.user.avatar,
+      enrolledCourseIds: res.user.enrolledCourseIds,
     });
 
     setIsLoading(false);

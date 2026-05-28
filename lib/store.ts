@@ -55,9 +55,12 @@ export interface UserState {
     semester: number;
     level: number;
     xp: number;
+    profileXp: number;
+    gems: number;
     accuracy: number;
     streak: number;
     avatar: string;
+    enrolledCourseIds: string[];
   }) => void;
   logout: () => void;
   updateProfile: (data: { name?: string, email?: string, bio?: string, avatarUrl?: string | null }) => void;
@@ -212,17 +215,17 @@ export const useUserStore = create<UserState>()(
         role: data.role,
         semester: data.semester,
         level: data.level,
-        xp: data.xp,
+        xp: data.profileXp, // Zustand .xp sebagai progress profile (bukan leaderboard)
         accuracy: data.accuracy as any,
         streak: data.streak,
+        gems: data.gems,
         avatarUrl: null,
+        enrolledCourseIds: data.enrolledCourseIds,
         // Reset progress sesi sebelumnya supaya tidak warisan data user lain
         // di laptop yang sama. Field-field yang diatur di DB di-overwrite di atas;
         // sisanya direset ke nilai netral.
         weeklyXp: 0,
         bio: '',
-        gems: 0,
-        enrolledCourseIds: [],
         pendingCourseIds: [],
         rejectedCourseIds: [],
         acceptedCourseIds: [],

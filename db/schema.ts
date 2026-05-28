@@ -22,7 +22,9 @@ export const users = pgTable('users', {
   
   // Gamification Data
   level: integer('level').default(1).notNull(),
-  xp: integer('xp').default(0).notNull(),
+  xp: integer('xp').default(0).notNull(), // Leaderboard XP (kompetitif — dari evaluasi)
+  profileXp: integer('profile_xp').default(0).notNull(), // Profile/Level XP (pertumbuhan personal — dari lesson + reward evaluasi)
+  gems: integer('gems').default(0).notNull(), // Currency untuk shop
   accuracy: integer('accuracy').default(0), // Persentase akurasi
   streak: integer('streak').default(0).notNull(),
   avatar: text('avatar').default('bg-blue-200 text-blue-700'),
@@ -173,6 +175,7 @@ export const evaluationResults = pgTable('evaluation_results', {
 export const evaluationProgress = pgTable('evaluation_progress', {
   id: serial('id').primaryKey(),
   evaluationId: text('evaluation_id').notNull(),
+  studentId: text('student_id'), // FK ke users.id (nullable untuk backwards-compat)
   studentName: text('student_name').notNull(),
   currentQuestion: integer('current_question').default(0).notNull(),
   totalQuestions: integer('total_questions').notNull(),
@@ -181,7 +184,7 @@ export const evaluationProgress = pgTable('evaluation_progress', {
   timeElapsed: integer('time_elapsed').default(0).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => ({
-  unq: unique().on(t.evaluationId, t.studentName),
+  unq: unique().on(t.evaluationId, t.studentId),
 }));
 
 // ==========================================

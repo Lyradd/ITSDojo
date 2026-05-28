@@ -15,6 +15,7 @@ export const users = pgTable('users', {
   id: text('id').primaryKey(), // ID string (bisa disinkronkan dengan Clerk/Auth)
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
+  password: text('password').default('123456').notNull(), // Plain text, default 123456 — bisa diubah via super admin
   role: roleEnum('role').default('mahasiswa').notNull(),
   
   // Academic Data

@@ -118,6 +118,21 @@ export async function finishEvaluationSession(evaluationId: string) {
   }
 }
 
+// Pause sesi yang sedang berlangsung — kembali ke waiting room.
+// Beda dengan finishEvaluationSession: arena tetap aktif, dosen bisa Mulai lagi.
+export async function pauseEvaluationSession(evaluationId: string) {
+  try {
+    await db
+      .update(evaluations)
+      .set({ sessionStatus: 'waiting', sessionStartedAt: null })
+      .where(eq(evaluations.id, evaluationId));
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to pause session ${evaluationId}:`, error);
+    return { success: false, error: "Database error" };
+  }
+}
+
 export async function reopenEvaluationSession(evaluationId: string) {
   try {
     await db

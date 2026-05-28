@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession } from "@/actions/evaluations";
+import { toast } from "react-hot-toast";
+import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession } from "@/actions/evaluations";
 import { Evaluation } from "@/lib/evaluation-types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  Square,
   Zap
 } from "lucide-react";
 import { useEvaluationStore } from "@/lib/evaluation-store";
@@ -31,11 +33,40 @@ export default function MonitorEvaluationPage() {
   const [liveStudents, setLiveStudents] = useState<any[]>([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
 
-  const { isWaitingRoomActive, initiateStartSequence, countdownEndTime, startWaitingRoomSession } = useEvaluationStore();
+  const { isWaitingRoomActive, initiateStartSequence, countdownEndTime, startWaitingRoomSession, resetEvaluation } = useEvaluationStore();
   const isStarting = countdownEndTime !== null;
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleStartSession = async () => {
+    const res = await startEvaluationSession(evaluationId);
+    if (res.success) {
+      initiateStartSequence();
+      toast.success("Sesi evaluasi dimulai");
+    } else {
+      toast.error("Gagal memulai sesi");
+    }
+  };
+
+  const handleStopSession = async () => {
+    setIsStopping(true);
+    const res = await pauseEvaluationSession(evaluationId);
+    setIsStopping(false);
+    setShowStopConfirm(false);
+    if (res.success) {
+      toast.success("Sesi dihentikan, kembali ke waiting room");
+      // Reset local store agar tombol balik ke "Mulai Sesi"
+      resetEvaluation();
+      // Reload evaluation data
+      const fresh = await getEvaluationById(evaluationId);
+      setEvaluation(fresh as unknown as Evaluation);
+    } else {
+      toast.error("Gagal menghentikan sesi");
+    }
+  };
 
   useEffect(() => {
     async function loadEval() {
@@ -172,17 +203,25 @@ export default function MonitorEvaluationPage() {
             <div className="flex items-center gap-3">
               {evaluation.isActive && (
                 <>
-                  {evaluation.isActive && (
+                  {isWaitingRoomActive ? (
+                    // Sesi belum dimulai → tampilkan tombol "Mulai Sesi"
                     <Button
-                      onClick={async () => {
-                        const res = await startEvaluationSession(evaluationId);
-                        if (res.success) initiateStartSequence();
-                      }}
-                      disabled={isStarting || !isWaitingRoomActive}
+                      onClick={handleStartSession}
+                      disabled={isStarting}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20"
                     >
                       <Zap className="w-4 h-4 mr-2" />
-                      {isStarting ? "Memulai Sesi..." : (!isWaitingRoomActive ? "Sesi Berlangsung" : "Mulai Sesi Sekarang")}
+                      {isStarting ? "Memulai Sesi..." : "Mulai Sesi Sekarang"}
+                    </Button>
+                  ) : (
+                    // Sesi sudah berlangsung → tombol Hentikan (pause — kembali ke waiting room)
+                    <Button
+                      onClick={() => setShowStopConfirm(true)}
+                      disabled={isStopping}
+                      className="bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-lg shadow-orange-500/20"
+                    >
+                      <Square className="w-4 h-4 mr-2" fill="currentColor" />
+                      {isStopping ? "Menghentikan..." : "Hentikan Sesi"}
                     </Button>
                   )}
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -396,6 +435,40 @@ export default function MonitorEvaluationPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Konfirmasi Hentikan Sesi (pause — bukan tutup arena) */}
+      {showStopConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4 text-orange-600 dark:text-orange-500">
+                <Square className="w-6 h-6" fill="currentColor" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-zinc-900 dark:text-white">Hentikan Sesi?</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
+                Sesi akan dihentikan dan kembali ke waiting room. Kamu bisa memulai ulang kapan saja. Untuk menutup arena permanen, gunakan tombol "Tutup Arena" di halaman daftar evaluasi.
+              </p>
+              <div className="flex gap-3 w-full">
+                <Button
+                  variant="outline"
+                  className="flex-1 font-bold rounded-xl"
+                  onClick={() => setShowStopConfirm(false)}
+                  disabled={isStopping}
+                >
+                  Batal
+                </Button>
+                <Button
+                  className="flex-1 font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={handleStopSession}
+                  disabled={isStopping}
+                >
+                  {isStopping ? "Menghentikan..." : "Ya, Hentikan"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

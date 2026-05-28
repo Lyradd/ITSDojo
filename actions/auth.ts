@@ -50,15 +50,9 @@ export async function seedMockUsers() {
 // LOGIN VALIDATION
 // ============================================
 
-const FIXED_PASSWORD = "123456";
-
-// Validasi login: email harus terdaftar di DB, password harus tepat 123456.
-// Return data user (untuk hydrate Zustand) atau null kalau gagal.
+// Validasi login: email harus terdaftar di DB, password harus match dengan users.password.
+// Default password awal "123456" (di-set saat seed). Super admin bisa ubah via /admin/users.
 export async function validateLogin(email: string, password: string) {
-  if (password !== FIXED_PASSWORD) {
-    return { success: false, error: "Password salah" };
-  }
-
   try {
     const result = await db
       .select()
@@ -71,6 +65,11 @@ export async function validateLogin(email: string, password: string) {
     }
 
     const user = result[0];
+
+    // Compare password — plain text untuk sekarang. Bisa di-upgrade ke bcrypt nanti.
+    if (user.password !== password) {
+      return { success: false, error: "Password salah" };
+    }
 
     // Fetch course IDs yang user sudah accepted di tabel enrollments
     const enrolledRows = await db

@@ -9,12 +9,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     const body = await req.json();
 
-    const [updated] = await db.update(users).set({
+    const updateData: Record<string, any> = {
       name: body.name,
       email: body.email,
       role: body.role,
       semester: body.semester,
-    }).where(eq(users.id, id)).returning();
+    };
+
+    // Password hanya di-update kalau ada (non-empty) — biar tidak overwrite jadi kosong
+    // saat super admin edit profil tanpa ubah password.
+    if (typeof body.password === 'string' && body.password.trim().length > 0) {
+      updateData.password = body.password.trim();
+    }
+
+    const [updated] = await db.update(users).set(updateData).where(eq(users.id, id)).returning();
 
     if (!updated) {
       return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });

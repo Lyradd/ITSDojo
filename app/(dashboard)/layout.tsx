@@ -12,6 +12,7 @@ import { RewardAnimation } from "@/components/shared/reward-animation";
 import { StreakReminder } from "@/components/shared/streak-reminder";
 import { LevelUpModal } from "@/components/shared/level-up-modal";
 import { usePathname } from "next/navigation";
+import { getUserProfile } from "@/actions/auth";
 
 export default function DashboardLayout({
   children,
@@ -22,11 +23,33 @@ export default function DashboardLayout({
   const hideSidebar = pathname.startsWith("/duel/1v1/");
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { checkDailyReset } = useUserStore();
+  const { checkDailyReset, isLoggedIn, id, syncFromServer } = useUserStore();
 
   useEffect(() => {
     checkDailyReset();
   }, [checkDailyReset]);
+
+  // Sinkronisasi data ke bawah (dari server ke client) saat dashboard dimuat
+  useEffect(() => {
+    if (isLoggedIn && id) {
+      const fetchProfile = async () => {
+        const res = await getUserProfile(id);
+        if (res.success && res.user) {
+          syncFromServer({
+            level: res.user.level,
+            profileXp: res.user.profileXp,
+            gems: res.user.gems,
+            streak: res.user.streak,
+            accuracy: res.user.accuracy,
+            completedLessonIds: res.user.completedLessonIds,
+            gamificationData: res.user.gamificationData,
+            enrolledCourseIds: res.user.enrolledCourseIds,
+          });
+        }
+      };
+      fetchProfile();
+    }
+  }, [isLoggedIn, id, syncFromServer]);
 
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative">

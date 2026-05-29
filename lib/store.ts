@@ -61,6 +61,18 @@ export interface UserState {
     streak: number;
     avatar: string;
     enrolledCourseIds: string[];
+    completedLessonIds?: string[];
+    gamificationData?: any;
+  }) => void;
+  syncFromServer: (data: {
+    level: number;
+    profileXp: number;
+    gems: number;
+    streak: number;
+    accuracy: number;
+    completedLessonIds?: string[];
+    gamificationData?: any;
+    enrolledCourseIds?: string[];
   }) => void;
   logout: () => void;
   updateProfile: (data: { name?: string, email?: string, bio?: string, avatarUrl?: string | null }) => void;
@@ -72,6 +84,7 @@ export interface UserState {
   xp: number; 
   weeklyXp: number; // NEW: Weekly XP for competitive leaderboard
   xpToNextLevel: number;
+  accuracy: number;
   streak: number;
   activeCourseId: string;
   enrolledCourseIds: string[];
@@ -200,6 +213,7 @@ export const useUserStore = create<UserState>()(
       lastDailyReset: formatLocalDate(new Date()),
       monthlyCompletedGoals: 0,
       claimedMonthlyMilestones: [],
+      accuracy: 0,
 
       isLevelUpModalOpen: false,
       levelUpData: null,
@@ -207,34 +221,95 @@ export const useUserStore = create<UserState>()(
 
       // --- ACTIONS: PROFILE ---
       login: () => set({ isLoggedIn: true }),
-      loginAsUser: (data) => set({
-        isLoggedIn: true,
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        semester: data.semester,
-        level: data.level,
-        xp: data.profileXp, // Zustand .xp sebagai progress profile (bukan leaderboard)
-        accuracy: data.accuracy as any,
-        streak: data.streak,
-        gems: data.gems,
-        avatarUrl: null,
-        enrolledCourseIds: data.enrolledCourseIds,
-        // Reset progress sesi sebelumnya supaya tidak warisan data user lain
-        // di laptop yang sama. Field-field yang diatur di DB di-overwrite di atas;
-        // sisanya direset ke nilai netral.
-        weeklyXp: 0,
-        bio: '',
-        pendingCourseIds: [],
-        rejectedCourseIds: [],
-        acceptedCourseIds: [],
-        completedLessonIds: [],
-        activityHistory: [],
-        earnedBadges: [],
-        unlockedAchievements: [],
-        bookmarkedCourseIds: [],
-      } as any),
+      loginAsUser: (data) => {
+        let calculatedXpToNextLevel = 100;
+        for (let i = 1; i < data.level; i++) {
+          calculatedXpToNextLevel = Math.floor(calculatedXpToNextLevel * 1.5);
+        }
+
+        set({
+          isLoggedIn: true,
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          semester: data.semester,
+          level: data.level,
+          xp: data.profileXp,
+          xpToNextLevel: calculatedXpToNextLevel,
+          accuracy: data.accuracy as any,
+          streak: data.streak,
+          gems: data.gems,
+          avatarUrl: null,
+          enrolledCourseIds: data.enrolledCourseIds,
+          weeklyXp: 0,
+          bio: '',
+          pendingCourseIds: [],
+          rejectedCourseIds: [],
+          acceptedCourseIds: [],
+          completedLessonIds: data.completedLessonIds || [],
+          activityHistory: data.gamificationData?.activityHistory || [],
+          earnedBadges: data.gamificationData?.earnedBadges || [],
+          unlockedAchievements: data.gamificationData?.unlockedAchievements || [],
+          bookmarkedCourseIds: data.gamificationData?.bookmarkedCourseIds || [],
+          dailyGoals: data.gamificationData?.dailyGoals || INITIAL_GOALS,
+          purchaseHistory: data.gamificationData?.purchaseHistory || [],
+          streakFreezeCount: data.gamificationData?.streakFreezeCount || 0,
+          hasGemMiner: data.gamificationData?.hasGemMiner || false,
+          hasXpBoost: data.gamificationData?.hasXpBoost || false,
+          xpMultiplier: data.gamificationData?.xpMultiplier || 1,
+          multiplierEndTime: data.gamificationData?.multiplierEndTime || null,
+          courseAccessHistory: data.gamificationData?.courseAccessHistory || {},
+          perfectWeeksCount: data.gamificationData?.perfectWeeksCount || 0,
+          nocturnalCount: data.gamificationData?.nocturnalCount || 0,
+          earlyBirdCount: data.gamificationData?.earlyBirdCount || 0,
+          longestStreak: data.gamificationData?.longestStreak || 0,
+          mostXpInDay: data.gamificationData?.mostXpInDay || 0,
+          totalPerfectLessons: data.gamificationData?.totalPerfectLessons || 0,
+          claimedMonthlyMilestones: data.gamificationData?.claimedMonthlyMilestones || [],
+          monthlyCompletedGoals: data.gamificationData?.monthlyCompletedGoals || 0,
+        } as any);
+      },
+      syncFromServer: (data) => {
+        let calculatedXpToNextLevel = 100;
+        for (let i = 1; i < data.level; i++) {
+          calculatedXpToNextLevel = Math.floor(calculatedXpToNextLevel * 1.5);
+        }
+        
+        set((state) => ({
+          ...state,
+          level: data.level,
+          xp: data.profileXp,
+          xpToNextLevel: calculatedXpToNextLevel,
+          gems: data.gems,
+          streak: data.streak,
+          accuracy: data.accuracy,
+          completedLessonIds: data.completedLessonIds || state.completedLessonIds || [],
+          ...(data.enrolledCourseIds ? { enrolledCourseIds: data.enrolledCourseIds } : {}),
+          ...(data.gamificationData ? {
+            activityHistory: data.gamificationData.activityHistory || [],
+            earnedBadges: data.gamificationData.earnedBadges || [],
+            unlockedAchievements: data.gamificationData.unlockedAchievements || [],
+            bookmarkedCourseIds: data.gamificationData.bookmarkedCourseIds || [],
+            dailyGoals: data.gamificationData.dailyGoals || INITIAL_GOALS,
+            purchaseHistory: data.gamificationData.purchaseHistory || [],
+            streakFreezeCount: data.gamificationData.streakFreezeCount || 0,
+            hasGemMiner: data.gamificationData.hasGemMiner || false,
+            hasXpBoost: data.gamificationData.hasXpBoost || false,
+            xpMultiplier: data.gamificationData.xpMultiplier || 1,
+            multiplierEndTime: data.gamificationData.multiplierEndTime || null,
+            courseAccessHistory: data.gamificationData.courseAccessHistory || {},
+            perfectWeeksCount: data.gamificationData.perfectWeeksCount || 0,
+            nocturnalCount: data.gamificationData.nocturnalCount || 0,
+            earlyBirdCount: data.gamificationData.earlyBirdCount || 0,
+            longestStreak: data.gamificationData.longestStreak || 0,
+            mostXpInDay: data.gamificationData.mostXpInDay || 0,
+            totalPerfectLessons: data.gamificationData.totalPerfectLessons || 0,
+            claimedMonthlyMilestones: data.gamificationData.claimedMonthlyMilestones || [],
+            monthlyCompletedGoals: data.gamificationData.monthlyCompletedGoals || 0,
+          } : {})
+        }));
+      },
       logout: () => {
         // Reset state penuh agar user berikutnya yang login tidak warisan data.
         set({
@@ -248,6 +323,8 @@ export const useUserStore = create<UserState>()(
           role: 'mahasiswa',
           semester: 1,
           xp: 0,
+          xpToNextLevel: 100,
+          accuracy: 0,
           weeklyXp: 0,
           streak: 0,
           enrolledCourseIds: [],
@@ -684,3 +761,83 @@ export const useUserStore = create<UserState>()(
     }
   )
 );
+
+if (typeof window !== 'undefined') {
+  let syncTimeout: any = null;
+  useUserStore.subscribe((state, prevState) => {
+    if (!state.isLoggedIn || !state.id) return;
+    
+    // Cek apakah ada field krusial yang berubah
+    const extendedDataChanged = 
+      state.activityHistory !== prevState.activityHistory ||
+      state.earnedBadges !== prevState.earnedBadges ||
+      state.unlockedAchievements !== prevState.unlockedAchievements ||
+      state.dailyGoals !== prevState.dailyGoals ||
+      state.purchaseHistory !== prevState.purchaseHistory ||
+      state.streakFreezeCount !== prevState.streakFreezeCount ||
+      state.hasGemMiner !== prevState.hasGemMiner ||
+      state.xpMultiplier !== prevState.xpMultiplier ||
+      state.multiplierEndTime !== prevState.multiplierEndTime ||
+      state.courseAccessHistory !== prevState.courseAccessHistory ||
+      state.perfectWeeksCount !== prevState.perfectWeeksCount ||
+      state.nocturnalCount !== prevState.nocturnalCount ||
+      state.earlyBirdCount !== prevState.earlyBirdCount ||
+      state.longestStreak !== prevState.longestStreak ||
+      state.mostXpInDay !== prevState.mostXpInDay ||
+      state.totalPerfectLessons !== prevState.totalPerfectLessons ||
+      state.claimedMonthlyMilestones !== prevState.claimedMonthlyMilestones ||
+      state.monthlyCompletedGoals !== prevState.monthlyCompletedGoals ||
+      state.bookmarkedCourseIds !== prevState.bookmarkedCourseIds;
+
+    const changed = 
+      state.xp !== prevState.xp ||
+      state.gems !== prevState.gems ||
+      state.streak !== prevState.streak ||
+      state.level !== prevState.level ||
+      state.accuracy !== prevState.accuracy ||
+      state.completedLessonIds.length !== prevState.completedLessonIds.length ||
+      extendedDataChanged;
+
+    if (changed) {
+      if (syncTimeout) clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(() => {
+        const gamificationData = {
+          activityHistory: state.activityHistory,
+          earnedBadges: state.earnedBadges,
+          unlockedAchievements: state.unlockedAchievements,
+          dailyGoals: state.dailyGoals,
+          purchaseHistory: state.purchaseHistory,
+          streakFreezeCount: state.streakFreezeCount,
+          hasGemMiner: state.hasGemMiner,
+          xpMultiplier: state.xpMultiplier,
+          multiplierEndTime: state.multiplierEndTime,
+          courseAccessHistory: state.courseAccessHistory,
+          perfectWeeksCount: state.perfectWeeksCount,
+          nocturnalCount: state.nocturnalCount,
+          earlyBirdCount: state.earlyBirdCount,
+          longestStreak: state.longestStreak,
+          mostXpInDay: state.mostXpInDay,
+          totalPerfectLessons: state.totalPerfectLessons,
+          claimedMonthlyMilestones: state.claimedMonthlyMilestones,
+          monthlyCompletedGoals: state.monthlyCompletedGoals,
+          bookmarkedCourseIds: state.bookmarkedCourseIds,
+        };
+
+        fetch('/api/user/sync-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: state.id,
+            profileXp: state.xp, // Di client, state.xp adalah profileXp di DB
+            gems: state.gems,
+            streak: state.streak,
+            level: state.level,
+            accuracy: state.accuracy,
+            completedLessonIds: state.completedLessonIds,
+            gamificationData
+          })
+        }).catch(err => console.error("Gagal melakukan sync progress:", err));
+      }, 2000); // Debounce 2 detik untuk menghindari spam request
+    }
+  });
+}

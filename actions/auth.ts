@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { users, enrollments } from "@/db/schema";
+import { users, enrollments, userProgress } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { MOCK_STUDENTS } from "@/lib/admin-data";
 
@@ -83,6 +83,13 @@ export async function validateLogin(email: string, password: string) {
       );
     const enrolledCourseIds = enrolledRows.map((r) => r.courseId);
 
+    // Fetch completed lesson IDs
+    const progressRows = await db
+      .select({ lessonId: userProgress.lessonId })
+      .from(userProgress)
+      .where(eq(userProgress.userId, user.id));
+    const completedLessonIds = progressRows.map((r) => r.lessonId.toString());
+
     return {
       success: true,
       user: {
@@ -99,6 +106,8 @@ export async function validateLogin(email: string, password: string) {
         streak: user.streak,
         avatar: user.avatar ?? "bg-blue-200 text-blue-700",
         enrolledCourseIds,
+        completedLessonIds,
+        gamificationData: user.gamificationData,
       },
     };
   } catch (error) {
@@ -124,5 +133,65 @@ export async function getLoginOptions() {
   } catch (error) {
     console.error("Failed to fetch login options:", error);
     return [];
+  }
+}
+
+// Mengambil profil pengguna terbaru dari database
+export async function getUserProfile(userId: string) {
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return { success: false, error: "User not found" };
+    }
+
+    const user = result[0];
+    
+    // Fetch course IDs yang user sudah accepted di tabel enrollments
+    const enrolledRows = await db
+      .select({ courseId: enrollments.courseId })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.studentId, user.id),
+          eq(enrollments.status, 'accepted'),
+        ),
+      );
+    const enrolledCourseIds = enrolledRows.map((r) => r.courseId);
+
+    // Fetch completed lesson IDs
+    const progressRows = await db
+      .select({ lessonId: userProgress.lessonId })
+      .from(userProgress)
+      .where(eq(userProgress.userId, user.id));
+    const completedLessonIds = progressRows.map((r) => r.lessonId.toString());
+
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        semester: user.semester,
+        level: user.level,
+        xp: user.xp,
+        profileXp: user.profileXp,
+        gems: user.gems,
+        accuracy: user.accuracy ?? 0,
+        streak: user.streak,
+        avatar: user.avatar ?? "bg-blue-200 text-blue-700",
+        enrolledCourseIds,
+        completedLessonIds,
+        gamificationData: user.gamificationData,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to fetch user profile:", error);
+    return { success: false, error: "Server error" };
   }
 }

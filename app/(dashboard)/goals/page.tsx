@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
 import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ const GoalIcon = ({ goal }: { goal: any }) => {
 };
 
 export default function GoalsPage() {
+  const router = useRouter();
   const {
     dailyGoals,
     streak,
@@ -70,7 +72,8 @@ export default function GoalsPage() {
     claimedMonthlyMilestones,
     claimMonthlyMilestone,
     streakFreezeCount,
-    level
+    level,
+    isLoggedIn
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -80,6 +83,13 @@ export default function GoalsPage() {
 
   // 1. Cek Mounted 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Auth Guard redirect
+  useEffect(() => {
+    if (isMounted && !isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isLoggedIn, router, isMounted]);
 
   // Timer Mundur untuk Reset Harian (Midnight)
   useEffect(() => {
@@ -96,7 +106,7 @@ export default function GoalsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!isMounted) return null;
+  if (!isMounted || !isLoggedIn) return null;
 
   // 3. Logika Data Kalender Streak dari Activity History
   const days = ["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"];

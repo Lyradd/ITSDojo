@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,11 @@ import { PurchaseHistoryModal } from "@/components/shared/purchase-history-modal
 import { toast } from "react-hot-toast";
 
 export default function ShopPage() {
+  const router = useRouter();
   const { 
     gems, streakFreezeCount, buyItem, multiplierEndTime, 
     purchaseHistory = [], level, unlockedInventorySlotIds = [], unlockInventorySlot,
-    hasGemMiner, hasShieldPack, useShieldPack, addGems 
+    hasGemMiner, hasShieldPack, useShieldPack, addGems, isLoggedIn
   } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ type: string, cost: number, title: string, icon: React.ReactNode, actionType?: 'buy' | 'unlock' } | null>(null);
@@ -31,6 +33,12 @@ export default function ShopPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isMounted && !isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isMounted, isLoggedIn, router]);
 
   // Keyboard Accessibility: Tutup modal dengan ESC
   useEffect(() => {
@@ -43,7 +51,7 @@ export default function ShopPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedItem]);
 
-  if (!isMounted) return null;
+  if (!isMounted || !isLoggedIn) return null;
 
   const confirmBuy = () => {
     if (!selectedItem || gems < selectedItem.cost) return;

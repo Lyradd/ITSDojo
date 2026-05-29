@@ -29,6 +29,7 @@ export const users = pgTable('users', {
   accuracy: integer('accuracy').default(0), // Persentase akurasi
   streak: integer('streak').default(0).notNull(),
   avatar: text('avatar').default('bg-blue-200 text-blue-700'),
+  gamificationData: jsonb('gamification_data'),
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

@@ -17,6 +17,7 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+import { logoutSession } from "@/actions/auth";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -28,7 +29,8 @@ export default function SettingsPage() {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutSession();
     logout();
     router.push("/login");
   };

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { courses } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "@/lib/auth-guard";
 
 // GET /api/courses/[id] — Ambil detail satu kelas
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 // PUT /api/courses/[id] — Update kelas
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -41,6 +45,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 // DELETE /api/courses/[id] — Hapus kelas
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     

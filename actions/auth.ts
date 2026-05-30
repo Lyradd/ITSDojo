@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users, enrollments, userProgress } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { MOCK_STUDENTS } from "@/lib/admin-data";
+import { createSession, destroySession } from "@/lib/session";
 
 const VALID_ROLES = new Set(["mahasiswa", "asdos", "dosen", "admin"]);
 
@@ -89,6 +90,9 @@ export async function validateLogin(email: string, password: string) {
       .from(userProgress)
       .where(eq(userProgress.userId, user.id));
     const completedLessonIds = progressRows.map((r) => r.lessonId.toString());
+
+    // Set HTTP-only signed session cookie
+    await createSession({ userId: user.id, role: user.role });
 
     return {
       success: true,
@@ -194,4 +198,12 @@ export async function getUserProfile(userId: string) {
     console.error("Failed to fetch user profile:", error);
     return { success: false, error: "Server error" };
   }
+}
+
+// ============================================
+// LOGOUT — Destroy server-side session
+// ============================================
+export async function logoutSession() {
+  await destroySession();
+  return { success: true };
 }

@@ -2,15 +2,27 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, userProgress } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getSession } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, level, xp, profileXp, gems, streak, accuracy, completedLessonIds, gamificationData } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    // ============================================
+    // AUTH GUARD: Verifikasi sesi dari HTTP-only cookie
+    // ============================================
+    // userId TIDAK diambil dari body request (tidak bisa dipercaya),
+    // melainkan dari signed session cookie yang di-set saat login.
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: "Unauthorized. Silakan login terlebih dahulu." },
+        { status: 401 }
+      );
     }
+
+    const userId = session.userId; // Sumber kebenaran: dari server-side cookie
+
+    const body = await req.json();
+    const { level, xp, profileXp, gems, streak, accuracy, completedLessonIds, gamificationData } = body;
 
     // Prepare update payload
     const updateData: any = {};
@@ -39,8 +51,8 @@ export async function POST(req: Request) {
       const existingIds = new Set(existing.map(e => e.lessonId.toString()));
       
       const newIds = completedLessonIds
-        .filter(id => !existingIds.has(id.toString()) && !isNaN(parseInt(id)))
-        .map(id => parseInt(id));
+        .filter((id: string) => !existingIds.has(id.toString()) && !isNaN(parseInt(id)))
+        .map((id: string) => parseInt(id));
         
       if (newIds.length > 0) {
         await db.insert(userProgress).values(

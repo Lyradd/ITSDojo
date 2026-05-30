@@ -1,6 +1,36 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { formatLocalDate } from './utils';
+import { z } from 'zod';
+
+const GamificationSchema = z.object({
+  activityHistory: z.array(z.any()).optional(),
+  earnedBadges: z.array(z.any()).optional(),
+  unlockedAchievements: z.array(z.string()).optional(),
+  bookmarkedCourseIds: z.array(z.string()).optional(),
+  dailyGoals: z.array(z.any()).optional(),
+  purchaseHistory: z.array(z.any()).optional(),
+  streakFreezeCount: z.number().optional(),
+  hasGemMiner: z.boolean().optional(),
+  hasXpBoost: z.boolean().optional(),
+  xpMultiplier: z.number().optional(),
+  multiplierEndTime: z.number().nullable().optional(),
+  courseAccessHistory: z.record(z.string()).optional(),
+  perfectWeeksCount: z.number().optional(),
+  nocturnalCount: z.number().optional(),
+  earlyBirdCount: z.number().optional(),
+  longestStreak: z.number().optional(),
+  mostXpInDay: z.number().optional(),
+  totalPerfectLessons: z.number().optional(),
+  claimedMonthlyMilestones: z.array(z.number()).optional(),
+  monthlyCompletedGoals: z.number().optional(),
+});
+
+const parseGamificationData = (data: any) => {
+  if (!data || typeof data !== 'object') return {};
+  const parsed = GamificationSchema.safeParse(data);
+  return parsed.success ? parsed.data : {};
+};
 
 // --- SHARED TYPES ---
 
@@ -227,6 +257,8 @@ export const useUserStore = create<UserState>()(
           calculatedXpToNextLevel = Math.floor(calculatedXpToNextLevel * 1.5);
         }
 
+        const gData = parseGamificationData(data.gamificationData);
+
         set({
           isLoggedIn: true,
           id: data.id,
@@ -241,33 +273,33 @@ export const useUserStore = create<UserState>()(
           streak: data.streak,
           gems: data.gems,
           avatarUrl: null,
-          enrolledCourseIds: data.enrolledCourseIds,
+          enrolledCourseIds: data.enrolledCourseIds || [],
           weeklyXp: 0,
           bio: '',
           pendingCourseIds: [],
           rejectedCourseIds: [],
           acceptedCourseIds: [],
           completedLessonIds: data.completedLessonIds || [],
-          activityHistory: data.gamificationData?.activityHistory || [],
-          earnedBadges: data.gamificationData?.earnedBadges || [],
-          unlockedAchievements: data.gamificationData?.unlockedAchievements || [],
-          bookmarkedCourseIds: data.gamificationData?.bookmarkedCourseIds || [],
-          dailyGoals: data.gamificationData?.dailyGoals || INITIAL_GOALS,
-          purchaseHistory: data.gamificationData?.purchaseHistory || [],
-          streakFreezeCount: data.gamificationData?.streakFreezeCount || 0,
-          hasGemMiner: data.gamificationData?.hasGemMiner || false,
-          hasXpBoost: data.gamificationData?.hasXpBoost || false,
-          xpMultiplier: data.gamificationData?.xpMultiplier || 1,
-          multiplierEndTime: data.gamificationData?.multiplierEndTime || null,
-          courseAccessHistory: data.gamificationData?.courseAccessHistory || {},
-          perfectWeeksCount: data.gamificationData?.perfectWeeksCount || 0,
-          nocturnalCount: data.gamificationData?.nocturnalCount || 0,
-          earlyBirdCount: data.gamificationData?.earlyBirdCount || 0,
-          longestStreak: data.gamificationData?.longestStreak || 0,
-          mostXpInDay: data.gamificationData?.mostXpInDay || 0,
-          totalPerfectLessons: data.gamificationData?.totalPerfectLessons || 0,
-          claimedMonthlyMilestones: data.gamificationData?.claimedMonthlyMilestones || [],
-          monthlyCompletedGoals: data.gamificationData?.monthlyCompletedGoals || 0,
+          activityHistory: gData.activityHistory || [],
+          earnedBadges: gData.earnedBadges || [],
+          unlockedAchievements: gData.unlockedAchievements || [],
+          bookmarkedCourseIds: gData.bookmarkedCourseIds || [],
+          dailyGoals: gData.dailyGoals || INITIAL_GOALS,
+          purchaseHistory: gData.purchaseHistory || [],
+          streakFreezeCount: gData.streakFreezeCount || 0,
+          hasGemMiner: gData.hasGemMiner || false,
+          hasXpBoost: gData.hasXpBoost || false,
+          xpMultiplier: gData.xpMultiplier || 1,
+          multiplierEndTime: gData.multiplierEndTime || null,
+          courseAccessHistory: gData.courseAccessHistory || {},
+          perfectWeeksCount: gData.perfectWeeksCount || 0,
+          nocturnalCount: gData.nocturnalCount || 0,
+          earlyBirdCount: gData.earlyBirdCount || 0,
+          longestStreak: gData.longestStreak || 0,
+          mostXpInDay: gData.mostXpInDay || 0,
+          totalPerfectLessons: gData.totalPerfectLessons || 0,
+          claimedMonthlyMilestones: gData.claimedMonthlyMilestones || [],
+          monthlyCompletedGoals: gData.monthlyCompletedGoals || 0,
         } as any);
       },
       syncFromServer: (data) => {
@@ -275,6 +307,8 @@ export const useUserStore = create<UserState>()(
         for (let i = 1; i < data.level; i++) {
           calculatedXpToNextLevel = Math.floor(calculatedXpToNextLevel * 1.5);
         }
+        
+        const gData = data.gamificationData ? parseGamificationData(data.gamificationData) : null;
         
         set((state) => ({
           ...state,
@@ -286,27 +320,27 @@ export const useUserStore = create<UserState>()(
           accuracy: data.accuracy,
           completedLessonIds: data.completedLessonIds || state.completedLessonIds || [],
           ...(data.enrolledCourseIds ? { enrolledCourseIds: data.enrolledCourseIds } : {}),
-          ...(data.gamificationData ? {
-            activityHistory: data.gamificationData.activityHistory || [],
-            earnedBadges: data.gamificationData.earnedBadges || [],
-            unlockedAchievements: data.gamificationData.unlockedAchievements || [],
-            bookmarkedCourseIds: data.gamificationData.bookmarkedCourseIds || [],
-            dailyGoals: data.gamificationData.dailyGoals || INITIAL_GOALS,
-            purchaseHistory: data.gamificationData.purchaseHistory || [],
-            streakFreezeCount: data.gamificationData.streakFreezeCount || 0,
-            hasGemMiner: data.gamificationData.hasGemMiner || false,
-            hasXpBoost: data.gamificationData.hasXpBoost || false,
-            xpMultiplier: data.gamificationData.xpMultiplier || 1,
-            multiplierEndTime: data.gamificationData.multiplierEndTime || null,
-            courseAccessHistory: data.gamificationData.courseAccessHistory || {},
-            perfectWeeksCount: data.gamificationData.perfectWeeksCount || 0,
-            nocturnalCount: data.gamificationData.nocturnalCount || 0,
-            earlyBirdCount: data.gamificationData.earlyBirdCount || 0,
-            longestStreak: data.gamificationData.longestStreak || 0,
-            mostXpInDay: data.gamificationData.mostXpInDay || 0,
-            totalPerfectLessons: data.gamificationData.totalPerfectLessons || 0,
-            claimedMonthlyMilestones: data.gamificationData.claimedMonthlyMilestones || [],
-            monthlyCompletedGoals: data.gamificationData.monthlyCompletedGoals || 0,
+          ...(gData ? {
+            activityHistory: gData.activityHistory || [],
+            earnedBadges: gData.earnedBadges || [],
+            unlockedAchievements: gData.unlockedAchievements || [],
+            bookmarkedCourseIds: gData.bookmarkedCourseIds || [],
+            dailyGoals: gData.dailyGoals || INITIAL_GOALS,
+            purchaseHistory: gData.purchaseHistory || [],
+            streakFreezeCount: gData.streakFreezeCount || 0,
+            hasGemMiner: gData.hasGemMiner || false,
+            hasXpBoost: gData.hasXpBoost || false,
+            xpMultiplier: gData.xpMultiplier || 1,
+            multiplierEndTime: gData.multiplierEndTime || null,
+            courseAccessHistory: gData.courseAccessHistory || {},
+            perfectWeeksCount: gData.perfectWeeksCount || 0,
+            nocturnalCount: gData.nocturnalCount || 0,
+            earlyBirdCount: gData.earlyBirdCount || 0,
+            longestStreak: gData.longestStreak || 0,
+            mostXpInDay: gData.mostXpInDay || 0,
+            totalPerfectLessons: gData.totalPerfectLessons || 0,
+            claimedMonthlyMilestones: gData.claimedMonthlyMilestones || [],
+            monthlyCompletedGoals: gData.monthlyCompletedGoals || 0,
           } : {})
         }));
       },
@@ -827,7 +861,8 @@ if (typeof window !== 'undefined') {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: state.id,
+            // userId dihapus dari body — server mengambilnya dari session cookie
+            // untuk mencegah manipulasi data oleh pihak tidak berwenang (IDOR).
             profileXp: state.xp, // Di client, state.xp adalah profileXp di DB
             gems: state.gems,
             streak: state.streak,

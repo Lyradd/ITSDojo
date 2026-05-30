@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
+import { getSession } from "@/lib/session";
 
 /**
  * Middleware helper untuk mengecek apakah request berasal dari admin/dosen.
  * 
- * CATATAN: Saat ini menggunakan custom header "x-user-role" sebagai placeholder.
- * Ketika sistem autentikasi asli (Supabase Auth, Clerk, dll.) sudah diimplementasi,
- * ganti logika di bawah ini dengan validasi token JWT / session cookie.
+ * Menggunakan signed HTTP-only session cookie untuk validasi identitas.
+ * Cookie di-set saat login (validateLogin) dan dihapus saat logout (logoutSession).
  * 
  * Contoh penggunaan di route.ts:
- *   const authError = requireAdmin(req);
+ *   const authError = await requireAdmin(req);
  *   if (authError) return authError;
  */
-export function requireAdmin(req: Request): NextResponse | null {
-  // TODO: Ganti dengan validasi session/token asli saat auth sudah ada
-  const role = req.headers.get("x-user-role");
+export async function requireAdmin(req: Request): Promise<NextResponse | null> {
+  const session = await getSession();
 
-  if (!role || !["admin", "dosen"].includes(role)) {
+  if (!session || !["admin", "dosen"].includes(session.role)) {
     return NextResponse.json(
       { error: "Unauthorized. Hanya admin atau dosen yang dapat mengakses endpoint ini." },
       { status: 403 }
@@ -23,4 +22,17 @@ export function requireAdmin(req: Request): NextResponse | null {
   }
 
   return null; // Akses diizinkan
+}
+
+/**
+ * Helper untuk mendapatkan userId dari session cookie.
+ * Mengembalikan null jika tidak ada sesi aktif.
+ * 
+ * Contoh penggunaan di route.ts:
+ *   const userId = await getAuthUserId();
+ *   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+ */
+export async function getAuthUserId(): Promise<string | null> {
+  const session = await getSession();
+  return session?.userId ?? null;
 }

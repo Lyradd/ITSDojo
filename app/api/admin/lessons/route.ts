@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth-guard";
 
 // POST /api/admin/lessons — Buat lesson baru (beserta test cases)
 export async function POST(req: Request) {
-  const authError = requireAdmin(req);
+  const authError = await requireAdmin(req);
   if (authError) return authError;
 
   try {

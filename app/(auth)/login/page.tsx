@@ -89,6 +89,7 @@ export default function LoginPage() {
       streak: res.user.streak,
       avatar: res.user.avatar,
       enrolledCourseIds: res.user.enrolledCourseIds,
+      gamificationData: res.user.gamificationData,
     });
 
     setIsLoading(false);

@@ -52,10 +52,19 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
             <span className="text-green-600 dark:text-green-400">{node.title}</span>
 
             {/* INFO OVERVIEW ON HOVER */}
-            <div className="max-h-0 opacity-0 group-hover:max-h-80 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
-              <p className="text-xs text-zinc-500 font-normal mb-2 whitespace-normal min-w-[140px] text-center sm:text-left">{node.desc}</p>
-              <div className={`flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded text-[10px] text-green-700 dark:text-green-400 w-fit font-bold border border-green-100 dark:border-green-900/40`}>
-                <CheckCircle className="w-3 h-3" /> Diselesaikan
+            <div className="max-h-0 opacity-0 group-hover:max-h-96 group-hover:opacity-100 group-hover:mt-2 transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center sm:items-start">
+              <p className="text-xs text-zinc-500 font-normal mb-2 whitespace-normal min-w-[160px] text-center sm:text-left">{node.desc}</p>
+              
+              <div className="flex flex-col gap-1.5 items-center sm:items-start w-full">
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <div className={`flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded text-[10px] text-green-700 dark:text-green-400 w-fit font-bold border border-green-100 dark:border-green-900/40`}>
+                    <CheckCircle className="w-3 h-3" /> Selesai
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded text-[10px] text-orange-700 dark:text-orange-400 w-fit font-bold border border-orange-200 dark:border-orange-900/50">
+                    <Zap className="w-3 h-3" /> +10 XP (Latihan)
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold text-blue-500 dark:text-blue-400 mt-1 animate-pulse">👉 Klik untuk Review Materi</span>
               </div>
             </div>
           </div>

@@ -159,7 +159,7 @@ export default function ProfilePage() {
             {/* Avatar Besar */}
             <div className="relative group">
               <div className="w-32 h-32 rounded-full bg-blue-600 border-4 border-blue-100 dark:border-blue-900 flex items-center justify-center text-5xl font-bold text-white shadow-xl overflow-hidden">
-                {avatarUrl ? (
+                {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.startsWith('data:')) ? (
                   <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                 ) : (
                   name.charAt(0).toUpperCase()

@@ -22,10 +22,14 @@ export async function POST(req: Request) {
     const userId = session.userId; // Sumber kebenaran: dari server-side cookie
 
     const body = await req.json();
-    const { level, xp, profileXp, gems, streak, accuracy, completedLessonIds, gamificationData } = body;
+    const { name, avatar, level, xp, profileXp, gems, streak, accuracy, completedLessonIds, gamificationData } = body;
+
+    console.log("SYNC-PROGRESS RECEIVED BIO:", gamificationData?.bio);
 
     // Prepare update payload
     const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (avatar !== undefined) updateData.avatar = avatar;
     if (level !== undefined) updateData.level = level;
     if (xp !== undefined) updateData.xp = xp;
     if (profileXp !== undefined) updateData.profileXp = profileXp;

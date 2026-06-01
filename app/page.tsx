@@ -1,50 +1,187 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
 import { useUserStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { LoginScene } from "@/components/three/login-scene";
-import { 
-  Rocket, ShieldCheck, Trophy, Users, ChevronRight, Github, Monitor, Zap, Star,
-  BrainCircuit, GitBranch, Target, LineChart, Code2, Award, ArrowUpRight, GraduationCap
+import {
+  Trophy, ChevronRight, Monitor, Zap,
+  BrainCircuit, Target, Code2, GraduationCap,
+  Swords, Flame, Gem, Lock, Map, Clock,
+  Activity, ShieldAlert, Rocket
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
+import dynamic from 'next/dynamic';
+import MagneticButton from "@/components/MagneticButton";
+
+const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false });
 
 export default function LandingPage() {
-  const { isLoggedIn } = useUserStore();
+  const [mounted, setMounted] = useState(false);
+  const isLoggedIn = useUserStore((state) => state.isLoggedIn);
   const containerRef = useRef(null);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  // --- SCROLL ANIMATIONS ---
+  const { scrollY } = useScroll();
+  // Using useSpring for buttery smooth physics-based scroll catching
+  const smoothScrollY = useSpring(scrollY, { stiffness: 80, damping: 20, mass: 0.5 });
+  
+  // Amplified effects for more noticeable transition
+  const heroOpacity = useTransform(smoothScrollY, [0, 400], [1, 0]);
+  const heroY = useTransform(smoothScrollY, [0, 400], [0, 200]);
+  const heroScale = useTransform(smoothScrollY, [0, 400], [1, 0.8]);
+  
+  // Amplified parallax movement
+  const parallaxFast = useTransform(smoothScrollY, [0, 800], [0, -400]);
+  const parallaxMedium = useTransform(smoothScrollY, [0, 800], [0, -250]);
+  const parallaxSlow = useTransform(smoothScrollY, [0, 800], [0, -150]);
+
+  // --- STATE ROADMAP INTERAKTIF ---
+  const [activeNode, setActiveNode] = useState<number>(1);
+  const roadmapNodes = [
+    { id: 1, title: "Logika Dasar", desc: "Kuasai algoritma, variabel, perulangan, dan struktur data fundamental.", status: "completed", xp: "Selesai" },
+    { id: 2, title: "Frontend Master", desc: "Bangun antarmuka UI interaktif dengan React.js dan TailwindCSS yang responsif.", status: "active", xp: "Progres 65%" },
+    { id: 3, title: "Data Science", desc: "Pelajari analisis data, visualisasi, dan pemrosesan model dengan Python.", status: "locked", xp: "Butuh 5,000 XP" },
+  ];
+
+  // --- STATE LEADERBOARD INTERAKTIF ---
+  const [leaderboardTab, setLeaderboardTab] = useState<"Mingguan" | "Musim 4">("Musim 4");
+  const [expandedUser, setExpandedUser] = useState<number | null>(3); // Default expand 'Anda'
+  const leaderboardData = {
+    "Mingguan": [
+      { name: "Anda", xp: "1,250", rank: 1, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix", highlight: true, stats: "Win Rate: 75% | Quest Selesai: 12" },
+      { name: "Siti Aminah", xp: "1,100", rank: 2, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka", bg: "bg-slate-400/20 text-slate-300", ring: "ring-slate-400/50", stats: "Win Rate: 60% | Quest Selesai: 15" },
+      { name: "Andi Wijaya", xp: "950", rank: 3, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Andi", bg: "bg-orange-500/20 text-orange-400", ring: "ring-orange-500/50", stats: "Win Rate: 55% | Quest Selesai: 10" },
+    ],
+    "Musim 4": [
+      { name: "Budi Santoso", xp: "14,500", rank: 1, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Budi", bg: "bg-amber-500/20 text-amber-400", ring: "ring-amber-500/50", stats: "Win Rate: 82% | Quest Selesai: 140" },
+      { name: "Siti Aminah", xp: "13,200", rank: 2, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka", bg: "bg-slate-400/20 text-slate-300", ring: "ring-slate-400/50", stats: "Win Rate: 71% | Quest Selesai: 125" },
+      { name: "Anda", xp: "12,850", rank: 3, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix", highlight: true, stats: "Win Rate: 68% | Quest Selesai: 110" },
+      { name: "Andi Wijaya", xp: "11,100", rank: 4, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Andi", bg: "bg-orange-500/20 text-orange-400", ring: "ring-orange-500/50", stats: "Win Rate: 64% | Quest Selesai: 98" },
+    ]
+  };
+
+  // --- STATE DUEL ANIMATION (TABRAKAN & TERKIKIS) ---
+  const [duelPhase, setDuelPhase] = useState<'idle' | 'colliding' | 'clashing' | 'retreating'>('idle');
+  const [duelTimeLeft, setDuelTimeLeft] = useState(15);
+  const [rivalHealth, setRivalHealth] = useState(950);
+  const [duelActiveAnswer, setDuelActiveAnswer] = useState(2);
+
+  useEffect(() => {
+    setMounted(true);
+    const checkDesktop = () => {
+      const isLargeScreen = window.innerWidth >= 768;
+      const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setIsDesktop(isLargeScreen && !isReducedMotion);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+
+    // Timer kuis di bagian bawah duel
+    const timer = setInterval(() => {
+      setDuelTimeLeft((prev) => {
+        if (prev <= 1) {
+          setDuelActiveAnswer(Math.floor(Math.random() * 4));
+          return 15;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Siklus animasi Duel Tabrakan & Terkikis (Setiap 6 detik)
+    const duelSequence = setInterval(() => {
+      setDuelPhase('colliding');
+
+      setTimeout(() => {
+        setDuelPhase('clashing');
+        // Saat bertabrakan (clash), rival kehilangan poin / terkikis
+        setRivalHealth(prev => Math.max(0, prev - 150));
+      }, 300); // Durasi menuju tabrakan yang lebih punchy (300ms)
+
+      setTimeout(() => {
+        setDuelPhase('retreating');
+      }, 1000); // Durasi clash getar (700ms)
+
+      setTimeout(() => {
+        setDuelPhase('idle');
+      }, 1500); // Selesai mundur
+
+    }, 6000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(duelSequence);
+      window.removeEventListener('resize', checkDesktop);
+    };
+  }, []);
 
   const scrollTo = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
+      const elementPosition = element.getBoundingClientRect().top - document.body.getBoundingClientRect().top - offset;
+      window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+    }
+  };
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+  // Varian animasi Duel untuk Player 1 (Anda) dan Player 2 (Rival)
+  const p1Variants: any = {
+    idle: { x: 0, y: 0, scale: 1, rotate: 0 },
+    colliding: { 
+      x: isDesktop ? 40 : 0, 
+      y: isDesktop ? 0 : 40, 
+      scale: 1.05, 
+      rotate: isDesktop ? 2 : 0,
+      transition: { duration: 0.3, ease: "backIn" } 
+    },
+    clashing: { 
+      x: isDesktop ? [40, 35, 45, 38, 42, 40] : 0, 
+      y: isDesktop ? 0 : [40, 35, 45, 38, 42, 40], 
+      scale: 1.05, 
+      rotate: isDesktop ? [2, -2, 2, -1, 1, 0] : 0,
+      filter: "brightness(1.2)", 
+      transition: { duration: 0.4, repeat: 1 } 
+    },
+    retreating: { 
+      x: 0, y: 0, scale: 1, rotate: 0, filter: "brightness(1)", 
+      transition: { duration: 0.5, type: "spring", bounce: 0.5 } 
+    }
+  };
+
+  const p2Variants: any = {
+    idle: { x: 0, y: 0, scale: 1, rotate: 0, filter: "brightness(1) blur(0px)" },
+    colliding: { 
+      x: isDesktop ? -40 : 0, 
+      y: isDesktop ? 0 : -40, 
+      scale: 1.05, 
+      rotate: isDesktop ? -2 : 0, 
+      transition: { duration: 0.3, ease: "backIn" } 
+    },
+    clashing: {
+      x: isDesktop ? [-40, -45, -35, -42, -38, -40] : 0,
+      y: isDesktop ? 0 : [-40, -45, -35, -42, -38, -40],
+      scale: 1.05,
+      rotate: isDesktop ? [-2, 2, -2, 1, -1, 0] : 0,
+      filter: ["brightness(1.2) blur(0px)", "brightness(2) blur(4px)", "brightness(1.5) blur(1px)"],
+      transition: { duration: 0.4, repeat: 1 }
+    },
+    retreating: { 
+      x: 0, y: 0, scale: 1, rotate: 0, filter: "brightness(1) blur(0px)", 
+      transition: { duration: 0.5, type: "spring", bounce: 0.5 } 
     }
   };
 
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen bg-[#030712] text-zinc-100 selection:bg-blue-500/30 font-sans relative overflow-x-hidden">
-      
+      {/* Global Grain Overlay for Glassmorphism */}
+      <div className="fixed inset-0 z-50 pointer-events-none opacity-[0.03] bg-[url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_Dissolve_Noise_Texture.png')] mix-blend-overlay"></div>
+
       {/* 1. ADVANCED BACKGROUND LAYER */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* Animated Aurora */}
-        <div className="absolute inset-0 opacity-40 animate-aurora bg-gradient-to-tr from-blue-900/20 via-indigo-900/20 to-cyan-900/20 blur-[100px]" />
-        
-        {/* Floating Orbs */}
-        <div className="absolute top-[10%] left-[10%] w-72 h-72 bg-blue-600/10 rounded-full blur-[120px] animate-orb-1" />
-        <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[140px] animate-orb-2" />
-        <div className="absolute top-[40%] right-[20%] w-64 h-64 bg-cyan-600/10 rounded-full blur-[100px] animate-orb-3" />
-
-        {/* Technical Grid */}
+        <div className="absolute inset-0 opacity-20 animate-aurora bg-gradient-to-tr from-blue-900/40 via-indigo-900/40 to-cyan-900/40 blur-[100px]" />
+        <div className="absolute top-[10%] left-[10%] w-72 h-72 bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[140px]" />
         <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#4f4f4f_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
       </div>
 
@@ -57,17 +194,17 @@ export default function LandingPage() {
             </div>
             <span className="text-xl font-black tracking-tight text-white">ITSDojo</span>
           </Link>
-          
-          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-zinc-400">
-            {['features', 'method', 'ranks'].map((section) => (
-              <motion.button 
+
+          <div className="hidden lg:flex items-center gap-8 text-sm font-semibold text-zinc-400">
+            {['roadmap', 'gamifikasi', 'peringkat', 'duel', 'analitik'].map((section) => (
+              <motion.button
                 key={section}
                 whileHover={{ scale: 1.05, color: '#ffffff' }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => scrollTo(section)}
                 className="capitalize hover:text-white transition-colors relative group"
               >
-                {section === 'method' ? 'Methodology' : section === 'ranks' ? 'Ranks' : section}
+                {section}
                 <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-blue-500 transition-all duration-300 ease-out group-hover:w-full rounded-full" />
               </motion.button>
             ))}
@@ -75,18 +212,18 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-4">
             <Link href="/login" className="hidden sm:block">
-              <motion.span 
-                whileHover={{ scale: 1.05, color: '#ffffff' }} 
+              <motion.span
+                whileHover={{ scale: 1.05, color: '#ffffff' }}
                 whileTap={{ scale: 0.95 }}
                 className="text-sm font-bold text-zinc-400 hover:text-white transition-colors inline-block"
               >
-                Log in
+                Masuk
               </motion.span>
             </Link>
-            <Link href={isLoggedIn ? "/learn" : "/login"}>
+            <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button className="bg-white text-black hover:bg-zinc-200 font-bold px-6 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all">
-                  Get Started
+                <Button className="bg-white text-black hover:bg-zinc-200 font-bold px-6 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all">
+                  Mulai Sekarang
                 </Button>
               </motion.div>
             </Link>
@@ -96,214 +233,583 @@ export default function LandingPage() {
 
       {/* 3. HERO SECTION */}
       <section className="relative min-h-[95vh] flex items-center justify-center pt-20 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <LoginScene showShapes={false} />
-        </div>
-        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-[#030712]/60 to-[#030712] pointer-events-none" />
+        {/* WebGL 3D Background - Loaded conditionally for Mobile Optimization */}
+        {isDesktop && <HeroScene />}
         
-        <div className="max-w-5xl mx-auto relative z-10 px-6 text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }} 
-            animate={{ opacity: 1, y: 0 }} 
+        <motion.div style={{ opacity: heroOpacity, y: heroY, scale: heroScale }} className="max-w-6xl mx-auto relative z-10 px-6 text-center pointer-events-none w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
+            className="pointer-events-auto"
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-8 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.1)]">
               <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-              Elevate your code to master level
+              Bergabung dengan Dojo Pembelajaran
             </div>
-            
-            <h1 className="text-6xl md:text-8xl lg:text-[6.5rem] font-black tracking-tighter mb-8 leading-[1] text-white">
-              The Dojo for <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-cyan-400 animate-text-gradient">
-                Future Builders
+
+            <h1 className="text-5xl md:text-7xl lg:text-[6.5rem] font-black tracking-tighter mb-8 leading-[1.1] text-white">
+              Evolusi Gamifikasi <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">
+                Pembelajaran IT
               </span>
             </h1>
-            
+
             <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-              Join the elite circle of developers. Master the modern stack through immersive quests, 
-              competitive duels, and a progression system that rewards your dedication.
+              ITSDojo mengubah cara mahasiswa IT belajar. Kuasai spesialisasi koding melalui quest interaktif, duel real-time, dan ekosistem gamifikasi yang memacu adrenalin.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href={isLoggedIn ? "/learn" : "/login"}>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button size="lg" className="h-16 px-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg shadow-[0_0_40px_rgba(37,99,235,0.4)] hover:shadow-[0_0_60px_rgba(37,99,235,0.6)] flex gap-2 group transition-all">
-                    Start Your Quest
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </motion.div>
+              <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
+                <MagneticButton size="lg" className="h-16 px-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg shadow-[0_0_40px_rgba(37,99,235,0.4)] transition-all flex gap-2 group">
+                  Tingkatkan Levelmu
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </MagneticButton>
               </Link>
-              <Link href="#method">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="outline" size="lg" className="h-16 px-10 rounded-full border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-bold text-lg backdrop-blur-sm transition-all hover:border-zinc-500">
-                    View Methodology
-                  </Button>
-                </motion.div>
-              </Link>
+              <MagneticButton onClick={() => scrollTo('roadmap')} variant="outline" size="lg" className="h-16 px-10 rounded-full border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-bold text-lg backdrop-blur-sm transition-all shadow-sm">
+                Jelajahi Fitur
+              </MagneticButton>
             </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Isometric floating elements */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          <motion.div style={{ y: parallaxMedium }} className="absolute top-[20%] left-[10%] lg:left-[15%]">
+            <motion.div animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }} className="flex w-20 h-20 lg:w-24 lg:h-24 bg-zinc-900/80 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl items-center justify-center">
+              <Monitor className="w-10 h-10 text-blue-400" />
+            </motion.div>
+          </motion.div>
+          
+          <motion.div style={{ y: parallaxFast }} className="absolute bottom-[20%] lg:bottom-[25%] right-[5%] lg:right-[15%]">
+            <motion.div animate={{ y: [10, -10, 10], rotate: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }} className="flex w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-600 to-cyan-400 rounded-3xl shadow-[0_0_50px_rgba(37,99,235,0.3)] items-center justify-center text-white">
+              <Code2 className="w-10 h-10 lg:w-12 lg:h-12" />
+            </motion.div>
+          </motion.div>
+
+          <motion.div style={{ y: parallaxSlow }} className="absolute top-[30%] right-[10%] lg:right-[20%]">
+            <motion.div animate={{ y: [-15, 15, -15], scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }} className="flex w-16 h-16 lg:w-20 lg:h-20 bg-zinc-900/80 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-xl items-center justify-center">
+              <Trophy className="w-8 h-8 text-yellow-500" />
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* 4. VALUE PROPOSITION */}
-      <section id="method" className="py-32 relative z-10 border-t border-white/5 bg-[#030712]/30 backdrop-blur-3xl">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-24">
-            <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white">Why ITSDojo?</h2>
-            <p className="text-zinc-500 max-w-2xl mx-auto text-xl">We've gamified the learning process to ensure you don't just learn, but master.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            <ValueCard 
-              icon={<Target className="w-8 h-8" />}
-              title="Interactive Path"
-              description="Visual roadmap that tracks every step of your journey from beginner to expert."
-            />
-            <ValueCard 
-              icon={<Trophy className="w-10 h-10" />}
-              title="Gamified Core"
-              description="XP, Gems, and Streaks designed to keep you motivated and consistent every single day."
-              highlighted
-            />
-            <ValueCard 
-              icon={<LineChart className="w-8 h-8" />}
-              title="Adaptive Support"
-              description="Get hints and power-ups exactly when you need them to overcome difficult challenges."
-            />
-          </div>
+      {/* 3.5 INFINITE SOCIAL PROOF MARQUEE */}
+      <section className="py-10 border-y border-white/5 bg-[#030712]/80 backdrop-blur-md relative z-10 overflow-hidden flex flex-col items-center">
+        <p className="text-zinc-500 text-sm font-bold tracking-widest uppercase mb-6">Teknologi yang Diajarkan & Digunakan</p>
+        <div className="flex overflow-hidden w-full relative">
+          {/* Gradient Masks */}
+          <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-[#030712] to-transparent z-10" />
+          <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#030712] to-transparent z-10" />
+          
+          <motion.div 
+            animate={{ x: [0, -1035] }} 
+            transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+            className="flex gap-16 whitespace-nowrap items-center w-max"
+          >
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="flex gap-16 items-center px-8">
+                <span className="text-xl font-bold text-zinc-600">TypeScript</span>
+                <span className="text-xl font-bold text-zinc-600">React.js</span>
+                <span className="text-xl font-bold text-zinc-600">Node.js</span>
+                <span className="text-xl font-bold text-zinc-600">Python</span>
+                <span className="text-xl font-bold text-zinc-600">PostgreSQL</span>
+                <span className="text-xl font-bold text-zinc-600">AWS</span>
+                <span className="text-xl font-bold text-zinc-600">Docker</span>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* 5. FEATURES SECTION */}
-      <section id="features" className="py-32 relative z-10">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            <div className="flex-1 text-center lg:text-left">
-              <h2 className="text-sm font-bold text-blue-500 uppercase tracking-widest mb-4">The Experience</h2>
-              <h3 className="text-5xl md:text-7xl font-black mb-8 text-white leading-[1.1]">Every Line,<br/>A Level Up.</h3>
-              <p className="text-zinc-400 text-lg mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                Experience a learning platform that feels like a high-end RPG. 
-                Our dashboard is optimized for focus, clarity, and dopamine-driven progression.
-              </p>
-              <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-12">
-                {['Analytics', 'Roadmap', 'Duel', 'Inventory'].map((tag) => (
-                  <span key={tag} className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-bold">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+      {/* 4. KILLER FEATURE 1: INTERACTIVE ROADMAP */}
+      <section id="roadmap" className="py-24 relative z-10 bg-[#030712]/50 border-y border-white/5 backdrop-blur-xl">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut" }} 
+          className="max-w-7xl mx-auto px-6"
+        >
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 mb-6 border border-blue-500/20 shadow-sm">
+              <Map className="w-8 h-8" />
             </div>
+            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">Pohon Skill Interaktif</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-xl leading-relaxed">
+              Klik setiap node untuk merancang takdirmu. Pilih spesialisasi, selesaikan modul untuk mengumpulkan XP, dan buka rahasia ilmu koding layaknya game RPG.
+            </p>
+          </div>
 
-            <div className="flex-1 w-full relative">
-              <div className="aspect-square rounded-[2rem] border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10" />
-                <div className="absolute inset-0 flex items-center justify-center p-8">
-                  <div className="w-full max-w-sm aspect-video bg-zinc-950 rounded-2xl border border-zinc-800 shadow-2xl relative group-hover:scale-105 transition-transform duration-500 overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-8 bg-zinc-900 border-b border-zinc-800 flex items-center px-4 gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500" />
-                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
+          <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
+            {/* Visual Tree */}
+            <div className="flex-1 p-8 rounded-[2rem] bg-zinc-900/40 border border-white/5 shadow-2xl relative">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_100%)] pointer-events-none" />
+              <div className="relative z-10 flex flex-col items-center gap-4 py-4">
+
+                {/* Node 1 */}
+                <div onClick={() => setActiveNode(1)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 1 ? 'scale-110' : 'hover:scale-105'}`}>
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg z-10 transition-colors ${activeNode === 1 ? 'bg-blue-600 text-white ring-4 ring-blue-500/40' : 'bg-blue-600/80 text-blue-100'}`}>
+                    <Code2 className="w-10 h-10" />
+                  </div>
+                  <span className={`font-bold mt-4 ${activeNode === 1 ? 'text-white' : 'text-zinc-400'}`}>Logika Dasar</span>
+                </div>
+
+                <div className="w-2 h-16 bg-gradient-to-b from-blue-500 to-blue-900/50 -my-4 z-0 rounded-full" />
+
+                {/* Split Nodes */}
+                <div className="flex gap-12 md:gap-24 items-start mt-4">
+                  <div onClick={() => setActiveNode(2)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 2 ? 'scale-110' : 'hover:scale-105'}`}>
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 2 ? 'bg-zinc-800 border-4 border-blue-500 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-900 border-4 border-zinc-700 text-zinc-500'}`}>
+                      <Monitor className="w-10 h-10" />
                     </div>
-                    <div className="pt-12 p-6 font-mono text-blue-400 text-sm">
-                      <p><span className="text-purple-400">class</span> DojoNinja {'{'}</p>
-                      <p className="pl-4">master() {'{'}</p>
-                      <p className="pl-8 text-zinc-500">// Leveling up...</p>
-                      <p className="pl-8 text-white">this.xp += 100;</p>
-                      <p className="pl-4">{'}'}</p>
-                      <p>{'}'}</p>
+                    <span className={`font-bold mt-4 ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Frontend</span>
+                  </div>
+
+                  <div onClick={() => setActiveNode(3)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 3 ? 'scale-110' : 'hover:scale-105'}`}>
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 3 ? 'bg-zinc-800 border-4 border-zinc-500 text-zinc-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]' : 'bg-zinc-900 border-4 border-zinc-800 text-zinc-600'}`}>
+                      <BrainCircuit className="w-10 h-10" />
                     </div>
+                    <span className={`font-bold mt-4 ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Data Science</span>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Interactive Detail Panel */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeNode}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="w-full lg:w-96 bg-zinc-900/80 rounded-[2rem] border border-blue-500/30 p-8 shadow-2xl flex flex-col"
+              >
+                {(() => {
+                  const node = roadmapNodes.find(n => n.id === activeNode);
+                  return (
+                    <>
+                      <div className="flex justify-between items-start mb-6">
+                        <div className={`p-3 rounded-xl ${node?.status === 'completed' ? 'bg-green-500/20 text-green-400' : node?.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                          {node?.id === 1 ? <Code2 className="w-6 h-6" /> : node?.id === 2 ? <Monitor className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                        </div>
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full border ${node?.status === 'completed' ? 'bg-green-500/10 border-green-500/30 text-green-400' : node?.status === 'active' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>
+                          {node?.xp}
+                        </span>
+                      </div>
+                      <h3 className="text-2xl font-black text-white mb-2">{node?.title}</h3>
+                      <p className="text-zinc-400 mb-8 leading-relaxed">{node?.desc}</p>
+
+                      <div className="mt-auto">
+                        <Button className={`w-full rounded-full font-bold h-12 ${node?.status === 'locked' ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-800 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}>
+                          {node?.status === 'locked' ? 'Terkunci' : 'Mulai Modul'}
+                        </Button>
+                      </div>
+                    </>
+                  )
+                })()}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* 6. DOJO RANKS */}
-      <section id="ranks" className="py-32 relative z-10 border-t border-white/5 bg-[#030712]/50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-20">
-            <h2 className="text-5xl md:text-7xl font-black mb-6 text-white tracking-tight">The Ninja Path</h2>
-            <p className="text-zinc-500 max-w-md mx-auto text-lg">Your journey to mastery is divided into four distinct phases of the moon.</p>
+      {/* 5. KILLER FEATURE 2: GAMIFICATION */}
+      <section id="gamifikasi" className="py-24 relative z-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut" }} 
+          className="max-w-6xl mx-auto px-6"
+        >
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">Didesain untuk Cara Kerja Otak</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-xl">
+              ITSDojo menggabungkan kurikulum terstruktur dan penghargaan instan untuk mendukung pembelajaran yang fokus dan adiktif.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+            <ValueCard
+              icon={<Flame className="w-8 h-8" />}
+              title="Pertahankan Streak"
+              description="Jaga api tetap menyala. Login dan selesaikan misi harian untuk membangun streak dan melipatgandakan perolehan XP Anda."
+            />
+            <ValueCard
+              icon={<Target className="w-10 h-10" />}
+              title="Misi & Pencapaian"
+              description="Selesaikan target misi harian. Dapatkan lencana eksklusif dan pamerkan dedikasi Anda di profil publik ke seluruh kampus."
+              highlighted
+            />
+            <ValueCard
+              icon={<Gem className="w-8 h-8" />}
+              title="Toko Dojo (Shop)"
+              description="Tukarkan Gems hasil jerih payah Anda dengan item kosmetik profil eksklusif, power-up, dan item pelindung streak."
+            />
+          </div>
+        </motion.div>
+      </section>
+
+      {/* 6. KILLER FEATURE 3: INTERACTIVE LEADERBOARD */}
+      <section id="peringkat" className="py-24 relative z-10 bg-[#030712]/50 border-y border-white/5">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut" }} 
+          className="max-w-6xl mx-auto px-6"
+        >
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="flex-1 w-full order-2 lg:order-1">
+              <div className="bg-zinc-900/60 backdrop-blur-md border border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[50px]"></div>
+
+                {/* Leaderboard Interactive Tabs */}
+                <div className="flex justify-between items-center mb-8 relative z-10">
+                  <h3 className="text-2xl font-black text-white">Peringkat Global</h3>
+                  <div className="flex bg-zinc-950 rounded-full p-1 border border-white/10">
+                    {(["Mingguan", "Musim 4"] as const).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setLeaderboardTab(tab)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${leaderboardTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-zinc-500 hover:text-white'}`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 relative z-10">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={leaderboardTab}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="space-y-4"
+                    >
+                      {leaderboardData[leaderboardTab].map((user: any) => (
+                        <div key={user.rank} onClick={() => setExpandedUser(expandedUser === user.rank ? null : user.rank)} className="cursor-pointer group">
+                          <div className={`flex items-center p-4 rounded-2xl transition-all ${user.highlight ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:border-zinc-500'}`}>
+                            <div className={`w-8 font-black text-lg ${user.highlight ? 'text-blue-200' : 'text-zinc-500'}`}>#{user.rank}</div>
+                            <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-bold text-lg mr-4 ring-2 ${user.highlight ? 'bg-white text-blue-600 ring-blue-400' : `${user.bg} ${user.ring}`}`}>
+                              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover bg-white/10" />
+                            </div>
+                            <div className="flex-1 font-bold text-lg group-hover:translate-x-1 transition-transform">{user.name}</div>
+                            <div className="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full">
+                              <Zap className={`w-4 h-4 ${user.highlight ? 'text-yellow-300' : 'text-yellow-500'}`} />
+                              <span className="font-bold">{user.xp}</span>
+                            </div>
+                          </div>
+                          {/* Expandable Detail Panel */}
+                          <AnimatePresence>
+                            {expandedUser === user.rank && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="p-4 bg-zinc-950/80 mt-2 rounded-xl text-sm text-zinc-400 flex justify-between items-center border border-zinc-800/50">
+                                  <span className="font-mono">{user.stats}</span>
+                                  <button className="text-blue-400 font-bold hover:underline">Lihat Profil</button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      ))}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 text-center lg:text-left order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
+                <Trophy className="w-4 h-4" /> Papan Peringkat Live
+              </div>
+              <h3 className="text-4xl md:text-5xl font-black mb-6 text-white leading-[1.1]">Naik ke Puncak Klasemen</h3>
+              <p className="text-zinc-400 text-lg leading-relaxed mb-8">
+                Kompetisi yang sehat memicu kehebatan. Pantau progres Anda melawan teman sekelas secara real-time. Klik profil manapun untuk mengintip statistik mereka, lalu curi taktiknya!
+              </p>
+              <Button className="h-14 px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg">
+                Lihat Semua Peringkat
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* 7. KILLER FEATURE 4: BRAIN DUEL (INTENSE COLLISION ANIMATION) */}
+      <section id="duel" className="py-32 relative z-10 bg-[#020617] text-white overflow-hidden border-b border-white/5">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:40px_40px] opacity-30"></div>
+          {/* Explosion glow synchronized with clashing phase */}
+          <motion.div
+            animate={{ opacity: duelPhase === 'clashing' ? 0.8 : 0, scale: duelPhase === 'clashing' ? 1.5 : 1 }}
+            transition={{ duration: 0.3 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/30 rounded-full blur-[100px] pointer-events-none mix-blend-screen"
+          ></motion.div>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut" }} 
+          className="max-w-6xl mx-auto px-6 relative z-10"
+        >
+          <div className="text-center mb-16">
+            <motion.div
+              animate={duelPhase === 'clashing' ? { rotate: [0, -10, 10, -10, 0], scale: 1.2 } : {}}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-red-500/10 text-red-500 mb-6 border border-red-500/30 backdrop-blur-md shadow-[0_0_40px_rgba(239,68,68,0.3)]"
+            >
+              <Swords className="w-10 h-10" />
+            </motion.div>
+            <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">Brain Duel: Arena Pertarungan</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-xl leading-relaxed">
+              Tabrak lawanmu secara langsung! Jawab akurat di bawah tekanan waktu, hancurkan pertahanan mereka, dan rebut XP di depan mata.
+            </p>
+          </div>
+
+          <div className="relative max-w-5xl mx-auto">
+
+            {/* Duel Arena Header (Players Colliding) */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 relative mb-12 h-40">
+
+              {/* Player 1 (You) */}
+              <motion.div
+                variants={p1Variants}
+                initial="idle"
+                animate={duelPhase}
+                className="bg-zinc-900/90 backdrop-blur-xl border-2 border-blue-500/60 p-8 rounded-[2rem] w-full md:w-80 text-center relative overflow-hidden shadow-[0_0_40px_rgba(59,130,246,0.3)] z-20"
+              >
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
+                <div className="flex items-center gap-5">
+                  <div className="w-20 h-20 rounded-full overflow-hidden bg-zinc-950 border-2 border-blue-500 flex items-center justify-center text-3xl font-black text-white shadow-[inset_0_0_15px_rgba(59,130,246,0.4)]">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Anda" className="w-full h-full object-cover bg-zinc-800" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <h4 className="text-2xl font-black text-white mb-1">Anda</h4>
+                    <div className="flex items-center gap-2 text-blue-400">
+                      <Zap className="w-4 h-4" />
+                      <span className="font-mono font-bold text-base">1280 pts</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* VS sign & Timer */}
+              <motion.div
+                animate={duelPhase === 'clashing' ? { scale: [1, 1.5, 0.8, 1.2, 1], rotate: [0, -10, 10, -10, 0] } : { scale: 1, rotate: 0 }}
+                transition={{ duration: 0.5 }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center"
+              >
+                <div className="w-20 h-20 rounded-full bg-zinc-950 flex items-center justify-center text-white font-black text-2xl shadow-[0_0_30px_rgba(255,255,255,0.15)] border-2 border-zinc-700 mb-2">
+                  VS
+                </div>
+              </motion.div>
+
+              {/* Player 2 (Rival) - With erosion effect */}
+              <motion.div
+                variants={p2Variants}
+                initial="idle"
+                animate={duelPhase}
+                className="bg-zinc-900/90 backdrop-blur-xl border-2 border-red-500/60 p-8 rounded-[2rem] w-full md:w-80 text-center relative overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.3)] z-20"
+              >
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500"></div>
+                {/* Flash hit indicator */}
+                {duelPhase === 'clashing' && <div className="absolute inset-0 bg-red-500/30 animate-pulse z-0 mix-blend-screen" />}
+
+                <div className="flex flex-row-reverse items-center gap-5 text-right relative z-10">
+                  <div className="w-20 h-20 rounded-full overflow-hidden bg-zinc-950 border-2 border-red-500 flex items-center justify-center text-3xl font-black text-white shadow-[inset_0_0_15px_rgba(239,68,68,0.4)]">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jack" alt="Rival" className="w-full h-full object-cover bg-zinc-800" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-2xl font-black text-white mb-1">Rival</h4>
+                    <div className="flex items-center justify-end gap-2 text-red-400">
+                      <motion.span
+                        key={rivalHealth}
+                        initial={{ scale: 1.5, color: '#fff' }}
+                        animate={{ scale: 1, color: '#f87171' }}
+                        className="font-mono font-bold text-base"
+                      >
+                        {rivalHealth} pts
+                      </motion.span>
+                      <Zap className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* The Active Quiz Question Box */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-14 shadow-2xl relative mt-4"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <span className="inline-block px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg text-sm font-bold border border-blue-500/30 tracking-wide">
+                  Soal #4 <span className="text-zinc-500 mx-2">|</span> JavaScript Basics
+                </span>
+                <motion.div 
+                  animate={duelTimeLeft <= 5 ? { x: [-2, 2, -3, 3, -1, 1, 0], y: [-1, 1, -2, 2, -1, 1, 0] } : { x: 0, y: 0 }} 
+                  transition={{ repeat: duelTimeLeft <= 5 ? Infinity : 0, duration: 0.3 }}
+                  className={`text-4xl font-black font-mono drop-shadow-[0_0_15px_rgba(239,68,68,0.6)] ${duelTimeLeft <= 5 ? 'text-red-500' : 'text-white'}`}
+                >
+                  00:{duelTimeLeft.toString().padStart(2, '0')}
+                </motion.div>
+              </div>
+
+              {/* In-box Timer Progress Bar */}
+              <div className="w-full h-2 bg-zinc-800/80 rounded-full overflow-hidden mb-10 shadow-inner border border-white/5">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 shadow-[0_0_10px_rgba(249,115,22,0.5)] relative"
+                  initial={{ width: "100%" }}
+                  animate={{ width: `${(duelTimeLeft / 15) * 100}%` }}
+                  transition={{ duration: 1, ease: "linear" }}
+                >
+                  <div className="absolute top-0 right-0 bottom-0 w-20 bg-gradient-to-r from-transparent to-white/30" />
+                </motion.div>
+              </div>
+
+              <div className="text-center mb-12">
+                <h3 className="text-3xl md:text-4xl font-bold text-white font-mono leading-tight">
+                  Apa output dari <span className="text-orange-400 bg-orange-400/10 px-2 rounded-md">typeof null</span> di JavaScript?
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {["null", "undefined", "object", "string"].map((ans, idx) => {
+                  const isMockActive = idx === duelActiveAnswer;
+                  return (
+                    <motion.button
+                      key={idx}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-6 rounded-2xl border-2 text-lg font-bold transition-all relative overflow-hidden group ${isMockActive
+                        ? 'bg-blue-600/20 border-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]'
+                        : 'bg-zinc-950 border-white/10 text-zinc-300 hover:border-white/30'
+                        }`}
+                    >
+                      {isMockActive && (
+                        <motion.div
+                          layoutId="activeGlow"
+                          className="absolute inset-0 bg-blue-500/10 z-0"
+                        />
+                      )}
+                      <span className="relative z-10 font-mono">{ans}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            <div className="mt-16 text-center">
+              <Button className="h-16 px-12 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-xl shadow-[0_0_40px_rgba(239,68,68,0.5)] transition-all flex items-center gap-3 mx-auto group">
+                <Rocket className="w-6 h-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> Mulai Pertarungan Baru
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* 8. REAL-TIME ANALYTICS (Non-AI, Gamification Focused) */}
+      <section id="analitik" className="py-24 relative z-10 bg-[#030712]">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut" }} 
+          className="max-w-7xl mx-auto px-6"
+        >
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">Analitik Pembelajaran Cerdas</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed">
+              Setiap klik membangun profil karaktermu. Sistem memantau gaya belajar Anda untuk merekomendasikan tantangan terbaik agar Anda tidak pernah bosan.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { rank: "Novice", desc: "Start your journey.", xp: "0 - 1k XP", color: "from-zinc-400 to-zinc-600", icon: "🥋" },
-              { rank: "Apprentice", desc: "Master logic basics.", xp: "1k - 5k XP", color: "from-blue-400 to-blue-600", icon: "⚔️" },
-              { rank: "Expert", desc: "Build complex apps.", xp: "5k - 15k XP", color: "from-red-400 to-red-600", icon: "🔥" },
-              { rank: "Sensei", desc: "Mentor the Dojo.", xp: "15k+ XP", color: "from-purple-400 to-purple-600", icon: "👑" }
-            ].map((r, i) => (
-              <motion.div 
+              { title: "Heatmap Aktivitas", desc: "Pantau intensitas belajar Anda setiap hari layaknya jejak kontribusi commit di GitHub.", icon: <Activity />, color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20" },
+              { title: "Deteksi Kelemahan", desc: "Sistem gamifikasi kami mengidentifikasi secara instan konsep koding yang sering Anda jawab salah.", icon: <ShieldAlert />, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
+              { title: "Rekomendasi Terarah", desc: "Dapatkan saran tantangan spesifik berdasarkan tingkat skill dan XP yang saat ini Anda miliki.", icon: <Monitor />, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" }
+            ].map((f, i) => (
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="p-8 rounded-3xl bg-zinc-900/30 border border-zinc-800/50 flex flex-col justify-between h-[300px] hover:bg-zinc-900/60 hover:border-zinc-700 transition-all group relative overflow-hidden"
+                className={`p-8 rounded-3xl bg-zinc-900/50 border ${f.border} flex flex-col justify-center h-[280px] hover:bg-zinc-800/80 hover:shadow-xl transition-all group relative overflow-hidden`}
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${r.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
-                <div>
-                  <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-3xl bg-gradient-to-br ${r.color} shadow-lg group-hover:scale-110 transition-transform`}>
-                    {r.icon}
-                  </div>
-                  <h3 className="text-white text-2xl font-bold mb-2">{r.rank}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed">{r.desc}</p>
+                <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center ${f.bg} ${f.color} shadow-lg group-hover:scale-110 transition-transform`}>
+                  {f.icon}
                 </div>
-                <div className="inline-flex items-center gap-2 text-xs font-bold text-white bg-zinc-950 px-4 py-2 rounded-full w-max mt-4 border border-zinc-800/50 shadow-inner">
-                  <Zap className="w-3 h-3 text-yellow-500" /> {r.xp}
-                </div>
+                <h3 className="text-white text-2xl font-bold mb-3">{f.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* 7. BOTTOM CTA */}
-      <section className="py-20 px-6 relative z-10">
-        <motion.div 
+      {/* 9. BOTTOM CTA */}
+      <section className="py-24 px-6 relative z-10 bg-[#030712]/50 border-t border-white/5">
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="max-w-6xl mx-auto bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 rounded-[4rem] p-20 md:p-32 text-center relative overflow-hidden shadow-[0_20px_100px_rgba(37,99,235,0.4)]"
+          className="max-w-6xl mx-auto bg-gradient-to-br from-blue-700 via-indigo-800 to-blue-900 rounded-[3rem] p-16 md:p-24 text-center relative overflow-hidden shadow-[0_0_80px_rgba(37,99,235,0.3)] border border-blue-500/20"
         >
-          <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:40px_40px]" />
-          
-          <h2 className="text-5xl md:text-7xl font-black text-white mb-8 relative z-10 tracking-tight leading-none">Ready to enter<br/>the Dojo?</h2>
-          <p className="text-blue-100 text-xl mb-12 max-w-xl mx-auto relative z-10 font-medium opacity-90 italic">"The best time to start was yesterday. The second best time is now."</p>
-          
-          <Link href="/login" className="relative z-10 inline-block">
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Button size="lg" className="h-16 px-12 rounded-full bg-white text-blue-600 hover:bg-zinc-50 font-black text-xl shadow-2xl transition-all">
-                Join Now <ChevronRight className="w-6 h-6 ml-2" />
-              </Button>
-            </motion.div>
+          <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6 relative z-10 tracking-tight leading-tight">Siap untuk memasuki<br />Dojo?</h2>
+          <p className="text-blue-200 text-lg md:text-xl mb-10 max-w-xl mx-auto relative z-10 font-medium opacity-90 italic">"Waktu terbaik untuk memulai adalah kemarin. Waktu terbaik kedua adalah sekarang."</p>
+
+          <Link href={mounted && isLoggedIn ? "/learn" : "/login"} className="relative z-10 inline-block">
+            <MagneticButton size="lg" className="h-16 px-12 rounded-full bg-white text-blue-900 hover:bg-zinc-200 font-black text-lg shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all flex items-center group">
+              Bergabung Sekarang <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" />
+            </MagneticButton>
           </Link>
         </motion.div>
       </section>
 
-      {/* 8. FOOTER */}
-      <footer className="py-20 border-t border-white/5 bg-[#030712] relative z-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
+      {/* 10. FOOTER */}
+      <footer className="relative z-10 bg-black pt-24 pb-12">
+        {/* Curved Top SVG Divider */}
+        <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-0">
+          <svg className="relative block w-full h-[60px] md:h-[120px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="#030712"></path>
+          </svg>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left relative z-10">
           <div className="flex flex-col gap-4 items-center md:items-start">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-black tracking-tighter text-white">ITSDojo</span>
+              <span className="text-xl font-black tracking-tight text-white">ITSDojo</span>
             </div>
-            <p className="text-zinc-500 text-sm max-w-xs">Mastering the stack, one level at a time. The ultimate Dojo for future builders.</p>
+            <p className="text-zinc-500 text-sm max-w-xs">Menguasai teknologi modern, satu level pada satu waktu. Dojo pamungkas untuk para builder masa depan.</p>
           </div>
-          
-          <div className="flex gap-12 text-sm font-bold text-zinc-400">
-            <Link href="#" className="hover:text-white transition-colors underline-offset-8 hover:underline">Privacy</Link>
-            <Link href="#" className="hover:text-white transition-colors underline-offset-8 hover:underline">Terms</Link>
-            <Link href="https://github.com" className="hover:text-white transition-colors underline-offset-8 hover:underline">GitHub</Link>
+
+          <div className="flex gap-8 text-sm font-bold text-zinc-500">
+            <Link href="#" className="hover:text-white transition-colors">Privasi</Link>
+            <Link href="#" className="hover:text-white transition-colors">Ketentuan</Link>
+            <Link href="https://github.com" className="hover:text-white transition-colors">GitHub</Link>
           </div>
 
           <div className="text-zinc-600 text-sm font-medium border-l border-zinc-800 pl-8 hidden md:block">
-            © 2026 ITSDojo Inc.<br/>All rights reserved.
+            © 2026 ITSDojo Inc.<br />Hak Cipta Dilindungi.
           </div>
         </div>
       </footer>
@@ -312,23 +818,39 @@ export default function LandingPage() {
 }
 
 function ValueCard({ icon, title, description, highlighted = false }: any) {
+  const divRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return;
+    const rect = divRef.current.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
   return (
-    <motion.div 
+    <motion.div
+      ref={divRef}
+      onMouseMove={handleMouseMove}
       whileHover={{ y: -10 }}
-      className={`p-12 rounded-[2.5rem] text-center transition-all h-[360px] flex flex-col justify-center relative overflow-hidden ${
-        highlighted 
-        ? "bg-gradient-to-b from-blue-600 to-blue-900 border border-blue-500/50 shadow-[0_0_60px_rgba(37,99,235,0.4)] z-10 md:scale-110" 
-        : "bg-zinc-900/40 border border-zinc-800 hover:bg-zinc-900/60"
-      }`}
+      className={`p-10 rounded-[2rem] text-center transition-all flex flex-col justify-center relative overflow-hidden shadow-lg group ${highlighted
+        ? "bg-gradient-to-b from-blue-600 to-blue-900 border border-blue-500/50 shadow-[0_20px_40px_rgba(37,99,235,0.3)] z-10 md:scale-105 text-white"
+        : "bg-zinc-900/40 border border-white/5 hover:border-white/10 text-white"
+        }`}
     >
-      {highlighted && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-white to-transparent" />}
-      <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-8 backdrop-blur-md border ${
-        highlighted ? "bg-white/10 border-white/20 text-white" : "bg-zinc-800/50 border-zinc-700 text-zinc-400"
-      }`}>
+      {/* Mouse Tracking Spotlight */}
+      <div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100 z-0"
+        style={{
+          background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, ${highlighted ? 'rgba(255,255,255,0.1)' : 'rgba(59,130,246,0.15)'}, transparent 40%)`,
+        }}
+      />
+      {highlighted && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white to-transparent" />}
+      <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-8 shadow-sm relative z-10 ${highlighted ? "bg-white/10 text-white border border-white/20" : "bg-zinc-800/50 text-blue-400 border border-zinc-700"
+        }`}>
         {icon}
       </div>
-      <h3 className={`text-2xl font-bold mb-4 ${highlighted ? "text-white" : "text-white"}`}>{title}</h3>
-      <p className={`text-base leading-relaxed ${highlighted ? "text-blue-100/80" : "text-zinc-500"}`}>{description}</p>
+      <h3 className={`text-2xl font-bold mb-4 text-white relative z-10`}>{title}</h3>
+      <p className={`text-base leading-relaxed relative z-10 ${highlighted ? "text-blue-100" : "text-zinc-400"}`}>{description}</p>
     </motion.div>
   );
 }

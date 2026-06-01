@@ -17,6 +17,7 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+import { logoutSession } from "@/actions/auth";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -28,8 +29,9 @@ export default function SettingsPage() {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logoutSession(); // Hapus session cookie di server
+    logout();              // Reset Zustand state di client
     router.push("/login");
   };
 

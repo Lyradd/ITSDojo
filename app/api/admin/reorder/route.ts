@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { units, lessons } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "@/lib/auth-guard";
 
 export async function PUT(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
-    const role = req.headers.get("x-user-role");
-    if (role !== "admin" && role !== "dosen") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
 
     const { type, items } = await req.json();
 

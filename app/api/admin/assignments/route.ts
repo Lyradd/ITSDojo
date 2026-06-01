@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { courseInstructors, courseAssistants, enrollments, courses, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { requireAdmin } from "@/lib/auth-guard";
 
 // GET /api/admin/assignments — Ambil semua assignment (dosen->kelas, asdos->kelas, mhs->kelas)
-export async function GET() {
+export async function GET(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     // Ambil semua instructor assignments
     const instructors = await db
@@ -70,6 +74,9 @@ export async function GET() {
 
 // POST /api/admin/assignments — Buat assignment baru
 export async function POST(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { userId, courseId, type } = body;
@@ -127,6 +134,9 @@ export async function POST(req: Request) {
 
 // DELETE /api/admin/assignments — Hapus assignment
 export async function DELETE(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');

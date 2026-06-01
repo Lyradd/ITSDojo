@@ -39,7 +39,7 @@ export default function EvaluationResultsPage() {
   const params = useParams();
   const evaluationId = params.evaluationId as string;
 
-  const { isLoggedIn, name, addXp } = useUserStore();
+  const { isLoggedIn, name, id: userId, addXp } = useUserStore();
   const {
     currentEvaluation,
     score: storeScore,
@@ -81,7 +81,7 @@ export default function EvaluationResultsPage() {
         questions: normalized.questions,
       });
 
-      const result = await getStudentEvaluationResult(evaluationId, name || 'Anonim');
+      const result = userId ? await getStudentEvaluationResult(evaluationId, userId) : null;
       if (cancelled) return;
       if (result) {
         setDbResult({

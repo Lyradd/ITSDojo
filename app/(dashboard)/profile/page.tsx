@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
-import { COURSES } from "@/lib/dummydata";
+import { COURSES } from "@/lib/dummydata"; // Fallback only
+import { getProfileSidebarData } from "@/actions/profile";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,18 +37,45 @@ import { ActivityHeatmap } from "@/components/profile/activity-heatmap";
 import { getAchievementsData } from "@/lib/profile-data";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const {
     name, xp, streak, completedLessonIds = [], unlockedAchievements = [],
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
     activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
-    createdAt, followingCount, followersCount, earnedBadges, perfectWeeksCount = 0
+    createdAt, followingCount, followersCount, earnedBadges, perfectWeeksCount = 0,
+    isLoggedIn, id, enrolledCourseIds = []
   } = useUserStore();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(name);
   const [tempBio, setTempBio] = useState(bio);
+
+  const [fetchedCourses, setFetchedCourses] = useState<any[]>([]);
+  const [fetchedPeers, setFetchedPeers] = useState<any[]>([]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && isLoggedIn && id) {
+      getProfileSidebarData(enrolledCourseIds, id).then((res) => {
+        if (res.success) {
+          setFetchedCourses(res.courses);
+          setFetchedPeers(res.peers);
+        }
+      });
+    }
+  }, [isMounted, isLoggedIn, id, enrolledCourseIds]);
+
+  useEffect(() => {
+    if (isMounted && !isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isMounted, isLoggedIn, router]);
 
   const AVATARS = [
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
@@ -58,6 +87,21 @@ export default function ProfilePage() {
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Luna",
     "https://api.dicebear.com/7.x/avataaars/svg?seed=Shadow"
   ];
+
+  // --- Modal UX Handlers ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsModalOpen(false);
+        setIsAvatarModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // If not mounted or not logged in, render nothing during redirect/hydration
+  if (!isMounted || !isLoggedIn) return null;
 
   const handleSaveProfile = () => {
     updateProfile({ name: tempName, bio: tempBio });
@@ -84,18 +128,7 @@ export default function ProfilePage() {
     }
   };
 
-  // --- Modal UX Handlers ---
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsModalOpen(false);
-        setIsAvatarModalOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
+  // Note: Modal UX Handlers have been moved above the early return
   // --- MOCK DATA (Data Dummy untuk Profil) ---
   const username = name.toLowerCase().replace(/\s/g, "");
   const joinDate = createdAt 
@@ -126,7 +159,7 @@ export default function ProfilePage() {
             {/* Avatar Besar */}
             <div className="relative group">
               <div className="w-32 h-32 rounded-full bg-blue-600 border-4 border-blue-100 dark:border-blue-900 flex items-center justify-center text-5xl font-bold text-white shadow-xl overflow-hidden">
-                {avatarUrl ? (
+                {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.startsWith('data:')) ? (
                   <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                 ) : (
                   name.charAt(0).toUpperCase()
@@ -309,30 +342,36 @@ export default function ProfilePage() {
         {/* === KOLOM KANAN: SIDEBAR WIDGETS === */}
         <div className="flex flex-col gap-6">
 
-          {/* Kursus Saya */}
+          {/* Kelas Saya */}
           <Card className="p-4 rounded-2xl border-2">
-            <h3 className="font-bold text-lg mb-4 text-zinc-700 dark:text-zinc-200">Kursus Saya</h3>
+            <h3 className="font-bold text-lg mb-4 text-zinc-700 dark:text-zinc-200">Kelas Saya</h3>
             <div className="space-y-4">
-              {COURSES.slice(0, 3).map((course, idx) => (
-                <div key={course.id} className="flex items-center gap-3 pb-3 border-b last:border-0 last:pb-0">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 dark:border-zinc-800 ${course.color}`}>
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <h4 className="font-bold text-sm truncate">{course.title}</h4>
-                    <div className="text-xs text-zinc-500 font-bold flex items-center gap-1">
-                      <span className={course.id === activeCourseId ? "text-green-500" : "text-zinc-400"}>
-                        {course.id === activeCourseId ? "Sedang dipelajari" : "Belum dimulai"}
-                      </span>
+              {fetchedCourses.length > 0 ? (
+                fetchedCourses.slice(0, 3).map((course, idx) => (
+                  <div key={course.id} className="flex items-center gap-3 pb-3 border-b last:border-0 last:pb-0">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 dark:border-zinc-800 bg-blue-100 dark:bg-blue-900/40 text-blue-500`}>
+                      {course.image ? (
+                        <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <BookOpen className="w-6 h-6" />
+                      )}
                     </div>
+                    <div className="flex-1 overflow-hidden">
+                      <h4 className="font-bold text-sm truncate">{course.title}</h4>
+                      <div className="text-xs text-zinc-500 font-bold flex items-center gap-1">
+                        <span className={course.id === activeCourseId ? "text-green-500" : "text-zinc-400"}>
+                          {course.id === activeCourseId ? "Sedang dipelajari" : "Terdaftar"}
+                        </span>
+                      </div>
+                    </div>
+                    {course.id === activeCourseId && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                   </div>
-                  {course.id === activeCourseId && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                ))
+              ) : (
+                <div className="text-center text-zinc-500 text-sm py-4">
+                  Belum terdaftar di kelas apapun
                 </div>
-              ))}
+              )}
             </div>
             <Link href="/courses">
               <Button variant="ghost" className="w-full mt-2 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:text-blue-400">
@@ -341,24 +380,34 @@ export default function ProfilePage() {
             </Link>
           </Card>
 
-          {/* Teman (Mock) */}
+          {/* Teman Belajar (Dynamic DB) */}
           <Card className="p-4 rounded-2xl border-2">
             <h3 className="font-bold text-lg mb-4 text-zinc-700 dark:text-zinc-200">Teman Belajar</h3>
             <div className="space-y-4">
-              {["Sarah K.", "Budi S.", "Citra A."].map((friend: string, idx: number) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center font-bold text-zinc-500 border-2 border-zinc-200">
-                    {friend.charAt(0)}
+              {fetchedPeers.length > 0 ? (
+                fetchedPeers.map((friend) => (
+                  <div key={friend.id} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-zinc-500 border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                      {friend.avatar && !friend.avatar.startsWith('bg-') ? (
+                         <img src={friend.avatar} alt={friend.name} className="w-full h-full object-cover" />
+                      ) : (
+                         friend.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm truncate">{friend.name}</h4>
+                      <div className="text-xs text-zinc-400">{friend.xp} XP • Lv. {friend.level}</div>
+                    </div>
+                    <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-blue-500 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20">
+                      Ikuti
+                    </Button>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-sm">{friend}</h4>
-                    <div className="text-xs text-zinc-400">1.2k XP • Lv. 5</div>
-                  </div>
-                  <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-blue-500 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20">
-                    Ikuti
-                  </Button>
+                ))
+              ) : (
+                <div className="text-center text-zinc-500 text-sm py-2">
+                  Belum ada teman yang bisa ditampilkan.
                 </div>
-              ))}
+              )}
             </div>
             <Button variant="ghost" className="w-full mt-4 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
               Cari Teman

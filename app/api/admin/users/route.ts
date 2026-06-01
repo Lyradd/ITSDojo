@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "@/lib/auth-guard";
 
 // GET /api/admin/users — Ambil semua user
-export async function GET() {
+export async function GET(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const allUsers = await db.select().from(users);
     return NextResponse.json(allUsers);
@@ -15,6 +19,9 @@ export async function GET() {
 
 // POST /api/admin/users — Buat user baru
 export async function POST(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     

@@ -10,63 +10,52 @@ export async function POST(req: Request) {
     const { language, files, stdin } = body;
     const code = files?.[0]?.content || "";
 
-    // 1. NATIVE EXECUTION UNTUK PYTHON & JAVASCRIPT
+    // 1. PISTON API EXECUTION UNTUK PYTHON & JAVASCRIPT (SECURE SANDBOX)
     if (language === 'python' || language === 'javascript') {
       try {
-        const tmpDir = os.tmpdir();
-        const fileExt = language === 'python' ? 'py' : 'js';
-        const fileName = `itsdojo_run_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
-        const filePath = path.join(tmpDir, fileName);
+        const pistonVersion = language === 'python' ? '3.10.0' : '18.15.0';
 
-        // Tulis kode ke temporary file
-        fs.writeFileSync(filePath, code);
-
-        let command = '';
-        if (language === 'python') {
-          // On Windows it's usually 'python'
-          command = `python "${filePath}"`;
-        } else {
-          command = `node "${filePath}"`;
-        }
-
-        // Eksekusi kode secara sinkron dengan stdin
-        const result = execSync(command, {
-          input: stdin || '',
-          timeout: 5000, // max 5 detik
-          encoding: 'utf-8',
-          stdio: ['pipe', 'pipe', 'pipe'] // stdin, stdout, stderr
+        const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            language: language,
+            version: pistonVersion,
+            files: [{ content: code }],
+            stdin: stdin || "",
+          })
         });
 
-        // Hapus file sementara
-        try { fs.unlinkSync(filePath); } catch (e) {}
+        if (!response.ok) {
+          throw new Error(`Piston API Error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        // Handle error output from Piston correctly
+        if (result.message) {
+          throw new Error(result.message);
+        }
 
         return NextResponse.json({
           language,
-          version: "Native",
+          version: "Piston",
           run: {
-            stdout: result.trimEnd(),
-            stderr: "",
-            output: result.trimEnd(),
-            code: 0,
-            signal: null
+            stdout: result.run.stdout || "",
+            stderr: result.run.stderr || "",
+            output: result.run.output || "",
+            code: result.run.code || 0,
+            signal: result.run.signal || null
           }
         });
 
       } catch (error: any) {
-        // Jika ada error runtime/sintaks (stderr)
-        let errMsg = error.stderr ? error.stderr.toString() : error.message;
-        
-        // Coba hapus file jika gagal di tengah jalan
-        try {
-          const files = fs.readdirSync(os.tmpdir()).filter(fn => fn.startsWith('itsdojo_run_'));
-          files.forEach(f => fs.unlinkSync(path.join(os.tmpdir(), f)));
-        } catch(e) {}
-
+        const errMsg = error.message || "Execution failed";
         return NextResponse.json({
           language,
-          version: "Native",
+          version: "Piston",
           run: {
-            stdout: error.stdout ? error.stdout.toString() : "",
+            stdout: "",
             stderr: errMsg,
             output: errMsg,
             code: 1,
@@ -100,7 +89,7 @@ export async function POST(req: Request) {
       } else if (coutMatch) {
         output = coutMatch[1];
       } else if (language === "sql") {
-        output = "CREATE INDEX idx_name ON users(name);"; 
+        output = "CREATE INDEX idx_name ON users(name);";
       } else {
         output = "Program finished with no output or mock unavailable.";
       }

@@ -7,7 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Users, UserCog, ShieldAlert, Trash2, Edit3, Shield,
-  CheckCircle2, UserPlus, X, BookOpen, Link2, Loader2
+  CheckCircle2, UserPlus, X, BookOpen, Link2, Loader2,
+  Search, ArrowUpDown, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,12 +36,19 @@ export default function SuperAdminUsersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingPassword, setEditingPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Add User Form State
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('mahasiswa');
   const [newSemester, setNewSemester] = useState(1);
+
+  // Search & Sort State (untuk Kelola Pengguna tab)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'email' | 'role' | 'semester'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Assignment Form State
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -128,18 +136,29 @@ export default function SuperAdminUsersPage() {
     if (!editingUser) return;
     setSaving(true);
     try {
+      const payload: any = { ...editingUser };
+      // Hanya kirim password kalau user input password baru di field — biar tidak overwrite kosong
+      if (editingPassword.trim().length > 0) {
+        payload.password = editingPassword.trim();
+      }
       const res = await fetch(`/api/admin/users/${editingUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingUser)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengupdate user");
 
       setIsEditModalOpen(false);
       setEditingUser(null);
+      setEditingPassword('');
+      setShowPassword(false);
       loadData();
-      toast.success(`Data pengguna "${editingUser.name}" berhasil diperbarui!`);
+      toast.success(
+        editingPassword.trim().length > 0
+          ? `Data & password "${editingUser.name}" berhasil diperbarui!`
+          : `Data pengguna "${editingUser.name}" berhasil diperbarui!`
+      );
     } catch (err: any) {
       toast.error(err.message || 'Terjadi kesalahan.');
     } finally {
@@ -375,6 +394,45 @@ export default function SuperAdminUsersPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-6"
               >
+                {/* Search & Sort Toolbar */}
+                <Card className="p-4 rounded-2xl border bg-white dark:bg-zinc-900/50">
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                      <input
+                        type="text"
+                        placeholder="Cari nama, email, atau role..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(['name', 'email', 'role', 'semester'] as const).map((field) => (
+                        <Button
+                          key={field}
+                          size="sm"
+                          variant={sortBy === field ? 'default' : 'outline'}
+                          onClick={() => {
+                            if (sortBy === field) {
+                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortBy(field);
+                              setSortOrder('asc');
+                            }
+                          }}
+                          className="font-bold capitalize"
+                        >
+                          {field === 'name' ? 'Nama' : field === 'email' ? 'Email' : field === 'role' ? 'Role' : 'Semester'}
+                          {sortBy === field && (
+                            <ArrowUpDown className={cn("w-3 h-3 ml-1.5", sortOrder === 'desc' && "rotate-180")} />
+                          )}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+
                 {/* Users Table */}
                 <Card className="rounded-2xl border overflow-hidden bg-white dark:bg-zinc-900/50">
                   <div className="overflow-x-auto">
@@ -389,7 +447,38 @@ export default function SuperAdminUsersPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((user) => (
+                        {(() => {
+                          // Filter & sort
+                          const filtered = users.filter((u) => {
+                            if (!searchQuery) return true;
+                            const q = searchQuery.toLowerCase();
+                            return (
+                              u.name?.toLowerCase().includes(q) ||
+                              u.email?.toLowerCase().includes(q) ||
+                              u.role?.toLowerCase().includes(q)
+                            );
+                          });
+                          const sorted = [...filtered].sort((a, b) => {
+                            let cmp = 0;
+                            const av = a[sortBy];
+                            const bv = b[sortBy];
+                            if (typeof av === 'number' && typeof bv === 'number') {
+                              cmp = av - bv;
+                            } else {
+                              cmp = String(av ?? '').localeCompare(String(bv ?? ''));
+                            }
+                            return sortOrder === 'asc' ? cmp : -cmp;
+                          });
+                          if (sorted.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={5} className="p-8 text-center text-sm text-zinc-500">
+                                  Tidak ada pengguna yang cocok dengan pencarian.
+                                </td>
+                              </tr>
+                            );
+                          }
+                          return sorted.map((user) => (
                           <tr key={user.id} className="border-b hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
                             <td className="p-4">
                               <div className="font-bold text-zinc-900 dark:text-white">{user.name}</div>
@@ -419,6 +508,8 @@ export default function SuperAdminUsersPage() {
                                   size="icon"
                                   onClick={() => {
                                     setEditingUser({ ...user });
+                                    setEditingPassword('');
+                                    setShowPassword(false);
                                     setIsEditModalOpen(true);
                                   }}
                                   className="h-8 w-8 text-zinc-500 hover:text-blue-600"
@@ -436,7 +527,8 @@ export default function SuperAdminUsersPage() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          ));
+                        })()}
                       </tbody>
                     </table>
                   </div>
@@ -890,6 +982,36 @@ export default function SuperAdminUsersPage() {
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-50"
                       />
                     </div>
+                  </div>
+
+                  {/* Password Reset (opsional) */}
+                  <div className="space-y-1.5 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                    <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-orange-500" />
+                      Ubah Password
+                      <span className="ml-auto text-[10px] font-medium text-zinc-400 normal-case tracking-normal">
+                        Kosongkan jika tidak ingin ubah
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={editingPassword}
+                        onChange={(e) => setEditingPassword(e.target.value)}
+                        placeholder="Password baru (kosongkan jika tidak diubah)"
+                        className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((s) => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-zinc-500">
+                      Default password baru: <span className="font-mono font-bold">123456</span>
+                    </p>
                   </div>
 
                   <div className="pt-4 flex gap-3">

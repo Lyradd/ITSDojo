@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { logoutSession } from "@/actions/auth";
 
 interface FeatureCardProps {
   icon: any;
@@ -48,7 +49,8 @@ export default function MorePage() {
   const router = useRouter();
   const { name, role, level, xp, logout } = useUserStore();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutSession();
     logout();
     router.push("/login");
   };

@@ -251,20 +251,6 @@ export function QuestionCard({
       transition={{ duration: 0.4 }}
     >
       <Card className="p-6 rounded-2xl border-2 relative">
-        {/* Floating Points Animation */}
-        <AnimatePresence>
-          {showFeedback && isCorrect && (
-            <motion.div
-              initial={{ opacity: 0, y: 0, scale: 0.5 }}
-              animate={{ opacity: 1, y: -40, scale: 1.2 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="absolute top-0 right-6 text-2xl font-black text-green-500 drop-shadow-md z-10 pointer-events-none"
-            >
-              +{question.points} Poin!
-            </motion.div>
-          )}
-        </AnimatePresence>
       {/* Question Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -299,9 +285,9 @@ export function QuestionCard({
       {/* Feedback */}
       {showFeedback && (
         <div className={cn(
-          "p-4 rounded-xl border-2 mb-4 animate-slide-in",
-          isCorrect 
-            ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" 
+          "p-5 rounded-xl border-2 mt-6 mb-4 animate-slide-in",
+          isCorrect
+            ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
             : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
         )}>
           <div className="flex items-start gap-3">
@@ -337,9 +323,9 @@ export function QuestionCard({
         <Button
           onClick={handleSubmit}
           disabled={selectedAnswer === null}
-          className="w-full bg-blue-600 hover:bg-blue-700 font-bold text-lg py-6"
+          className="w-full bg-blue-600 hover:bg-blue-700 font-bold text-lg py-6 mt-6"
         >
-          Submit Jawaban
+          Jawab
         </Button>
       )}
       </Card>

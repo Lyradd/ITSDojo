@@ -118,6 +118,21 @@ export async function finishEvaluationSession(evaluationId: string) {
   }
 }
 
+// Pause sesi yang sedang berlangsung — kembali ke waiting room.
+// Beda dengan finishEvaluationSession: arena tetap aktif, dosen bisa Mulai lagi.
+export async function pauseEvaluationSession(evaluationId: string) {
+  try {
+    await db
+      .update(evaluations)
+      .set({ sessionStatus: 'waiting', sessionStartedAt: null })
+      .where(eq(evaluations.id, evaluationId));
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to pause session ${evaluationId}:`, error);
+    return { success: false, error: "Database error" };
+  }
+}
+
 export async function reopenEvaluationSession(evaluationId: string) {
   try {
     await db
@@ -186,6 +201,7 @@ export async function getEvaluationSessionStatus(evaluationId: string) {
 
 export async function upsertEvaluationProgress(data: {
   evaluationId: string;
+  studentId: string;
   studentName: string;
   currentQuestion: number;
   totalQuestions: number;
@@ -197,6 +213,7 @@ export async function upsertEvaluationProgress(data: {
     const { evaluationProgress } = await import("@/db/schema");
     await db.insert(evaluationProgress).values({
       evaluationId: data.evaluationId,
+      studentId: data.studentId,
       studentName: data.studentName,
       currentQuestion: data.currentQuestion,
       totalQuestions: data.totalQuestions,
@@ -205,8 +222,9 @@ export async function upsertEvaluationProgress(data: {
       timeElapsed: data.timeElapsed,
       updatedAt: new Date(),
     }).onConflictDoUpdate({
-      target: [evaluationProgress.evaluationId, evaluationProgress.studentName],
+      target: [evaluationProgress.evaluationId, evaluationProgress.studentId],
       set: {
+        studentName: data.studentName,
         currentQuestion: data.currentQuestion,
         totalQuestions: data.totalQuestions,
         score: data.score,
@@ -242,25 +260,13 @@ export async function getLiveEvaluationProgress(evaluationId: string) {
 
 export async function submitEvaluationResult(data: {
   evaluationId: string;
-  studentName: string;
+  studentId: string;
   score: number;
   accuracy: number;
   timeSpent: number; // dalam detik
 }) {
   try {
-    // Cari user berdasarkan name (best effort — kalau tidak ketemu, skip insert ke evaluationResults)
-    const userMatch = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.name, data.studentName))
-      .limit(1);
-
-    if (userMatch.length === 0) {
-      console.warn(`submitEvaluationResult: user "${data.studentName}" tidak ditemukan, hasil hanya tersimpan di evaluation_progress`);
-      return { success: true, persistedToResults: false };
-    }
-
-    const userId = userMatch[0].id;
+    const userId = data.studentId;
 
     // Cek apakah user sudah pernah submit hasil untuk evaluasi ini.
     // Kalau sudah, jangan tambah XP lagi (anti double-claim) tapi tetap insert hasil baru.
@@ -285,16 +291,45 @@ export async function submitEvaluationResult(data: {
       completedAt: new Date(),
     });
 
-    // Tambahkan XP ke profil user agar papan peringkat global ter-update.
-    // Hanya pada submission pertama untuk evaluasi ini.
-    if (isFirstSubmission && data.score > 0) {
-      await db
-        .update(users)
-        .set({ xp: sql`${users.xp} + ${data.score}` })
-        .where(eq(users.id, userId));
+    // Tambahkan reward ke profil user. Hanya pada submission pertama untuk evaluasi ini.
+    // Mapping reward (skripsi: dual-XP system):
+    //   - Per soal benar: +10 leaderboard XP (sudah dihandle saat sesi via score)
+    //   - Selesai evaluasi (≥60% akurasi): +30 profile_xp, +5 gems
+    //   - Bonus akurasi ≥80%: +20 profile_xp, +5 gems
+    let xpAdded = 0;
+    let profileXpAdded = 0;
+    let gemsAdded = 0;
+
+    if (isFirstSubmission) {
+      // Leaderboard XP (kompetitif) — score absolut yang didapat dari menjawab benar
+      if (data.score > 0) {
+        xpAdded = data.score;
+      }
+
+      // Profile XP & Gems (status/growth) — milestone-based
+      const passed = data.accuracy >= 60;
+      const excellent = data.accuracy >= 80;
+      if (passed) {
+        profileXpAdded += 30;
+        gemsAdded += 5;
+      }
+      if (excellent) {
+        profileXpAdded += 20;
+        gemsAdded += 5;
+      }
+
+      if (xpAdded > 0 || profileXpAdded > 0 || gemsAdded > 0) {
+        await db
+          .update(users)
+          .set({
+            xp: sql`${users.xp} + ${xpAdded}`,
+            profileXp: sql`${users.profileXp} + ${profileXpAdded}`,
+            gems: sql`${users.gems} + ${gemsAdded}`,
+          })
+          .where(eq(users.id, userId));
+      }
 
       // Broadcast leaderboard fresh ke semua client yang subscribe via Socket.IO.
-      // globalThis.__io di-set oleh server.js saat startup. Aman kalau tidak ada (mis. di test env).
       try {
         const io = (globalThis as any).__io;
         if (io) {
@@ -307,30 +342,28 @@ export async function submitEvaluationResult(data: {
       }
     }
 
-    return { success: true, persistedToResults: true, xpAdded: isFirstSubmission ? data.score : 0 };
+    return {
+      success: true,
+      persistedToResults: true,
+      xpAdded,
+      profileXpAdded,
+      gemsAdded,
+    };
   } catch (error) {
     console.error("Failed to submit evaluation result:", error);
     return { success: false, error: "Database error" };
   }
 }
 
-export async function getStudentEvaluationResult(evaluationId: string, studentName: string) {
+export async function getStudentEvaluationResult(evaluationId: string, studentId: string) {
   try {
-    const userMatch = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.name, studentName))
-      .limit(1);
-
-    if (userMatch.length === 0) return null;
-
     const result = await db
       .select()
       .from(evaluationResults)
       .where(
         and(
           eq(evaluationResults.evaluationId, evaluationId),
-          eq(evaluationResults.studentId, userMatch[0].id),
+          eq(evaluationResults.studentId, studentId),
         ),
       )
       .orderBy(desc(evaluationResults.completedAt))

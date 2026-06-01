@@ -99,7 +99,7 @@ const TUTORIAL_STEPS = [
 
 export default function EvaluationPage() {
   const router = useRouter();
-  const { isLoggedIn, enrolledCourseIds, name } = useUserStore();
+  const { isLoggedIn, semester, name } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [showTutorial, setShowTutorial] = useState(false);
@@ -109,7 +109,7 @@ export default function EvaluationPage() {
   useEffect(() => { setIsMounted(true); }, []);
 
   const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
-  const [coursesList, setCoursesList] = useState<{ id: string; title: string }[]>([]);
+  const [coursesList, setCoursesList] = useState<{ id: string; title: string; requiredSemester: number }[]>([]);
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
@@ -131,7 +131,12 @@ export default function EvaluationPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  const enrolledEvaluations = evaluationsList.filter(e => enrolledCourseIds.includes(e.courseId));
+  // Filter evaluasi berdasarkan semester user — kursus yang requiredSemester ≤ semester user
+  // otomatis bisa diakses (tidak perlu enrollment).
+  const accessibleCourseIds = coursesList
+    .filter((c) => c.requiredSemester <= semester)
+    .map((c) => c.id);
+  const enrolledEvaluations = evaluationsList.filter((e) => accessibleCourseIds.includes(e.courseId));
   const filteredEvaluations = selectedCourse === 'all'
     ? enrolledEvaluations
     : enrolledEvaluations.filter(e => e.courseId === selectedCourse);
@@ -297,7 +302,7 @@ export default function EvaluationPage() {
           >
             Semua Kelas
           </Button>
-          {coursesList.filter(c => enrolledCourseIds.includes(c.id)).map(course => (
+          {coursesList.filter(c => accessibleCourseIds.includes(c.id)).map(course => (
             <Button 
               key={course.id} 
               size="sm" 
@@ -317,8 +322,8 @@ export default function EvaluationPage() {
           <div className="col-span-full text-center py-12 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800">
             <Swords className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
             <p className="text-zinc-500 dark:text-zinc-400">
-              {enrolledCourseIds.length === 0
-                ? "Kamu belum terdaftar di kelas manapun. Silakan minta akses kelas terlebih dahulu di menu Daftar Kelas."
+              {accessibleCourseIds.length === 0
+                ? `Belum ada kelas tersedia untuk semester ${semester}. Hubungi admin jika ini tidak sesuai.`
                 : "Belum ada tantangan di arena ini"}
             </p>
           </div>

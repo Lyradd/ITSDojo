@@ -121,14 +121,18 @@ export const enrollments = pgTable('enrollments', {
   status: enrollStatusEnum('status').default('pending').notNull(),
   requestedAt: timestamp('requested_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (t) => ({
+  unq: unique().on(t.studentId, t.courseId),
+}));
 
 export const userProgress = pgTable('user_progress', {
   id: serial('id').primaryKey(),
   userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   lessonId: integer('lesson_id').references(() => lessons.id, { onDelete: 'cascade' }).notNull(),
   completedAt: timestamp('completed_at').defaultNow().notNull(),
-});
+}, (t) => ({
+  unq: unique().on(t.userId, t.lessonId),
+}));
 
 // Junction table: Menghubungkan Dosen ke kelas yang diampunya
 export const courseInstructors = pgTable('course_instructors', {
@@ -136,7 +140,9 @@ export const courseInstructors = pgTable('course_instructors', {
   courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
   dosenId: text('dosen_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   assignedAt: timestamp('assigned_at').defaultNow().notNull(),
-});
+}, (t) => ({
+  unq: unique().on(t.courseId, t.dosenId),
+}));
 
 // Junction table: Menghubungkan Asdos ke kelas yang didampinginya
 export const courseAssistants = pgTable('course_assistants', {
@@ -144,7 +150,9 @@ export const courseAssistants = pgTable('course_assistants', {
   courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
   asdosId: text('asdos_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   assignedAt: timestamp('assigned_at').defaultNow().notNull(),
-});
+}, (t) => ({
+  unq: unique().on(t.courseId, t.asdosId),
+}));
 
 // ==========================================
 // 4. TABEL EVALUATIONS (Kuis Real-time)

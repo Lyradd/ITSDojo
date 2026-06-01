@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { getActiveEvaluations } from '@/actions/evaluations';
+import { getActiveEvaluations, getStudentCompletedEvaluationIds } from '@/actions/evaluations';
 import { getAllCourses } from '@/actions/courses';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,7 +99,7 @@ const TUTORIAL_STEPS = [
 
 export default function EvaluationPage() {
   const router = useRouter();
-  const { isLoggedIn, semester, name } = useUserStore();
+  const { isLoggedIn, semester, name, id: userId } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [showTutorial, setShowTutorial] = useState(false);
@@ -110,6 +110,7 @@ export default function EvaluationPage() {
 
   const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
   const [coursesList, setCoursesList] = useState<{ id: string; title: string; requiredSemester: number }[]>([]);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
@@ -119,15 +120,17 @@ export default function EvaluationPage() {
 
     if (isMounted && isLoggedIn) {
       (async () => {
-        const [data, courses] = await Promise.all([
+        const [data, courses, completed] = await Promise.all([
           getActiveEvaluations(),
           getAllCourses(),
+          getStudentCompletedEvaluationIds(userId)
         ]);
         setEvaluationsList(data);
         setCoursesList(courses);
+        setCompletedIds(completed);
       })();
     }
-  }, [isLoggedIn, router, isMounted]);
+  }, [isLoggedIn, router, isMounted, userId]);
 
   if (!isMounted || !isLoggedIn) return null;
 
@@ -334,6 +337,7 @@ export default function EvaluationPage() {
               evaluation={evaluation}
               getCourseName={getCourseName}
               name={name}
+              isCompletedByStudent={completedIds.includes(evaluation.id)}
               onStart={() => router.push(`/evaluation/${evaluation.id}`)}
             />
           ))
@@ -344,11 +348,12 @@ export default function EvaluationPage() {
 }
 
 // ─── Card Component with Warning Modal ──────────────────────────────────────
-function EvaluationCard({ evaluation, getCourseName, onStart, name }: {
+function EvaluationCard({ evaluation, getCourseName, onStart, name, isCompletedByStudent }: {
   evaluation: any;
   getCourseName: (id: string) => string;
   onStart: () => void;
   name: string;
+  isCompletedByStudent?: boolean;
 }) {
   const [showWarning, setShowWarning] = useState(false);
 
@@ -457,7 +462,9 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name }: {
             <div className="flex-1 p-5 md:border-r border-indigo-100 dark:border-indigo-900/40">
               <p className="text-xs text-indigo-500 dark:text-indigo-400/80 font-medium mb-1 uppercase tracking-widest">Kamu</p>
               <p className="text-lg font-bold text-zinc-900 dark:text-white truncate">{name}</p>
-              <p className="text-sm text-zinc-500 dark:text-indigo-300/60 mt-1 font-medium">Belum mulai</p>
+              <p className={cn("text-sm mt-1 font-medium", isCompletedByStudent ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-500 dark:text-indigo-300/60")}>
+                {isCompletedByStudent ? "Sudah Mengerjakan" : "Belum mulai"}
+              </p>
             </div>
             <div className="flex-1 p-5 border-t md:border-t-0 border-indigo-100 dark:border-indigo-900/40 bg-zinc-100/50 dark:bg-slate-900/40">
               <p className="text-xs text-indigo-500 dark:text-indigo-400/80 font-medium mb-1 uppercase tracking-widest">Lawan terkuat</p>
@@ -494,7 +501,7 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name }: {
           </div>
 
           <Button onClick={() => setShowWarning(true)} className="w-full bg-white dark:bg-slate-950 text-indigo-700 dark:text-white hover:bg-indigo-50 dark:hover:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 font-bold h-12 rounded-xl transition-all shadow-md">
-            <Swords className="w-4 h-4 mr-2" /> Masuk Arena
+            <Swords className="w-4 h-4 mr-2" /> {isCompletedByStudent ? "Masuk Arena (Latihan)" : "Masuk Arena"}
           </Button>
         </div>
       </Card>

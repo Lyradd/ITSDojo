@@ -207,3 +207,11 @@ export async function logoutSession() {
   await destroySession();
   return { success: true };
 }
+
+// ============================================
+// BYPASS ADMIN — For Dev/Demo Only
+// ============================================
+export async function bypassLoginAsAdmin() {
+  await createSession({ userId: "super-admin-bypass", role: "admin" });
+  return { success: true };
+}

@@ -55,6 +55,16 @@ npm run dev
 ```
 Setelah berjalan, buka tautan **[http://localhost:3000](http://localhost:3000)** di browser Anda.
 
+### 6. Ekspos Aplikasi ke Internet untuk Testing (Cloudflare Tunnel)
+Jika Anda ingin mengekspos aplikasi pengembangan lokal (`http://localhost:3000`) ke internet agar bisa diuji oleh orang lain (misal: mahasiswa/dosen) dari luar jaringan lokal secara global:
+1. Pastikan Anda sudah menginstal [Cloudflare Tunnel (cloudflared)](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/).
+2. Pastikan server lokal Anda sudah berjalan (`npm run dev`).
+3. Buka terminal baru, jalankan perintah tunnel gratis berikut:
+   ```bash
+   cloudflared tunnel --url http://localhost:3000
+   ```
+4. Salin tautan publik bertipe `https://*.trycloudflare.com` yang muncul di terminal dan bagikan ke penguji/mahasiswa.
+
 ---
 
 ## 👥 Panduan Pengujian & Akun Demo

@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { upsertLobbyState } from "@/lib/lobby-bus";
 
 export async function POST(
   req: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   const resolvedParams = await Promise.resolve(params);
   const requestedRoomId = resolvedParams.roomId;
@@ -58,6 +59,11 @@ export async function POST(
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
 
+  // Prevent joining as the same user who created the lobby.
+  if (guestId === lobby.hostId) {
+    return NextResponse.json({ error: "Tidak dapat bergabung dengan lobby milik sendiri." }, { status: 400 });
+  }
+
   const result = await db
     .update(duelRooms)
     .set({
@@ -70,6 +76,13 @@ export async function POST(
   if (result.rowCount === 0) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
+
+  upsertLobbyState({
+    ...lobby,
+    guestId,
+    status: "joined",
+    updatedAt: new Date(),
+  });
 
   return NextResponse.json({ status: "joined" });
 }

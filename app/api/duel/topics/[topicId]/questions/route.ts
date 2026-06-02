@@ -74,7 +74,7 @@ function getFallbackQuestions(topicName: string) {
 
 export async function GET(
   req: Request,
-  { params }: { params: { topicId: string } }
+  { params }: { params: Promise<{ topicId: string }> }
 ) {
   const resolvedParams = await Promise.resolve(params);
   const topicId = Number(resolvedParams.topicId);

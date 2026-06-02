@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { upsertLobbyState } from "@/lib/lobby-bus";
 
 export async function POST(req: Request) {
   try {
@@ -60,6 +61,19 @@ export async function POST(req: Request) {
         updatedAt: new Date(),
       })
       .returning({ id: duelRooms.id, inviteCode: duelRooms.inviteCode, status: duelRooms.status });
+
+    upsertLobbyState({
+      id: room?.id ?? null,
+      topicId,
+      hostId,
+      guestId: null,
+      status: room?.status ?? "waiting",
+      inviteCode: room?.inviteCode ?? inviteCode,
+      startedAt: null,
+      endedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
     return NextResponse.json({
       id: room?.id ?? null,

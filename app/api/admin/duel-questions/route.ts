@@ -29,7 +29,7 @@ function toNumber(value: unknown) {
 }
 
 export async function GET(req: Request) {
-  const authError = requireAdmin(req);
+  const authError = await requireAdmin(req);
   if (authError) return authError;
 
   try {
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const authError = requireAdmin(req);
+  const authError = await requireAdmin(req);
   if (authError) return authError;
 
   try {

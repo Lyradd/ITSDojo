@@ -11,7 +11,7 @@ type TopicChoiceBody = {
 
 export async function POST(
   req: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   const resolvedParams = await Promise.resolve(params);
   const requestedRoomId = resolvedParams.roomId;
@@ -65,9 +65,11 @@ export async function POST(
     ...session,
     currentRound: session.currentRound + 1,
     currentTopicId: topicId,
+    currentQuestionIndex: 0,
     status: "in_progress" as const,
     chooserId: null,
     pendingScores: {},
+    questionSubmissions: {},
     updatedAt: new Date().toISOString(),
   };
 

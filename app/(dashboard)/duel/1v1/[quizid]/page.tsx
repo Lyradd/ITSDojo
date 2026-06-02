@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useParams, useRouter } from "next/navigation";
 import { QuizQuestionCard } from "@/components/quiz/quiz-question-card";
 import type { Question } from "@/lib/quiz-mock-data";
@@ -36,9 +36,11 @@ type DuelSession = {
   minRounds: number;
   currentRound: number;
   currentTopicId: string;
+  currentQuestionIndex: number;
   status: "in_progress" | "awaiting_topic_choice" | "finished";
   chooserId: string | null;
   pendingScores: Record<string, number>;
+  questionSubmissions: Record<string, number>;
   roundResults: RoundSummary[];
   winnerId: string | null;
   updatedAt: string;
@@ -80,7 +82,7 @@ export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { email, name, role } = useUserStore();
+  const { id, email, name, role } = useUserStore();
   const roomId = searchParams.get("room");
   const routeTopicId = typeof params.quizid === "string" ? params.quizid : undefined;
   const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
@@ -156,6 +158,9 @@ export default function QuizPage() {
           return;
         }
 
+        // Debug: log full lobby payload to help diagnose host/guest name issues
+        // Remove or disable in production
+        console.debug('[duel] fetched lobby', data);
         setRoom(data);
         setRoomError(null);
 
@@ -202,51 +207,6 @@ export default function QuizPage() {
       window.clearInterval(interval);
     };
   }, [roomId, email, name, role, joinAttempted]);
-
-  useEffect(() => {
-    if (!roomId || !room || room.status !== "started") {
-      setDuelSession(null);
-      setSessionError(null);
-      return;
-    }
-
-    let active = true;
-    const encodedRoomId = encodeURIComponent(roomId);
-
-    const syncSession = async () => {
-      try {
-        const response = await fetch(`/api/duel/lobbies/${encodedRoomId}/session`);
-
-        if (!response.ok) {
-          if (active) {
-            setSessionError(await readJsonError(response, "Gagal memuat sesi duel."));
-          }
-          return;
-        }
-
-        const payload = (await response.json()) as { session: DuelSession };
-
-        if (!active) {
-          return;
-        }
-
-        setDuelSession(payload.session);
-        setSessionError(null);
-      } catch {
-        if (active) {
-          setSessionError("Gagal memuat sesi duel.");
-        }
-      }
-    };
-
-    void syncSession();
-    const interval = window.setInterval(syncSession, 2000);
-
-    return () => {
-      active = false;
-      window.clearInterval(interval);
-    };
-  }, [roomId, room]);
 
   const currentTopicId = duelSession?.currentTopicId ?? routeTopicId;
   const currentRound = duelSession?.currentRound ?? 1;
@@ -320,11 +280,12 @@ export default function QuizPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(questions[0]?.timeLimit ?? 30);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+  const [showChooseTopicModal, setShowChooseTopicModal] = useState(false);
 
-  const isHost = room?.host?.id === email;
-  const opponentName = (room
-    ? (isHost ? room.guest?.name : room.host?.name)
-    : searchParams.get("opponentName")) ?? "Lawan";
+  const isHost = room?.host?.id === id;
+  const opponentKey = isHost ? "guest" : "host";
+  const opponentName =
+    room?.[opponentKey]?.name ?? searchParams.get("opponentName") ?? "Lawan";
   const waitingForLobby = Boolean(roomId) && (!room || room.status !== "started");
   const finished = duelSession?.status === "finished";
   const isPlayerChoosingTopic =
@@ -341,6 +302,16 @@ export default function QuizPage() {
       : false;
   const waitingForOpponentScore =
     duelSession?.status === "in_progress" && hasCurrentPlayerSubmitted && !hasOpponentSubmitted;
+  const hasCurrentQuestionSubmitted =
+    typeof currentPlayerId === "string" && currentPlayerId.length > 0
+      ? (duelSession?.questionSubmissions?.[currentPlayerId] ?? -1) === currentIndex
+      : false;
+  const hasOpponentQuestionSubmitted =
+    typeof opponentPlayerId === "string" && opponentPlayerId.length > 0
+      ? (duelSession?.questionSubmissions?.[opponentPlayerId] ?? -1) === currentIndex
+      : false;
+  const bothQuestionSubmitted = hasCurrentQuestionSubmitted && hasOpponentQuestionSubmitted;
+  const waitingForOpponentQuestion = isSubmitted && hasCurrentQuestionSubmitted && !hasOpponentQuestionSubmitted;
   const topicName =
     topicOptions.find((topic) => topic.id === currentTopicId)?.subjectName ??
     `Topik ${currentTopicId ?? "Umum"}`;
@@ -362,74 +333,7 @@ export default function QuizPage() {
     setTimeRemaining(questions[0]?.timeLimit ?? 30);
   };
 
-  const handleExitQuiz = async () => {
-    if (roomId) {
-      try {
-        await fetch(`/api/duel/lobbies/${encodeURIComponent(roomId)}/cancel`, {
-          method: "POST",
-        });
-      } catch {
-        // Best effort termination; continue navigation even if the request fails.
-      }
-    }
-
-    resetQuizState();
-    setShowExitPrompt(false);
-    router.push("/duel/1v1");
-  };
-
-  useEffect(() => {
-    setCurrentIndex(0);
-    setAnswers({});
-    setIsSubmitted(false);
-    setTimeRemaining(questions[0]?.timeLimit ?? 30);
-  }, [roomId]);
-
-  useEffect(() => {
-    setCurrentIndex(0);
-    setAnswers({});
-    setIsSubmitted(false);
-    setTimeRemaining(questions[0]?.timeLimit ?? 30);
-  }, [questions]);
-
-  useEffect(() => {
-    if (finished || questions.length === 0 || waitingForLobby || isPlayerChoosingTopic || waitingForOpponentTopicChoice || waitingForOpponentScore) return;
-
-    const timer = window.setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setIsSubmitted(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [finished, currentIndex, questions.length, waitingForLobby, isPlayerChoosingTopic, waitingForOpponentTopicChoice, waitingForOpponentScore]);
-
-  const currentQuestion = questions[currentIndex];
-  const totalScore = inProgressPlayerScore;
-
-  const handleSubmit = (answer: string | number) => {
-    if (!currentQuestion || isSubmitted) return;
-
-    const isCorrect =
-      String(answer).toLowerCase() === String(currentQuestion.correctAnswer).toLowerCase();
-
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.id]: {
-        answer,
-        correct: isCorrect,
-        points: isCorrect ? currentQuestion.bloomWeight : 0,
-      },
-    }));
-
-    setIsSubmitted(true);
-  };
-
-  const finalizeRound = async () => {
+  const finalizeRound = useCallback(async () => {
     if (!roomId || !currentPlayerId) {
       setSessionError("Identitas pemain tidak valid.");
       return;
@@ -471,7 +375,216 @@ export default function QuizPage() {
     } finally {
       setSubmittingRoundScore(false);
     }
+  }, [roomId, currentPlayerId, submittingRoundScore, questions, answers]);
+
+  useEffect(() => {
+    if (!roomId || !room || room.status !== "started") {
+      setDuelSession(null);
+      setSessionError(null);
+      return;
+    }
+
+    let active = true;
+    const encodedRoomId = encodeURIComponent(roomId);
+
+    const syncSession = async () => {
+      try {
+        const response = await fetch(`/api/duel/lobbies/${encodedRoomId}/session`);
+
+        if (!response.ok) {
+          if (active) {
+            setSessionError(await readJsonError(response, "Gagal memuat sesi duel."));
+          }
+          return;
+        }
+
+        const payload = (await response.json()) as { session: DuelSession };
+
+        if (!active) {
+          return;
+        }
+
+        setDuelSession(payload.session);
+        setSessionError(null);
+      } catch {
+        if (active) {
+          setSessionError("Gagal memuat sesi duel.");
+        }
+      }
+    };
+
+    void syncSession();
+    const interval = window.setInterval(syncSession, isSubmitted ? 750 : 2000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [isSubmitted, roomId, room]);
+
+  useEffect(() => {
+    const nextQuestionIndex = duelSession?.currentQuestionIndex;
+
+    if (typeof nextQuestionIndex !== "number" || nextQuestionIndex <= currentIndex) {
+      return;
+    }
+
+    const nextQuestion = questions[nextQuestionIndex];
+
+    if (!nextQuestion) {
+      return;
+    }
+
+    setCurrentIndex(nextQuestionIndex);
+    setIsSubmitted(false);
+    setTimeRemaining(nextQuestion.timeLimit ?? 30);
+  }, [currentIndex, duelSession?.currentQuestionIndex, questions]);
+
+  const leaveLobby = async () => {
+    if (!roomId || !currentPlayerId || !room) {
+      return;
+    }
+
+    const roleForLeave = currentPlayerId === room.host?.id ? "host" : "guest";
+
+    try {
+      await fetch(`/api/duel/lobbies/${encodeURIComponent(roomId)}/leave`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playerId: currentPlayerId,
+          role: roleForLeave,
+        }),
+      });
+    } catch {
+      // Best effort leave; navigation should still continue.
+    }
   };
+
+  const handleExitQuiz = async () => {
+    await leaveLobby();
+
+    resetQuizState();
+    setShowExitPrompt(false);
+    router.push("/duel/1v1");
+  };
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setAnswers({});
+    setIsSubmitted(false);
+    setTimeRemaining(questions[0]?.timeLimit ?? 30);
+  }, [roomId]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setAnswers({});
+    setIsSubmitted(false);
+    setTimeRemaining(questions[0]?.timeLimit ?? 30);
+  }, [questions]);
+
+  useEffect(() => {
+    if (
+      finished ||
+      questions.length === 0 ||
+      waitingForLobby ||
+      isPlayerChoosingTopic ||
+      waitingForOpponentTopicChoice ||
+      waitingForOpponentScore ||
+      isSubmitted
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setIsSubmitted(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [finished, currentIndex, isSubmitted, questions.length, waitingForLobby, isPlayerChoosingTopic, waitingForOpponentTopicChoice, waitingForOpponentScore]);
+
+  useEffect(() => {
+    const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
+    if (
+      isFinalQuestion &&
+      bothQuestionSubmitted &&
+      !hasCurrentPlayerSubmitted &&
+      !submittingRoundScore
+    ) {
+      void finalizeRound();
+    }
+  }, [
+    currentIndex,
+    bothQuestionSubmitted,
+    hasCurrentPlayerSubmitted,
+    submittingRoundScore,
+    questions.length,
+    finalizeRound,
+  ]);
+
+  const currentQuestion = questions[currentIndex];
+  const totalScore = inProgressPlayerScore;
+
+  const handleSubmit = (answer: string | number) => {
+    if (!currentQuestion || isSubmitted) return;
+
+    const isCorrect =
+      String(answer).toLowerCase() === String(currentQuestion.correctAnswer).toLowerCase();
+
+    setAnswers((prev) => ({
+      ...prev,
+      [currentQuestion.id]: {
+        answer,
+        correct: isCorrect,
+        points: isCorrect ? currentQuestion.bloomWeight : 0,
+      },
+    }));
+
+    setIsSubmitted(true);
+    void syncQuestionSubmission(currentIndex);
+  };
+
+  const syncQuestionSubmission = async (questionIndex: number) => {
+    if (!roomId || !currentPlayerId || !room) {
+      return;
+    }
+
+    try {
+      const encodedRoomId = encodeURIComponent(roomId);
+      const response = await fetch(`/api/duel/lobbies/${encodedRoomId}/session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playerId: currentPlayerId,
+          questionIndex,
+          isFinalQuestion: questionIndex >= questions.length - 1,
+        }),
+      });
+
+      if (!response.ok) {
+        setSessionError(await readJsonError(response, "Gagal sinkronisasi jawaban."));
+        return;
+      }
+
+      const payload = (await response.json()) as { session: DuelSession };
+      setDuelSession(payload.session);
+      setSessionError(null);
+    } catch {
+      setSessionError("Gagal sinkronisasi jawaban.");
+    }
+  };
+
+
 
   const chooseNextTopic = async (topicId: string) => {
     if (!roomId || !currentPlayerId || choosingTopic) {
@@ -500,6 +613,8 @@ export default function QuizPage() {
       const payload = (await response.json()) as { session: DuelSession };
       setDuelSession(payload.session);
       setSessionError(null);
+      // hide modal when choice was successful
+      setShowChooseTopicModal(false);
     } catch {
       setSessionError("Gagal memilih topik round berikutnya.");
     } finally {
@@ -507,14 +622,16 @@ export default function QuizPage() {
     }
   };
 
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setIsSubmitted(false);
-      setTimeRemaining(questions[currentIndex + 1].timeLimit);
+  useEffect(() => {
+    if (duelSession?.status === "awaiting_topic_choice" && duelSession?.chooserId === currentPlayerId) {
+      setShowChooseTopicModal(true);
     } else {
-      void finalizeRound();
+      setShowChooseTopicModal(false);
     }
+  }, [duelSession, currentPlayerId]);
+
+  const handleNext = () => {
+    void finalizeRound();
   };
 
   if (roomId && roomError) {
@@ -587,7 +704,18 @@ export default function QuizPage() {
               : "Lobby siap. Host bisa memulai duel kapan saja."}
           </div>
 
-          <Button className="mt-6" variant="outline" onClick={() => router.push("/duel/1v1")}>Keluar</Button>
+          <Button
+            className="mt-6"
+            variant="outline"
+            onClick={() => {
+              void (async () => {
+                await leaveLobby();
+                router.push("/duel/1v1");
+              })();
+            }}
+          >
+            Keluar
+          </Button>
         </Card>
       </div>
     );
@@ -640,9 +768,9 @@ export default function QuizPage() {
               <h1 className="text-3xl font-bold">
                 {topicName}
               </h1>
-              <p className="text-zinc-600 dark:text-zinc-400">Your Opponent is <b>{opponentName}</b></p>
+              <p className="text-zinc-600 dark:text-zinc-400">Lawan mu adalah <b>{opponentName}</b></p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Round {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} dari minimal {duelSession?.minRounds ?? MIN_DUEL_ROUNDS} round, {QUESTIONS_PER_ROUND} soal per round.
+                Ronde {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} dari minimal {duelSession?.minRounds ?? MIN_DUEL_ROUNDS} ronde, {QUESTIONS_PER_ROUND} soal per round.
               </p>
             </div>
 
@@ -760,15 +888,25 @@ export default function QuizPage() {
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                     <p className="text-sm text-zinc-500">Skor saat ini</p>
-                    <p className="text-3xl font-bold">{liveRoundScore}</p>
+                    <p className="text-3xl font-bold text-zinc-800">{liveRoundScore}</p>
                   </div>
-                  <Button onClick={handleNext} className="w-full sm:w-auto" disabled={submittingRoundScore}>
-                    {currentIndex < questions.length - 1
-                      ? "Soal Selanjutnya"
-                      : submittingRoundScore
+                  {currentIndex < questions.length - 1 ? (
+                    <div className="flex w-full items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 sm:w-auto">
+                      {waitingForOpponentQuestion
+                        ? `Menunggu ${opponentName} menjawab...`
+                        : bothQuestionSubmitted
+                          ? "Jawaban lengkap, memuat soal berikutnya..."
+                          : "Jawaban terkirim, menunggu lawan..."}
+                    </div>
+                  ) : (
+                    <Button onClick={handleNext} className="w-full sm:w-auto" disabled={submittingRoundScore || !bothQuestionSubmitted}>
+                      {submittingRoundScore
                         ? "Mengirim skor..."
-                        : `Selesaikan Round ${currentRound}`}
-                  </Button>
+                        : bothQuestionSubmitted
+                          ? `Selesaikan Round ${currentRound}`
+                          : `Menunggu ${opponentName} menjawab...`}
+                    </Button>
+                  )}
                 </div>
               )}
             </>
@@ -861,6 +999,45 @@ export default function QuizPage() {
                   onClick={handleExitQuiz}
                 >
                   Ya, Keluar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showChooseTopicModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800">
+            <div className="flex flex-col items-center text-center gap-3">
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Pilih Topik Berikutnya</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Kamu memiliki skor lebih rendah pada ronde ini. Pilih topik untuk ronde berikutnya.</p>
+
+              <div className="w-full mt-4 grid gap-3">
+                {topicOptions
+                  .filter((topic) => topic.id !== currentTopicId)
+                  .map((topic) => (
+                    <Button
+                      key={topic.id}
+                      variant="outline"
+                      onClick={() => void chooseNextTopic(topic.id)}
+                      disabled={choosingTopic}
+                      className="w-full"
+                    >
+                      {choosingTopic ? "Menyimpan pilihan..." : topic.subjectName}
+                    </Button>
+                  ))}
+
+                {topicOptions.filter((topic) => topic.id !== currentTopicId).length === 0 ? (
+                  <Button className="mt-2" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "") }>
+                    Lanjutkan dengan topik saat ini
+                  </Button>
+                ) : null}
+              </div>
+
+              <div className="mt-4 flex gap-3 w-full">
+                <Button variant="outline" className="flex-1 rounded-2xl" onClick={() => setShowChooseTopicModal(false)}>
+                  Tutup
                 </Button>
               </div>
             </div>

@@ -13,9 +13,11 @@ export type DuelSessionState = {
   minRounds: number;
   currentRound: number;
   currentTopicId: string;
+  currentQuestionIndex: number;
   status: DuelSessionStatus;
   chooserId: string | null;
   pendingScores: Record<string, number>;
+  questionSubmissions: Record<string, number>;
   roundResults: DuelRoundResult[];
   winnerId: string | null;
   updatedAt: string;
@@ -38,6 +40,26 @@ export function getDuelSession(roomKey: string) {
 export function setDuelSession(roomKey: string, session: DuelSessionState) {
   duelSessionStore.set(roomKey, session);
   return session;
+}
+
+export function recordQuestionSubmission(roomKey: string, playerId: string, questionIndex: number) {
+  const existing = duelSessionStore.get(roomKey);
+
+  if (!existing) {
+    return null;
+  }
+
+  const updated: DuelSessionState = {
+    ...existing,
+    questionSubmissions: {
+      ...existing.questionSubmissions,
+      [playerId]: questionIndex,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  duelSessionStore.set(roomKey, updated);
+  return updated;
 }
 
 export function upsertDuelSession(roomKey: string, create: () => DuelSessionState) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms, duelSubject } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import {
   DuelSessionState,
   getDuelSession,
@@ -93,6 +94,29 @@ export async function GET(
   }
 
   const roomKey = lobby.inviteCode;
+  if (lobby.endedAt) {
+    const session = getDuelSession(roomKey) ?? {
+      roomKey,
+      minRounds: MIN_DUEL_ROUNDS,
+      currentRound: MIN_DUEL_ROUNDS,
+      currentTopicId: String(lobby.topicId),
+      currentQuestionIndex: 0,
+      status: "finished" as const,
+      chooserId: null,
+      pendingScores: {},
+      questionSubmissions: {},
+      roundResults: [],
+      winnerId: null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return NextResponse.json({
+      session,
+      hostId: lobby.hostId,
+      guestId: lobby.guestId,
+    });
+  }
+
   const session = normalizeSession(upsertDuelSession(roomKey, () => createInitialSession(roomKey, String(lobby.topicId))));
 
   return NextResponse.json({
@@ -268,6 +292,14 @@ export async function POST(
       winnerId: calculateWinnerId({ ...existing, roundResults }, lobby.hostId, lobby.guestId),
       updatedAt: new Date().toISOString(),
     };
+
+    await db
+      .update(duelRooms)
+      .set({
+        endedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(duelRooms.id, lobby.id as any));
 
     setDuelSession(roomKey, finishedSession);
     return NextResponse.json({ session: finishedSession });

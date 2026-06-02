@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, LogOut, Swords } from "lucide-react";
 import { useUserStore } from "@/lib/store";
+import { triggerConfetti } from "@/lib/confetti";
 
 type LobbyRoom = {
   id: number;
@@ -127,6 +128,11 @@ export default function QuizPage() {
       return;
     }
 
+    // Stop polling room details if it has already started
+    if (room?.status === "started") {
+      return;
+    }
+
     let active = true;
     let retryCount = 0;
     const encodedRoomId = encodeURIComponent(roomId);
@@ -206,7 +212,7 @@ export default function QuizPage() {
       active = false;
       window.clearInterval(interval);
     };
-  }, [roomId, email, name, role, joinAttempted]);
+  }, [roomId, email, name, role, joinAttempted, room?.status]);
 
   const currentTopicId = duelSession?.currentTopicId ?? routeTopicId;
   const currentRound = duelSession?.currentRound ?? 1;
@@ -384,6 +390,10 @@ export default function QuizPage() {
       return;
     }
 
+    if (finished) {
+      return;
+    }
+
     let active = true;
     const encodedRoomId = encodeURIComponent(roomId);
 
@@ -393,6 +403,17 @@ export default function QuizPage() {
 
         if (!response.ok) {
           if (active) {
+            // Fetch room status once to check if cancelled
+            try {
+              const roomResponse = await fetch(`/api/duel/lobbies/${encodedRoomId}`);
+              if (roomResponse.ok) {
+                const roomData = await roomResponse.json();
+                setRoom(roomData);
+              }
+            } catch {
+              // Ignore room fetch error
+            }
+
             setSessionError(await readJsonError(response, "Gagal memuat sesi duel."));
           }
           return;
@@ -420,7 +441,7 @@ export default function QuizPage() {
       active = false;
       window.clearInterval(interval);
     };
-  }, [isSubmitted, roomId, room]);
+  }, [isSubmitted, roomId, room, finished]);
 
   useEffect(() => {
     const nextQuestionIndex = duelSession?.currentQuestionIndex;
@@ -484,6 +505,12 @@ export default function QuizPage() {
     setIsSubmitted(false);
     setTimeRemaining(questions[0]?.timeLimit ?? 30);
   }, [questions]);
+
+  useEffect(() => {
+    if (finished && duelSession?.winnerId === currentPlayerId) {
+      triggerConfetti();
+    }
+  }, [finished, duelSession?.winnerId, currentPlayerId]);
 
   useEffect(() => {
     if (
@@ -660,7 +687,7 @@ export default function QuizPage() {
     );
   }
 
-  if (roomId && room && room.status !== "started") {
+  if (roomId && room && room.status !== "started" && !finished) {
     if (room.status === "cancelled") {
       return (
         <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex items-center justify-center">
@@ -735,7 +762,7 @@ export default function QuizPage() {
     );
   }
 
-  if (roomId && sessionError) {
+  if (roomId && sessionError && !finished) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex items-center justify-center">
         <Card className="p-8 text-center max-w-xl">
@@ -763,14 +790,13 @@ export default function QuizPage() {
     <div className="container mx-auto px-16 py-8">
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
         <section>
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-150 pb-4">
             <div>
               <h1 className="text-3xl font-bold">
                 {topicName}
               </h1>
-              <p className="text-zinc-600 dark:text-zinc-400">Lawan mu adalah <b>{opponentName}</b></p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Ronde {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} dari minimal {duelSession?.minRounds ?? MIN_DUEL_ROUNDS} ronde, {QUESTIONS_PER_ROUND} soal per round.
+              <p className="text-sm text-zinc-500 mt-1">
+                Ronde {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} dari {duelSession?.minRounds ?? MIN_DUEL_ROUNDS} ronde • {QUESTIONS_PER_ROUND} soal per round
               </p>
             </div>
 
@@ -791,14 +817,14 @@ export default function QuizPage() {
                 <CheckCircle2 className="h-6 w-6 text-green-600" />
                 <h2 className="text-2xl font-semibold">Duel Selesai</h2>
               </div>
-              <p className="mb-2 text-lg">Skor kamu: {totalPlayerScore}</p>
-              <p className="mb-2 text-lg">Skor lawan: {totalOpponentScore}</p>
-              <p className="mb-4 font-semibold text-blue-700 dark:text-blue-300">
-                {duelSession?.winnerId === currentPlayerId
-                  ? "Kamu menang duel!"
-                  : duelSession?.winnerId
-                    ? "Lawan memenangkan duel."
-                    : "Duel berakhir seri."}
+              <p className="mb-4 font-bold text-2xl uppercase tracking-wider">
+                {duelSession?.winnerId === currentPlayerId ? (
+                  <span className="text-emerald-600 dark:text-emerald-400">YOU WIN! 🎉</span>
+                ) : duelSession?.winnerId ? (
+                  <span className="text-rose-600 dark:text-rose-400">YOU LOSE! 😢</span>
+                ) : (
+                  <span className="text-zinc-600 dark:text-zinc-400">DRAW! 🤝</span>
+                )}
               </p>
 
               <div className="space-y-4">
@@ -819,9 +845,17 @@ export default function QuizPage() {
                 })}
               </div>
 
-              <Button onClick={() => router.push("/duel/1v1")} className="mt-6">
-                Pilih Topik Lain
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                <Button onClick={() => router.push("/duel/1v1")} variant="outline" className="w-full sm:w-auto">
+                  Pilih Topik Lain
+                </Button>
+                <Button onClick={async () => {
+                  await leaveLobby();
+                  router.push("/duel/1v1");
+                }} className="w-full sm:w-auto">
+                  Selesai
+                </Button>
+              </div>
             </Card>
           ) : isPlayerChoosingTopic ? (
             <Card className="p-8">
@@ -846,7 +880,7 @@ export default function QuizPage() {
               </div>
 
               {topicOptions.filter((topic) => topic.id !== currentTopicId).length === 0 ? (
-                <Button className="mt-6" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "") }>
+                <Button className="mt-6" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "")}>
                   Lanjutkan dengan topik saat ini
                 </Button>
               ) : null}
@@ -919,13 +953,40 @@ export default function QuizPage() {
 
         <aside className="space-y-4">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-3">Ringkasan Duel</h3>
-            <p>Round aktif: {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} / {duelSession?.minRounds ?? MIN_DUEL_ROUNDS}</p>
-            <p>Soal di round ini: {questions.length}</p>
-            <p>Topik: {currentTopicId ?? "Umum"}</p>
-            <p>Waktu tiap soal: {currentQuestion?.timeLimit ?? 0}s</p>
-            <p className="mt-2">Total skor kamu: {totalScore}</p>
-            <p>Total skor lawan: {totalOpponentScore}</p>
+            <h3 className="text-lg font-semibold mb-4 border-b border-zinc-100 pb-2 dark:border-zinc-800">Skor Duel</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-xl bg-blue-50 dark:bg-blue-950/30 p-3 border border-blue-100 dark:border-blue-900/50">
+                <div>
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Kamu</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Total Skor</p>
+                </div>
+                <p className="text-2xl font-black text-blue-700 dark:text-blue-400">{totalScore}</p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl bg-rose-50 dark:bg-rose-950/30 p-3 border border-rose-100 dark:border-rose-900/50">
+                <div>
+                  <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{opponentName}</p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400">Lawan</p>
+                </div>
+                <p className="text-2xl font-black text-rose-700 dark:text-rose-400">{totalOpponentScore}</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 space-y-1">
+              <p>Ronde aktif: {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} / {duelSession?.minRounds ?? MIN_DUEL_ROUNDS}</p>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-3">Progres</h3>
+            <div className="h-3 overflow-hidden rounded-full bg-zinc-200">
+              <div
+                className="h-full bg-blue-600"
+                style={{ width: `${questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="mt-3 text-sm text-zinc-500">
+              {currentIndex + 1} / {questions.length} selesai
+            </p>
           </Card>
 
           <Card className="p-6">
@@ -953,19 +1014,6 @@ export default function QuizPage() {
                 ))}
               </div>
             )}
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-3">Progres</h3>
-            <div className="h-3 overflow-hidden rounded-full bg-zinc-200">
-              <div
-                className="h-full bg-blue-600"
-                style={{ width: `${questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0}%` }}
-              />
-            </div>
-            <p className="mt-3 text-sm text-zinc-500">
-              {currentIndex + 1} / {questions.length} selesai
-            </p>
           </Card>
         </aside>
       </div>
@@ -1029,7 +1077,7 @@ export default function QuizPage() {
                   ))}
 
                 {topicOptions.filter((topic) => topic.id !== currentTopicId).length === 0 ? (
-                  <Button className="mt-2" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "") }>
+                  <Button className="mt-2" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "")}>
                     Lanjutkan dengan topik saat ini
                   </Button>
                 ) : null}

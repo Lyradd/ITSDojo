@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { deleteDuelSession } from "@/lib/duel-session-store";
+import { deleteDuelSession, getDuelSession } from "@/lib/duel-session-store";
 import { upsertLobbyState } from "@/lib/lobby-bus";
 
 type LeaveBody = {
@@ -39,7 +39,10 @@ export async function POST(
     return NextResponse.json({ error: "Player is not in this lobby" }, { status: 403 });
   }
 
-  const nextStatus = isHost || lobby.status === "started" ? "cancelled" : "waiting";
+  const session = getDuelSession(lobby.inviteCode);
+  const isFinished = session?.status === "finished" || lobby.endedAt !== null;
+
+  const nextStatus = isFinished ? lobby.status : (isHost || lobby.status === "started" ? "cancelled" : "waiting");
   const now = new Date();
 
   const result = await db
@@ -47,7 +50,7 @@ export async function POST(
     .set({
       guestId: isGuest ? null : lobby.guestId,
       status: nextStatus,
-      endedAt: nextStatus === "cancelled" ? now : null,
+      endedAt: isFinished ? lobby.endedAt : (nextStatus === "cancelled" ? now : null),
       updatedAt: now,
     })
     .where(eq(duelRooms.id, lobby.id as any));
@@ -60,11 +63,11 @@ export async function POST(
     ...lobby,
     guestId: isGuest ? null : lobby.guestId,
     status: nextStatus,
-    endedAt: nextStatus === "cancelled" ? now : null,
+    endedAt: isFinished ? lobby.endedAt : (nextStatus === "cancelled" ? now : null),
     updatedAt: now,
   });
 
-  if (nextStatus === "cancelled") {
+  if (nextStatus === "cancelled" || isFinished) {
     deleteDuelSession(lobby.inviteCode);
   }
 

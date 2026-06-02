@@ -124,7 +124,7 @@ export default function MonitorEvaluationPage() {
           score: d.score,
           timeElapsed: d.timeElapsed,
           updatedAt: d.updatedAt,
-          status: d.status as 'active' | 'completed' | 'stuck',
+          status: d.status as 'active' | 'completed' | 'stuck' | 'waiting',
         }));
         setLiveStudents(mappedData);
         setLastUpdate(new Date());
@@ -536,7 +536,7 @@ type LiveStudent = {
   score: number;
   timeElapsed: number;
   updatedAt: string | Date;
-  status: 'active' | 'completed' | 'stuck';
+  status: 'active' | 'completed' | 'stuck' | 'waiting';
 };
 
 function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDelete: (studentId: string, studentName: string) => void }) {
@@ -563,6 +563,12 @@ function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDe
       bg: "bg-orange-100 dark:bg-orange-950",
       label: "Stuck",
       icon: XCircle,
+    },
+    waiting: {
+      color: "text-zinc-500 dark:text-zinc-400",
+      bg: "bg-zinc-100 dark:bg-zinc-900",
+      label: "Menunggu",
+      icon: Clock,
     },
   };
 

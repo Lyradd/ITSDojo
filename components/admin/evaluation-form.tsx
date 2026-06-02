@@ -115,6 +115,21 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
           </div>
           <p className="text-xs text-zinc-500 mt-1">Otomatis dari soal</p>
         </div>
+
+        {/* Bot Quota */}
+        <div>
+          <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+            Target Peserta (Bot)
+          </label>
+          <Input
+            type="number"
+            value={metadata.botQuota || 0}
+            onChange={(e) => updateField('botQuota', parseInt(e.target.value) || 0)}
+            min={0}
+            placeholder="Misal: 25"
+          />
+          <p className="text-xs text-zinc-500 mt-1">Isi 0 jika tidak pakai bot.</p>
+        </div>
       </div>
     </div>
   );

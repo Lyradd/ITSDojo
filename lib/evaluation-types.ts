@@ -138,6 +138,7 @@ export interface EvaluationMetadata {
   totalPoints: number;
   difficulty: DifficultyLevel;
   courseId?: string; // course tempat evaluasi ini ditampilkan ke mahasiswa
+  botQuota?: number; // Target participants quota
 }
 
 export interface Evaluation extends EvaluationMetadata {

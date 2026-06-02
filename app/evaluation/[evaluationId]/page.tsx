@@ -64,7 +64,7 @@ function WaitingRoomOverlay({
   onStart: () => void;
 }) {
   const { id: userId, name: userName, role } = useUserStore();
-  const { countdownEndTime, startWaitingRoomSession, initiateStartSequence } = useEvaluationStore();
+  const { countdownEndTime, startWaitingRoomSession, initiateStartSequence, currentEvaluation } = useEvaluationStore();
   const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
   const [showParticipants, setShowParticipants] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -126,12 +126,12 @@ function WaitingRoomOverlay({
       studentId: userId,
       studentName: userName,
       currentQuestion: 0,
-      totalQuestions: 0,
+      totalQuestions: currentEvaluation?.questions?.length || 0,
       score: 0,
       status: 'waiting',
       timeElapsed: 0,
     });
-  }, [evaluationId, userId, userName, role]);
+  }, [evaluationId, userId, userName, role, currentEvaluation]);
 
   useEffect(() => {
     let mounted = true;

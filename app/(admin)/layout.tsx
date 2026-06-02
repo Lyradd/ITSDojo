@@ -17,8 +17,14 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { role, isLoggedIn } = useUserStore();
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted) return;
     // Redirect if not logged in
     if (!isLoggedIn) {
       router.push('/login');
@@ -30,8 +36,8 @@ export default function AdminLayout({
     }
   }, [role, isLoggedIn, router]);
 
-  // Don't render if not allowed
-  if (!isLoggedIn || (role !== 'dosen' && role !== 'asdos' && role !== 'admin')) {
+  // Don't render if not allowed or not mounted
+  if (!hasMounted || !isLoggedIn || (role !== 'dosen' && role !== 'asdos' && role !== 'admin')) {
     return null;
   }
 

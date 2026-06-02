@@ -177,7 +177,11 @@ export default function CreateEvaluationPage() {
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
                 Build Questions
               </h2>
-              <QuestionBuilder questions={questions} onChange={setQuestions} />
+              <QuestionBuilder 
+                questions={questions} 
+                onChange={setQuestions} 
+                courseId={metadata.courseId} 
+              />
             </>
           )}
 

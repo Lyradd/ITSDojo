@@ -7,6 +7,7 @@ import { desc, relations } from 'drizzle-orm';
 export const roleEnum = pgEnum('role', ['mahasiswa', 'dosen', 'asdos', 'admin']);
 export const enrollStatusEnum = pgEnum('enroll_status', ['pending', 'accepted', 'rejected']);
 export const difficultyEnum = pgEnum('difficulty', ['Beginner', 'Intermediate', 'Advanced']);
+export const usageTypeEnum = pgEnum('usage_type', ['lesson', 'evaluation', 'duel']);
 
 // ==========================================
 // 1. TABEL USERS & ROLES
@@ -236,6 +237,38 @@ export const duelRooms = pgTable('duel_rooms', {
   endedAt: timestamp('ended_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ==========================================
+// 8. TABEL QUESTION BANK (Bank Soal Paket)
+// ==========================================
+export const questionPackages = pgTable('question_packages', {
+  id: serial('id').primaryKey(),
+  courseId: text('course_id')
+    .references(() => courses.id, { onDelete: 'cascade' })
+    .notNull(),
+  usageType: usageTypeEnum('usage_type').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdBy: text('created_by'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const questionBankItems = pgTable('question_bank_items', {
+  id: serial('id').primaryKey(),
+  packageId: integer('package_id')
+    .references(() => questionPackages.id, { onDelete: 'cascade' })
+    .notNull(),
+  questionText: text('question_text').notNull(),
+  questionType: text('question_type').notNull(),
+  options: jsonb('options').default([]),
+  correctAnswer: text('correct_answer'),
+  puzzlePairs: jsonb('puzzle_pairs').default([]),
+  bloomLevel: text('bloom_level').default('C1').notNull(),
+  difficulty: text('difficulty').default('medium').notNull(),
+  points: integer('points').default(10).notNull(),
+  timeLimit: integer('time_limit'),
+  order: integer('order').default(0).notNull(),
 });
 
 // ==========================================

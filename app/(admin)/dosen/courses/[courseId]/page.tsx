@@ -576,14 +576,14 @@ export default function CourseDetailPage() {
                             transition={{ duration: 0.25, ease: "easeInOut" }}
                             className="pl-4 border-l-2 border-blue-500 my-2 overflow-hidden"
                           >
-                            <LessonEditor 
-                              unitId={unit.id} 
-                              initialData={lessonForm} 
-                              saving={saving} 
-                              onSubmit={handleSaveLesson} 
-                              onCancel={() => { setShowAddLesson(null); setEditingLessonId(null); setLessonForm({ ...EMPTY_LESSON }); }} 
-                              isEditing={editingLessonId === lesson.id} 
-                            />
+                              <LessonEditor 
+                                unitId={unit.id} 
+                                initialData={lessonForm} 
+                                saving={saving} 
+                                onSubmit={handleSaveLesson} 
+                                onCancel={() => { setShowAddLesson(null); setEditingLessonId(null); setLessonForm({ ...EMPTY_LESSON }); }} 
+                                isEditing={editingLessonId === lesson.id} 
+                              />
                           </motion.div>
                         )}
                       </AnimatePresence>

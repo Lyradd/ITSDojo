@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Loader2, Save, FileText, Video, Code, ChevronUp, ChevronDown, Paperclip, AlertCircle } from 'lucide-react';
+import { Plus, X, Loader2, Save, FileText, Video, Code, ChevronUp, ChevronDown, Paperclip, AlertCircle, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import VideoUrlInput from '@/components/admin/video-url-input';
 import MaterialUpload from '@/components/admin/material-upload';
+import { QuestionBankImporter } from '@/components/admin/question-bank-importer';
+import { useParams } from 'next/navigation';
 
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -82,6 +84,9 @@ export default function LessonEditor({
   isEditing
 }: LessonEditorProps) {
   const [expandedSection, setExpandedSection] = useState<string>('basic');
+  const [showImporter, setShowImporter] = useState(false);
+  const params = useParams();
+  const courseId = params?.courseId as string;
 
   const {
     register,
@@ -141,8 +146,39 @@ export default function LessonEditor({
   const hasBasicError = !!(errors.title || errors.order || errors.duration || errors.xpReward || errors.gemReward);
   const hasCodingError = !!(errors.testCases);
 
+  const handleImportQuestion = (items: any[]) => {
+    if (items.length === 0) return;
+    const item = items[0]; // For lesson, we only take the first one
+    
+    setValue('problemTitle', item.questionText, { shouldValidate: true, shouldDirty: true });
+    
+    if (item.questionType === 'coding') {
+      setValue('problemDescription', item.options?.description || '', { shouldValidate: true, shouldDirty: true });
+      setValue('starterCode', item.options?.starterCode || '', { shouldValidate: true, shouldDirty: true });
+      if (item.options?.testCases) {
+        setValue('testCases', item.options.testCases, { shouldValidate: true, shouldDirty: true });
+      }
+    } else {
+      // If importing multiple choice into coding
+      const desc = `Soal: ${item.questionText}\n\nOpsi:\n` + 
+        (item.options || []).map((o: any, i: number) => `${i+1}. ${o.text}`).join('\n');
+      setValue('problemDescription', desc, { shouldValidate: true, shouldDirty: true });
+    }
+    
+    setShowImporter(false);
+  };
+
   return (
-    <Card className="p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 my-4">
+    <Card className="p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 my-4 relative">
+      {showImporter && courseId && (
+        <QuestionBankImporter
+          courseId={courseId}
+          usageType="lesson"
+          singleSelection={true}
+          onSelectItems={handleImportQuestion}
+          onClose={() => setShowImporter(false)}
+        />
+      )}
       <h4 className="text-lg font-bold mb-4">
         {isEditing ? '✏️ Edit Lesson' : '➕ Tambah Lesson Baru'}
       </h4>
@@ -259,7 +295,20 @@ export default function LessonEditor({
         </AnimatePresence>
 
         {/* Section: Coding Problem */}
-        <SectionToggle id="coding" label="Soal Coding (Practice)" icon={Code} hasError={hasCodingError} />
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <SectionToggle id="coding" label="Soal Coding (Practice)" icon={Code} hasError={hasCodingError} />
+          </div>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => setShowImporter(true)}
+            className="border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 hover:text-purple-800 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300 transition-colors"
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Bank Soal
+          </Button>
+        </div>
         <AnimatePresence initial={false}>
           {expandedSection === 'coding' && (
             <motion.div

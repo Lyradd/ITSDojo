@@ -40,12 +40,18 @@ export default function EditEvaluationPage() {
         setIsLoading(false);
         return;
       }
+      const rawDesc = data.description || "";
+      const botMatch = rawDesc.match(/\[BOT_QUOTA:(\d+)\]/);
+      const botQuota = botMatch ? parseInt(botMatch[1], 10) : 0;
+      const cleanDesc = rawDesc.replace(/\n?\[BOT_QUOTA:\d+\]/, '').trim();
+
       setMetadata({
         title: data.title || "",
-        description: data.description || "",
+        description: cleanDesc,
         duration: data.duration || 60,
         totalPoints: data.totalPoints || 0,
         difficulty: 'medium' as DifficultyLevel,
+        botQuota,
       });
       setQuestions(Array.isArray(data.questions) ? (data.questions as Question[]) : []);
       setOriginalCourseId(data.courseId);
@@ -60,9 +66,13 @@ export default function EditEvaluationPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    const finalDescription = metadata.botQuota 
+      ? `${metadata.description}\n[BOT_QUOTA:${metadata.botQuota}]`
+      : metadata.description;
+
     const res = await updateEvaluation(evaluationId, {
       title: metadata.title,
-      description: metadata.description,
+      description: finalDescription,
       duration: metadata.duration,
       totalPoints,
       questions,

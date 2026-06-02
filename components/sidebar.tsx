@@ -30,7 +30,8 @@ import {
   ShoppingBag,
   MoreVertical,
   Gem,
-  Zap
+  Zap,
+  Database
 } from "lucide-react";
 
 
@@ -50,6 +51,7 @@ const dosenMenuItems = [
   { icon: BookOpen, label: "Daftar Kelas", href: "/dosen/courses" },
   { icon: Users, label: "Mahasiswa", href: "/dosen/students" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
+  { icon: Database, label: "Bank Soal", href: "/dosen/question-bank" },
   { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
   { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
 ];

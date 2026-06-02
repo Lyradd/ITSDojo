@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Reorder, useDragControls } from "framer-motion";
 import { Question, QuestionType, BloomLevel, DifficultyLevel, generateQuestionId } from "@/lib/evaluation-types";
 import { BloomSelector } from "./bloom-selector";
+import { QuestionBankImporter } from "./question-bank-importer";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import {
@@ -14,20 +15,23 @@ import {
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
+  Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface QuestionBuilderProps {
+  courseId?: string;
   questions: Question[];
   onChange: (questions: Question[]) => void;
 }
 
-export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
+export function QuestionBuilder({ questions, onChange, courseId }: QuestionBuilderProps) {
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(
     questions[0]?.id || null
   );
   const [currentType, setCurrentType] = useState<QuestionType>('multiple_choice');
+  const [showImporter, setShowImporter] = useState(false);
 
   const addQuestion = (type: QuestionType) => {
     setCurrentType(type);
@@ -92,10 +96,87 @@ export function QuestionBuilder({ questions, onChange }: QuestionBuilderProps) {
     onChange(newQuestions);
   };
 
+  const handleImport = (importedItems: any[]) => {
+    if (!importedItems || importedItems.length === 0) return;
+    
+    const newQuestions = importedItems.map(item => {
+      const qType = item.questionType as QuestionType;
+      const parsedOptions = typeof item.options === 'string' ? JSON.parse(item.options) : item.options;
+      const parsedPuzzlePairs = typeof item.puzzlePairs === 'string' ? JSON.parse(item.puzzlePairs) : item.puzzlePairs;
+      
+      return {
+        id: generateQuestionId(), // Generate fresh IDs to avoid react key collisions
+        type: qType,
+        question: item.questionText,
+        points: item.points || 10,
+        bloomLevel: (item.bloomLevel || 'C1') as BloomLevel,
+        difficulty: (item.difficulty || 'medium') as DifficultyLevel,
+        timeLimit: item.timeLimit || undefined,
+        
+        // Conditional mapping based on type
+        ...(qType === 'multiple_choice' && {
+          options: Array.isArray(parsedOptions) && parsedOptions.length > 0 
+            ? parsedOptions 
+            : [
+              { id: 'opt1', text: '', isCorrect: false },
+              { id: 'opt2', text: '', isCorrect: false }
+            ]
+        }),
+        
+        ...(qType === 'true_false' && {
+          correctAnswer: item.correctAnswer === 'true' || item.correctAnswer === true
+        }),
+        
+        ...(qType === 'short_answer' && {
+          expectedAnswer: item.correctAnswer || ''
+        }),
+        
+        ...(qType === 'puzzle' && {
+          puzzlePairs: Array.isArray(parsedPuzzlePairs) && parsedPuzzlePairs.length > 0
+            ? parsedPuzzlePairs
+            : [
+              { id: 'pair1', text: '' },
+              { id: 'pair2', text: '' }
+            ]
+        }),
+        
+        ...(qType === 'essay' && {
+          wordLimit: 500,
+          expectedAnswer: ''
+        }),
+      } as Question;
+    });
+
+    onChange([...questions, ...newQuestions]);
+    setShowImporter(false);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {showImporter && courseId && (
+        <QuestionBankImporter
+          courseId={courseId}
+          usageType="evaluation"
+          onSelectItems={handleImport}
+          onClose={() => setShowImporter(false)}
+        />
+      )}
+
       {/* Add Question Buttons */}
       <div className="flex flex-wrap gap-3">
+        {courseId && (
+          <Button
+            type="button"
+            onClick={() => setShowImporter(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold border-2 border-purple-600"
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Impor Bank Soal
+          </Button>
+        )}
+        
+        <div className="w-[1px] h-10 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+
         <Button
           type="button"
           onClick={() => addQuestion('multiple_choice')}

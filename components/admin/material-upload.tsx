@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, File, X, Loader2, Download, Eye } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface MaterialFile {
   url: string;
@@ -39,10 +40,14 @@ export default function MaterialUpload({ materials, onMaterialsChange }: Materia
     if (!files || files.length === 0) return;
 
     setUploading(true);
-    const newMaterials = [...materials];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    const uploadPromises = Array.from(files).map(async (file) => {
+      // Validasi ukuran file (Max 20MB)
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`File ${file.name} terlalu besar (Maksimal 20MB)`);
+        return null;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -54,23 +59,37 @@ export default function MaterialUpload({ materials, onMaterialsChange }: Materia
 
         if (res.ok) {
           const data = await res.json();
-          newMaterials.push({
+          return {
             url: data.url,
             fileName: data.fileName,
             fileSize: data.fileSize,
             fileType: data.fileType,
-          });
+          };
         } else {
           const err = await res.json();
-          alert(`Gagal upload ${file.name}: ${err.error}`);
+          toast.error(`Gagal upload ${file.name}: ${err.error || 'Unknown error'}`);
+          return null;
         }
       } catch (err) {
         console.error('Upload error:', err);
-        alert(`Gagal upload ${file.name}`);
+        toast.error(`Gagal upload ${file.name}`);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const successfulUploads = results.filter(Boolean) as MaterialFile[];
+
+    if (successfulUploads.length > 0) {
+      onMaterialsChange([...materials, ...successfulUploads]);
+      
+      if (successfulUploads.length === files.length) {
+        toast.success(`${successfulUploads.length} file berhasil diunggah!`);
+      } else {
+        toast.success(`${successfulUploads.length} dari ${files.length} file berhasil diunggah.`);
       }
     }
 
-    onMaterialsChange(newMaterials);
     setUploading(false);
 
     // Reset file input

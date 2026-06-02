@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession } from "@/actions/evaluations";
+import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress } from "@/actions/evaluations";
 import { Evaluation } from "@/lib/evaluation-types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,7 +19,9 @@ import {
   XCircle,
   RefreshCw,
   Square,
-  Zap
+  Zap,
+  Trash2,
+  Download
 } from "lucide-react";
 import { useEvaluationStore } from "@/lib/evaluation-store";
 
@@ -114,13 +116,15 @@ export default function MonitorEvaluationPage() {
         const liveData = await getLiveEvaluationProgress(evaluationId);
         const mappedData = liveData.map((d: any) => ({
           id: d.studentName,
+          studentId: d.studentId,
           name: d.studentName,
           avatar: d.studentName.substring(0, 2).toUpperCase(),
           currentQuestion: d.currentQuestion,
           totalQuestions: d.totalQuestions,
           score: d.score,
           timeElapsed: d.timeElapsed,
-          status: d.status as 'active' | 'completed' | 'stuck',
+          updatedAt: d.updatedAt,
+          status: d.status as 'active' | 'completed' | 'stuck' | 'waiting',
         }));
         setLiveStudents(mappedData);
         setLastUpdate(new Date());
@@ -133,7 +137,41 @@ export default function MonitorEvaluationPage() {
     const interval = setInterval(fetchLiveData, 3000); // Refresh every 3 seconds
 
     return () => clearInterval(interval);
-  }, [autoRefresh, evaluation?.isActive]);
+  }, [autoRefresh, evaluation?.isActive, evaluationId]);
+
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (!confirm(`Are you sure you want to delete progress for ${studentName}?`)) return;
+    const res = await deleteStudentProgress(evaluationId, studentId);
+    if (res.success) {
+      toast.success(`Progress for ${studentName} deleted`);
+      setLiveStudents(prev => prev.filter(s => s.studentId !== studentId));
+    } else {
+      toast.error(`Failed to delete progress`);
+    }
+  };
+
+  const handleDownloadCSV = () => {
+    const headers = ["Rank,Name,Status,Questions Answered,Total Questions,Accuracy (%),Points (XP),Time Elapsed (Sec),Completed At"];
+    
+    const rows = leaderboard.map((s, index) => {
+      const accuracy = s.totalQuestions > 0 ? Math.round((s.score / (s.totalQuestions * 10)) * 100) : 0;
+      const completedAt = s.status === 'completed' && s.updatedAt 
+        ? `${new Date(s.updatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} ${new Date(s.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` 
+        : '-';
+      
+      return `${index + 1},"${s.name}",${s.status},${s.currentQuestion},${s.totalQuestions},${accuracy},${s.score},${s.timeElapsed},"${completedAt}"`;
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join("\n"), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Hasil_Evaluasi_${evaluation?.title.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Berhasil mengunduh data CSV");
+  };
 
   if (loading) {
     return <div className="p-8 text-center text-zinc-500">Loading evaluation data...</div>;
@@ -243,6 +281,15 @@ export default function MonitorEvaluationPage() {
                   </Button>
                 </>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadCSV}
+                className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+              >
+                <Download className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
+                Download CSV
+              </Button>
             </div>
           </div>
         </div>
@@ -333,7 +380,7 @@ export default function MonitorEvaluationPage() {
 
               <div className="space-y-4">
                 {liveStudents.map((student) => (
-                  <StudentProgressCard key={student.id} student={student} />
+                  <StudentProgressCard key={student.id} student={student} onDelete={handleDeleteStudent} />
                 ))}
               </div>
             </Card>
@@ -481,16 +528,18 @@ export default function MonitorEvaluationPage() {
 
 type LiveStudent = {
   id: string;
+  studentId: string;
   name: string;
   avatar: string;
   currentQuestion: number;
   totalQuestions: number;
   score: number;
   timeElapsed: number;
-  status: 'active' | 'completed' | 'stuck';
+  updatedAt: string | Date;
+  status: 'active' | 'completed' | 'stuck' | 'waiting';
 };
 
-function StudentProgressCard({ student }: { student: LiveStudent }) {
+function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDelete: (studentId: string, studentName: string) => void }) {
   const progressPercentage = student.totalQuestions > 0 ? (student.currentQuestion / student.totalQuestions) * 100 : 0;
   const accuracyPercentage = student.totalQuestions > 0 ? (student.score / (student.totalQuestions * 10)) * 100 : 0;
   const timeMinutes = Math.floor(student.timeElapsed / 60);
@@ -514,6 +563,12 @@ function StudentProgressCard({ student }: { student: LiveStudent }) {
       bg: "bg-orange-100 dark:bg-orange-950",
       label: "Stuck",
       icon: XCircle,
+    },
+    waiting: {
+      color: "text-zinc-500 dark:text-zinc-400",
+      bg: "bg-zinc-100 dark:bg-zinc-900",
+      label: "Menunggu",
+      icon: Clock,
     },
   };
 
@@ -539,17 +594,34 @@ function StudentProgressCard({ student }: { student: LiveStudent }) {
               <span className="font-medium">{status.label}</span>
             </div>
             <span className="text-zinc-400">•</span>
-            <div className="text-zinc-600 dark:text-zinc-400">
+            <div className="text-zinc-600 dark:text-zinc-400" title="Waktu pengerjaan">
               <Clock className="w-3 h-3 inline mr-1" />
               {timeMinutes}:{timeSeconds.toString().padStart(2, "0")}
             </div>
+            {student.status === 'completed' && student.updatedAt && (
+              <>
+                <span className="text-zinc-400">•</span>
+                <div className="text-zinc-600 dark:text-zinc-400 text-xs bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded font-medium" title="Selesai pada">
+                  {new Date(student.updatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • {new Date(student.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Score / Accuracy */}
         <div className="text-right">
-          <div className="text-2xl font-bold text-purple-600">
-            {Math.round(accuracyPercentage)}%
+          <div className="flex items-center gap-2 justify-end mb-1">
+            <div className="text-2xl font-bold text-purple-600">
+              {Math.round(accuracyPercentage)}%
+            </div>
+            <button
+              onClick={() => onDelete(student.studentId, student.name)}
+              className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"
+              title="Delete student progress"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
           <div className="text-xs text-zinc-500">{student.score} Pts</div>
         </div>

@@ -254,6 +254,28 @@ export async function getLiveEvaluationProgress(evaluationId: string) {
   }
 }
 
+export async function deleteStudentProgress(evaluationId: string, studentId: string) {
+  try {
+    const { evaluationProgress } = await import("@/db/schema");
+    await db.delete(evaluationProgress).where(
+      and(
+        eq(evaluationProgress.evaluationId, evaluationId),
+        eq(evaluationProgress.studentId, studentId)
+      )
+    );
+    await db.delete(evaluationResults).where(
+      and(
+        eq(evaluationResults.evaluationId, evaluationId),
+        eq(evaluationResults.studentId, studentId)
+      )
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete student progress:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
 export async function getStudentCompletedEvaluationIds(studentId: string) {
   try {
     const results = await db.select({ evaluationId: evaluationResults.evaluationId })

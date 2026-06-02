@@ -63,11 +63,12 @@ function WaitingRoomOverlay({
   evaluationTitle: string;
   onStart: () => void;
 }) {
-  const { role } = useUserStore();
+  const { id: userId, name: userName, role } = useUserStore();
   const { countdownEndTime, startWaitingRoomSession, initiateStartSequence } = useEvaluationStore();
   const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * FUN_FACTS.length));
   const [showParticipants, setShowParticipants] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [participants, setParticipants] = useState<{name: string, avatar: string}[]>([]);
 
   // Poll DB session status — when dosen presses "Mulai Sesi" from another device,
   // sessionStatus becomes 'active' and we trigger the local countdown sequence.
@@ -116,30 +117,47 @@ function WaitingRoomOverlay({
     return () => clearInterval(timer);
   }, [isStarting]);
   
-  // Simulated joined users list
-  const [participants, setParticipants] = useState<{name: string, avatar: string}[]>([
-    { name: 'Ahmad Rizki', avatar: 'bg-blue-200 text-blue-700' },
-    { name: 'Sarah Kusuma', avatar: 'bg-pink-200 text-pink-700' },
-    { name: 'Budi Santoso', avatar: 'bg-green-200 text-green-700' },
-    { name: 'Dinda Pratiwi', avatar: 'bg-purple-200 text-purple-700' },
-    { name: 'Eko Prasetyo', avatar: 'bg-indigo-200 text-indigo-700' },
-  ]);
+  useEffect(() => {
+    if (role === 'dosen' || role === 'admin' || role === 'asdos') return;
+    
+    // Register as waiting
+    upsertEvaluationProgress({
+      evaluationId,
+      studentId: userId,
+      studentName: userName,
+      currentQuestion: 0,
+      totalQuestions: 0,
+      score: 0,
+      status: 'waiting',
+      timeElapsed: 0,
+    });
+  }, [evaluationId, userId, userName, role]);
 
   useEffect(() => {
-    // Simulate users joining over time
-    const interval = setInterval(() => {
-      const names = ['Gilang', 'Fitri', 'Hana', 'Irfan', 'Joko', 'Kartika', 'Lestari', 'Fajar', 'Nadia', 'Omar'];
-      const bgColors = ['bg-red-200 text-red-700', 'bg-teal-200 text-teal-700', 'bg-orange-200 text-orange-700', 'bg-cyan-200 text-cyan-700'];
-      
-      setParticipants(prev => {
-        if (prev.length >= 25) return prev;
-        const newName = names[Math.floor(Math.random() * names.length)] + ' ' + (prev.length + 1);
-        const newColor = bgColors[Math.floor(Math.random() * bgColors.length)];
-        return [...prev, { name: newName, avatar: newColor }];
-      });
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    let mounted = true;
+    const fetchParticipants = async () => {
+      try {
+        const liveData = await getLiveEvaluationProgress(evaluationId);
+        if (!mounted) return;
+        
+        const bgColors = ['bg-red-200 text-red-700', 'bg-teal-200 text-teal-700', 'bg-orange-200 text-orange-700', 'bg-cyan-200 text-cyan-700', 'bg-blue-200 text-blue-700', 'bg-purple-200 text-purple-700'];
+        const users = liveData.map((d, index) => ({
+          name: d.studentName,
+          avatar: bgColors[index % bgColors.length]
+        }));
+        setParticipants(users);
+      } catch (err) {
+        console.error("Failed to fetch participants:", err);
+      }
+    };
+
+    fetchParticipants();
+    const interval = setInterval(fetchParticipants, 3000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [evaluationId]);
 
   const nextFact = () => setCurrentFactIndex((p) => (p + 1) % FUN_FACTS.length);
   const prevFact = () => setCurrentFactIndex((p) => (p - 1 + FUN_FACTS.length) % FUN_FACTS.length);

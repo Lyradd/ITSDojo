@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 export async function GET(
   req: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   const resolvedParams = await Promise.resolve(params);
   const requestedRoomId = resolvedParams.roomId;
@@ -18,7 +18,7 @@ export async function GET(
   }
 
   const [host] = await db
-    .select({ id: users.id, name: users.name, email: users.email, role: users.role })
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, avatar: users.avatar })
     .from(users)
     .where(eq(users.id, lobby.hostId))
     .limit(1);
@@ -32,7 +32,7 @@ export async function GET(
 
   const guest = lobby.guestId
     ? await db
-        .select({ id: users.id, name: users.name, email: users.email, role: users.role })
+        .select({ id: users.id, name: users.name, email: users.email, role: users.role, avatar: users.avatar })
         .from(users)
         .where(eq(users.id, lobby.guestId))
         .limit(1)
@@ -44,6 +44,7 @@ export async function GET(
         name: lobby.guestId,
         email: lobby.guestId,
         role: "mahasiswa" as const,
+        avatar: null,
       }
     : null;
 

@@ -18,8 +18,8 @@ type LobbyRoom = {
   inviteCode: string;
   topicId: number;
   status: "waiting" | "joined" | "started" | "cancelled";
-  host: { id: string; name: string; email: string; role: string } | null;
-  guest: { id: string; name: string; email: string; role: string } | null;
+  host: { id: string; name: string; email: string; role: string; avatar?: string | null } | null;
+  guest: { id: string; name: string; email: string; role: string; avatar?: string | null } | null;
 };
 
 const LOBBY_STATUS_TEXT: Record<LobbyRoom["status"], string> = {
@@ -317,7 +317,24 @@ export default function DuelPage() {
                     {LOBBY_STATUS_TEXT[lobbyStatus]}
                   </p>
                   {room?.guest ? (
-                    <p>Lawanmu: <b>{room.guest.name}</b></p>
+                    <div className="mt-2 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 ${room.guest.avatar && (room.guest.avatar.startsWith('http') || room.guest.avatar.startsWith('/') || room.guest.avatar.startsWith('data:')) ? '' : (room.guest.avatar ?? 'bg-blue-200 text-blue-700')}`}>
+                        {room.guest.avatar && (room.guest.avatar.startsWith('http') || room.guest.avatar.startsWith('/') || room.guest.avatar.startsWith('data:')) ? (
+                          // Image avatar
+                          <img src={room.guest.avatar} alt={room.guest.name} className="w-full h-full object-cover" />
+                        ) : (
+                          // Colored initials avatar
+                          <span className="font-bold text-sm">
+                            {room.guest.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-sm">Lawanmu</p>
+                        <p className="font-semibold">{room.guest.name}</p>
+                      </div>
+                    </div>
                   ) : (
                     <p>Belum ada pemain kedua di room ini.</p>
                   )}

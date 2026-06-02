@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { deleteDuelSession } from "@/lib/duel-session-store";
+import { upsertLobbyState } from "@/lib/lobby-bus";
 
 export async function POST(
   req: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   const resolvedParams = await Promise.resolve(params);
   const requestedRoomId = resolvedParams.roomId;
@@ -21,6 +23,7 @@ export async function POST(
     .update(duelRooms)
     .set({
       status: "cancelled",
+      guestId: null,
       endedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -29,6 +32,16 @@ export async function POST(
   if (result.rowCount === 0) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
+
+  upsertLobbyState({
+    ...lobby,
+    guestId: null,
+    status: "cancelled",
+    endedAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  deleteDuelSession(lobby.inviteCode);
 
   return NextResponse.json({ status: "cancelled" });
 }

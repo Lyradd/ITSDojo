@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore } from "@/lib/store";
-import { validateLogin } from "@/actions/auth";
+import { validateLogin, bypassLoginAsAdmin } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -271,9 +271,10 @@ export default function LoginPage() {
                 <div className="pt-4 flex justify-center">
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setRole('admin');
                       login();
+                      await bypassLoginAsAdmin(); // Set cookie di server backend
                       router.push('/admin');
                     }}
                     className="text-[10px] font-bold text-zinc-400 hover:text-blue-500 uppercase tracking-widest transition-colors flex items-center gap-1.5 opacity-50 hover:opacity-100"

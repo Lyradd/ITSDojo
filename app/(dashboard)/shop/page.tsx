@@ -28,6 +28,7 @@ export default function ShopPage() {
   const [selectedItem, setSelectedItem] = useState<{ type: string, cost: number, title: string, icon: React.ReactNode, actionType?: 'buy' | 'unlock' } | null>(null);
   const [alertInfo, setAlertInfo] = useState<{ title: string, message: string, icon: React.ReactNode } | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const timeLeft = useMultiplierTimer();
 
   useEffect(() => {
@@ -54,8 +55,10 @@ export default function ShopPage() {
   if (!isMounted || !isLoggedIn) return null;
 
   const confirmBuy = () => {
-    if (!selectedItem || gems < selectedItem.cost) return;
+    if (!selectedItem || gems < selectedItem.cost || isProcessing) return;
     
+    setIsProcessing(true);
+
     if (selectedItem.actionType === 'unlock') {
       const success = unlockInventorySlot(selectedItem.type, selectedItem.cost);
       if (success) {
@@ -64,6 +67,7 @@ export default function ShopPage() {
         toast.success(`${selectedItem.title} berhasil dibuka!`);
         setSelectedItem(null);
       }
+      setIsProcessing(false);
       return;
     }
 
@@ -86,6 +90,8 @@ export default function ShopPage() {
       toast.success(`${selectedItem.title} berhasil dibeli!`);
       setSelectedItem(null);
     }
+    
+    setTimeout(() => setIsProcessing(false), 500); // Lock UI briefly for visual feedback
   };
 
   const isMultiplierActive = multiplierEndTime && multiplierEndTime > Date.now();

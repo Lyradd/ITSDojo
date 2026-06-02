@@ -254,6 +254,18 @@ export async function getLiveEvaluationProgress(evaluationId: string) {
   }
 }
 
+export async function getStudentCompletedEvaluationIds(studentId: string) {
+  try {
+    const results = await db.select({ evaluationId: evaluationResults.evaluationId })
+      .from(evaluationResults)
+      .where(eq(evaluationResults.studentId, studentId));
+    return results.map(r => r.evaluationId);
+  } catch (error) {
+    console.error("Failed to get completed evaluations:", error);
+    return [];
+  }
+}
+
 // ============================================
 // EVALUATION RESULTS (final submission)
 // ============================================

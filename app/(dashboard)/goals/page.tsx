@@ -80,6 +80,7 @@ export default function GoalsPage() {
   const timeLeft = useMultiplierTimer();
   const [resetTimeLeft, setResetTimeLeft] = useState<string | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [claimingGoals, setClaimingGoals] = useState<Set<string>>(new Set());
 
   // 1. Cek Mounted 
   useEffect(() => { setIsMounted(true); }, []);
@@ -126,11 +127,26 @@ export default function GoalsPage() {
   });
 
 
-  // 4. Wrapper Fungsi Klaim Hadiah
+  // 4. Wrapper Fungsi Klaim Hadiah dengan Anti-Eksploitasi (Debounce/Lock)
   const handleClaim = (goalId: string) => {
+    // Mencegah double-click eksploitasi dalam rentang waktu yang sama
+    if (claimingGoals.has(goalId)) return;
+    
+    // Optimistic UI Update: Kunci tombol langsung
+    setClaimingGoals(prev => new Set(prev).add(goalId));
+
     claimGoalReward(goalId);
     triggerConfetti();
     playCoinSound();
+
+    // Lepas kunci setelah animasi selesai (opsional, tapi aman jika user refresh)
+    setTimeout(() => {
+      setClaimingGoals(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(goalId);
+        return newSet;
+      });
+    }, 1000);
   };
 
   return (
@@ -268,10 +284,11 @@ export default function GoalsPage() {
                           ) : isClaimable ? (
                             <Button
                               onClick={() => handleClaim(goal.id)}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 transition-transform active:scale-95 group relative overflow-hidden"
+                              disabled={claimingGoals.has(goal.id)}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 transition-transform active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:active:scale-100"
                             >
-                              <span className="relative z-10">Klaim</span>
-                              <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />
+                              <span className="relative z-10">{claimingGoals.has(goal.id) ? 'Klaim...' : 'Klaim'}</span>
+                              {!claimingGoals.has(goal.id) && <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />}
                             </Button>
                           ) : (
                             // Tampilan Hadiah (Belum Selesai)

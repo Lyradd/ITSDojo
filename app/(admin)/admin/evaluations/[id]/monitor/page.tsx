@@ -152,15 +152,18 @@ export default function MonitorEvaluationPage() {
 
   const activeStudents = liveStudents.filter((s) => s.status === "active").length;
   const completedStudents = liveStudents.filter((s) => s.status === "completed").length;
-  const avgScore = Math.round(
-    liveStudents.reduce((sum, s) => sum + s.score, 0) / (liveStudents.length || 1)
+  const avgAccuracy = Math.round(
+    liveStudents.reduce((sum, s) => {
+      const acc = s.totalQuestions > 0 ? (s.score / (s.totalQuestions * 10)) * 100 : 0;
+      return sum + acc;
+    }, 0) / (liveStudents.length || 1)
   );
   const avgProgress = Math.round(
     liveStudents.reduce((sum, s) => sum + (s.currentQuestion / s.totalQuestions) * 100, 0) /
       (liveStudents.length || 1)
   );
 
-  // Sorted leaderboard
+  // Sorted leaderboard by score
   const leaderboard = [...liveStudents].sort((a, b) => b.score - a.score);
 
   return (
@@ -309,10 +312,10 @@ export default function MonitorEvaluationPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-orange-600">
-                  {avgScore}%
+                  {avgAccuracy}%
                 </div>
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {evaluation.isActive ? "Current Avg" : "Final Avg Score"}
+                  {evaluation.isActive ? "Current Avg Accuracy" : "Final Avg Accuracy"}
                 </div>
               </div>
             </div>
@@ -380,7 +383,10 @@ export default function MonitorEvaluationPage() {
 
                     <div className="text-right">
                       <div className="text-lg font-bold text-zinc-900 dark:text-white">
-                        {student.score}%
+                        {student.totalQuestions > 0 ? Math.round((student.score / (student.totalQuestions * 10)) * 100) : 0}%
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        {student.score} Pts
                       </div>
                     </div>
                   </div>
@@ -485,7 +491,8 @@ type LiveStudent = {
 };
 
 function StudentProgressCard({ student }: { student: LiveStudent }) {
-  const progressPercentage = (student.currentQuestion / student.totalQuestions) * 100;
+  const progressPercentage = student.totalQuestions > 0 ? (student.currentQuestion / student.totalQuestions) * 100 : 0;
+  const accuracyPercentage = student.totalQuestions > 0 ? (student.score / (student.totalQuestions * 10)) * 100 : 0;
   const timeMinutes = Math.floor(student.timeElapsed / 60);
   const timeSeconds = student.timeElapsed % 60;
 
@@ -539,12 +546,12 @@ function StudentProgressCard({ student }: { student: LiveStudent }) {
           </div>
         </div>
 
-        {/* Score */}
+        {/* Score / Accuracy */}
         <div className="text-right">
           <div className="text-2xl font-bold text-purple-600">
-            {student.score}%
+            {Math.round(accuracyPercentage)}%
           </div>
-          <div className="text-xs text-zinc-500">Score</div>
+          <div className="text-xs text-zinc-500">{student.score} Pts</div>
         </div>
       </div>
 

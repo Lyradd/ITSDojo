@@ -11,7 +11,7 @@ import {
   addCurrentUserToLeaderboard,
   addBotsIfNeeded,
 } from '@/lib/evaluation-data';
-import { getEvaluationById, upsertEvaluationProgress, getEvaluationSessionStatus, startEvaluationSession, submitEvaluationResult, getLiveEvaluationProgress } from '@/actions/evaluations';
+import { getEvaluationById, upsertEvaluationProgress, getEvaluationSessionStatus, startEvaluationSession, submitEvaluationResult, getLiveEvaluationProgress, getStudentEvaluationResult } from '@/actions/evaluations';
 import { QuestionCard } from '@/components/evaluation/question-card';
 import { FeedbackToast } from '@/components/evaluation/feedback-toast';
 import { LiveLeaderboard } from '@/components/leaderboard/live-leaderboard';
@@ -316,6 +316,7 @@ export default function EvaluationFullscreenPage() {
 
   const [isNavigatorOpen, setIsNavigatorOpen] = useState(true);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
 
   // Toast feedback state
   const [toast, setToast] = useState<{
@@ -379,9 +380,16 @@ export default function EvaluationFullscreenPage() {
         return;
       }
       setDbEvaluation(data);
+
+      if (userId) {
+        const pastResult = await getStudentEvaluationResult(evaluationId, userId);
+        if (pastResult) {
+          setIsPracticeMode(true);
+        }
+      }
     };
     fetchEval();
-  }, [evaluationId, isLoggedIn, router]);
+  }, [evaluationId, isLoggedIn, router, userId]);
 
   useEffect(() => {
     if (!dbEvaluation) return;
@@ -492,7 +500,7 @@ export default function EvaluationFullscreenPage() {
   // Sync progress to DB. Harus dideklarasikan sebelum early return
   // agar urutan hook konsisten antar render (Rules of Hooks).
   useEffect(() => {
-    if (!currentEvaluation || !isEvaluationActive || !userId) return;
+    if (!currentEvaluation || !isEvaluationActive || !userId || isPracticeMode) return;
 
     const syncProgress = async () => {
       const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
@@ -509,7 +517,7 @@ export default function EvaluationFullscreenPage() {
     };
 
     syncProgress();
-  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name, userId]);
+  }, [score, userAnswers.size, currentEvaluation, isEvaluationActive, startTime, name, userId, isPracticeMode]);
 
   if (!isMounted || !isLoggedIn || !isInitialized || !currentEvaluation) {
     return null;
@@ -556,7 +564,7 @@ export default function EvaluationFullscreenPage() {
 
   const handleFinish = async () => {
     const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
-    if (currentEvaluation && userId) {
+    if (currentEvaluation && userId && !isPracticeMode) {
       await upsertEvaluationProgress({
         evaluationId: currentEvaluation.id,
         studentId: userId,

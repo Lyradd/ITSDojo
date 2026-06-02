@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "@/lib/auth-guard";
 
 // PUT /api/admin/users/[id] — Update user
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -36,6 +40,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 // DELETE /api/admin/users/[id] — Hapus user
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
 

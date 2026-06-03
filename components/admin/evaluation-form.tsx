@@ -78,15 +78,11 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
         {/* Duration */}
         <div>
           <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Durasi (menit) *
+            Durasi (menit)
           </label>
-          <Input
-            type="number"
-            value={metadata.duration}
-            onChange={(e) => updateField('duration', parseInt(e.target.value) || 0)}
-            min={1}
-            placeholder="60"
-          />
+          <div className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-sm italic">
+            Diatur otomatis (Live Timer)
+          </div>
         </div>
 
         {/* Difficulty */}

@@ -41,6 +41,7 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
       type,
       question: "",
       points: 10,
+      timeLimit: 30,
       bloomLevel: 'C1',
       difficulty: 'medium',
       ...(type === 'multiple_choice' && {
@@ -112,7 +113,7 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
         points: item.points || 10,
         bloomLevel: (item.bloomLevel || 'C1') as BloomLevel,
         difficulty: (item.difficulty || 'medium') as DifficultyLevel,
-        timeLimit: item.timeLimit || undefined,
+        timeLimit: item.timeLimit || 30,
         
         // Conditional mapping based on type
         ...(qType === 'multiple_choice' && {
@@ -457,15 +458,16 @@ function QuestionCard({
             {/* Time Limit */}
             <div>
               <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-                Time Limit (sec)
+                Time Limit (sec) *
               </label>
               <input
                 type="number"
-                value={question.timeLimit || ''}
-                onChange={(e) => onUpdate({ timeLimit: parseInt(e.target.value) || undefined })}
-                placeholder="Optional"
+                value={question.timeLimit || 30}
+                onChange={(e) => onUpdate({ timeLimit: parseInt(e.target.value) || 30 })}
+                placeholder="30"
                 className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
                 min={10}
+                required
               />
             </div>
           </div>

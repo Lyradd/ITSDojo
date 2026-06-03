@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress, updateEvaluation, nextQuestion, pauseQuestion, resumeQuestion, getEvaluationSessionStatus } from "@/actions/evaluations";
@@ -229,6 +229,8 @@ export default function MonitorEvaluationPage() {
 
   // Add countdown timer display for the current question
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [autoNext, setAutoNext] = useState<boolean>(false);
+  const isCallingNext = useRef<boolean>(false);
 
   useEffect(() => {
     if (!evaluation || !questionStartedAt || isPaused || sessionStatus !== 'active') return;
@@ -237,16 +239,27 @@ export default function MonitorEvaluationPage() {
     
     const limit = currentQ.timeLimit || 30; // Default 30s
     
-    const tick = () => {
+    const tick = async () => {
       const elapsed = (Date.now() - questionStartedAt.getTime()) / 1000;
       const rem = Math.max(0, limit - elapsed);
       setTimeLeft(Math.floor(rem));
+
+      if (rem === 0 && autoNext && !isCallingNext.current && currentQuestionIndex < (evaluation.questions?.length || 0) - 1) {
+        isCallingNext.current = true;
+        const res = await nextQuestion(evaluation.id);
+        if (res.success) {
+          toast.success("Otomatis pindah ke soal berikutnya!");
+        }
+        setTimeout(() => {
+          isCallingNext.current = false;
+        }, 2000);
+      }
     };
     
     tick();
     const intv = setInterval(tick, 1000);
     return () => clearInterval(intv);
-  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus]);
+  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus, autoNext]);
 
   if (loading) {
     return <div className="p-8 text-center text-zinc-500">Loading evaluation data...</div>;
@@ -431,6 +444,23 @@ export default function MonitorEvaluationPage() {
                 >
                   Next Soal
                 </Button>
+                <div className="flex items-center gap-2 ml-2">
+                  <div 
+                    className={cn(
+                      "w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300", 
+                      autoNext ? "bg-indigo-500" : "bg-zinc-300 dark:bg-zinc-700"
+                    )}
+                    onClick={() => setAutoNext(!autoNext)}
+                  >
+                    <div 
+                      className={cn(
+                        "bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ease-in-out", 
+                        autoNext ? "translate-x-6" : ""
+                      )}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Auto-Next</span>
+                </div>
               </div>
             </div>
             

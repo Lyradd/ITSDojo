@@ -119,7 +119,11 @@ export function LiveLeaderboard({
 
   // Combine real and bot leaderboard, then sort
   const combinedLeaderboard = [...realLeaderboard, ...botLeaderboard]
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+      return a.name.localeCompare(b.name);
+    })
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
   // Show top entries + nearby entries for current user

@@ -476,9 +476,8 @@ export default function EvaluationFullscreenPage() {
       const otherUsers = liveData
         .filter((d: any) => d.studentName !== name)
         .map((d: any, idx: number) => {
-          const accuracy = d.totalQuestions > 0
-            ? Math.round((d.score / (d.totalQuestions * 10)) * 100)
-            : 0;
+          const answered = d.currentQuestion > 0 ? d.currentQuestion : 1;
+          const accuracy = Math.round(((d.score / 10) / answered) * 100);
           const palette = ['bg-blue-200 text-blue-700', 'bg-pink-200 text-pink-700', 'bg-green-200 text-green-700', 'bg-purple-200 text-purple-700', 'bg-orange-200 text-orange-700'];
           return {
             userId: `progress-${d.studentName}`,

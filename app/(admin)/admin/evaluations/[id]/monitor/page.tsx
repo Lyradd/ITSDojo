@@ -227,6 +227,27 @@ export default function MonitorEvaluationPage() {
     toast.success("Berhasil mengunduh data CSV");
   };
 
+  // Add countdown timer display for the current question
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (!evaluation || !questionStartedAt || isPaused || sessionStatus !== 'active') return;
+    const currentQ = evaluation.questions?.[currentQuestionIndex];
+    if (!currentQ) return;
+    
+    const limit = currentQ.timeLimit || 30; // Default 30s
+    
+    const tick = () => {
+      const elapsed = (Date.now() - questionStartedAt.getTime()) / 1000;
+      const rem = Math.max(0, limit - elapsed);
+      setTimeLeft(Math.floor(rem));
+    };
+    
+    tick();
+    const intv = setInterval(tick, 1000);
+    return () => clearInterval(intv);
+  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus]);
+
   if (loading) {
     return <div className="p-8 text-center text-zinc-500">Loading evaluation data...</div>;
   }
@@ -280,26 +301,6 @@ export default function MonitorEvaluationPage() {
     if (res.success) toast.success("Soal dilanjutkan");
   };
 
-  // Add countdown timer display for the current question
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-
-  useEffect(() => {
-    if (!evaluation || !questionStartedAt || isPaused || sessionStatus !== 'active') return;
-    const currentQ = evaluation.questions?.[currentQuestionIndex];
-    if (!currentQ) return;
-    
-    const limit = currentQ.timeLimit || 30; // Default 30s
-    
-    const tick = () => {
-      const elapsed = (Date.now() - questionStartedAt.getTime()) / 1000;
-      const rem = Math.max(0, limit - elapsed);
-      setTimeLeft(Math.floor(rem));
-    };
-    
-    tick();
-    const intv = setInterval(tick, 1000);
-    return () => clearInterval(intv);
-  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">

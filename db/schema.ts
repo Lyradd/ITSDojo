@@ -170,6 +170,13 @@ export const evaluations = pgTable('evaluations', {
   // Session lifecycle: 'waiting' (default, menunggu dosen mulai) | 'active' (sedang berjalan) | 'finished'
   sessionStatus: text('session_status').default('waiting').notNull(),
   sessionStartedAt: timestamp('session_started_at'),
+  
+  // Real-time synchronization fields
+  currentQuestionIndex: integer('current_question_index').default(0).notNull(),
+  questionStartedAt: timestamp('question_started_at'),
+  isPaused: boolean('is_paused').default(false).notNull(),
+  pausedAt: timestamp('paused_at'),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

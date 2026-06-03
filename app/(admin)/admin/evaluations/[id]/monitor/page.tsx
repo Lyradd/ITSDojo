@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress, updateEvaluation } from "@/actions/evaluations";
+import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress, updateEvaluation, nextQuestion, pauseQuestion, resumeQuestion, getEvaluationSessionStatus } from "@/actions/evaluations";
 import { Evaluation, Question } from "@/lib/evaluation-types";
 import { QuestionBuilder } from "@/components/admin/question-builder";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,11 @@ export default function MonitorEvaluationPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [questionStartedAt, setQuestionStartedAt] = useState<Date | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string>('waiting');
 
   const { isWaitingRoomActive, initiateStartSequence, countdownEndTime, startWaitingRoomSession, resetEvaluation } = useEvaluationStore();
   const isStarting = countdownEndTime !== null;
@@ -81,13 +86,17 @@ export default function MonitorEvaluationPage() {
         const data = await getEvaluationById(evaluationId);
         setEvaluation(data as unknown as Evaluation);
 
-        // Sync local state with the actual DB status so we don't use stale persisted state
         const status = (data as any)?.sessionStatus;
+        setSessionStatus(status || 'waiting');
         if (status === 'waiting') {
           useEvaluationStore.setState({ isWaitingRoomActive: true, countdownEndTime: null });
         } else if (status === 'active') {
           useEvaluationStore.setState({ isWaitingRoomActive: false });
         }
+        
+        setCurrentQuestionIndex((data as any)?.currentQuestionIndex || 0);
+        setIsPaused((data as any)?.isPaused || false);
+        setQuestionStartedAt((data as any)?.questionStartedAt ? new Date((data as any)?.questionStartedAt) : null);
       } catch (err) {
         console.error(err);
       } finally {
@@ -118,7 +127,17 @@ export default function MonitorEvaluationPage() {
 
     const fetchLiveData = async () => {
       try {
-        const liveData = await getLiveEvaluationProgress(evaluationId);
+        const [liveData, sessionState] = await Promise.all([
+          getLiveEvaluationProgress(evaluationId),
+          getEvaluationSessionStatus(evaluationId)
+        ]);
+        
+        if (sessionState) {
+          setSessionStatus(sessionState.sessionStatus);
+          setCurrentQuestionIndex(sessionState.currentQuestionIndex);
+          setIsPaused(sessionState.isPaused);
+          setQuestionStartedAt(sessionState.questionStartedAt ? new Date(sessionState.questionStartedAt) : null);
+        }
         const mappedData = liveData.map((d: any) => ({
           id: d.studentName,
           studentId: d.studentId,
@@ -235,9 +254,52 @@ export default function MonitorEvaluationPage() {
     liveStudents.reduce((sum, s) => sum + (s.currentQuestion / s.totalQuestions) * 100, 0) /
       (liveStudents.length || 1)
   );
-
   // Sorted leaderboard by score
   const leaderboard = [...liveStudents].sort((a, b) => b.score - a.score);
+
+  const handleNextQuestion = async () => {
+    const res = await nextQuestion(evaluationId);
+    if (res.success) {
+      toast.success("Berhasil pindah ke soal berikutnya!");
+    } else {
+      if (res.reason === 'already_at_end') {
+        toast.error("Sudah berada di soal terakhir!");
+      } else {
+        toast.error("Gagal pindah soal");
+      }
+    }
+  };
+
+  const handlePauseQuestion = async () => {
+    const res = await pauseQuestion(evaluationId);
+    if (res.success) toast.success("Soal dipause");
+  };
+
+  const handleResumeQuestion = async () => {
+    const res = await resumeQuestion(evaluationId);
+    if (res.success) toast.success("Soal dilanjutkan");
+  };
+
+  // Add countdown timer display for the current question
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (!evaluation || !questionStartedAt || isPaused || sessionStatus !== 'active') return;
+    const currentQ = evaluation.questions?.[currentQuestionIndex];
+    if (!currentQ) return;
+    
+    const limit = currentQ.timeLimit || 30; // Default 30s
+    
+    const tick = () => {
+      const elapsed = (Date.now() - questionStartedAt.getTime()) / 1000;
+      const rem = Math.max(0, limit - elapsed);
+      setTimeLeft(Math.floor(rem));
+    };
+    
+    tick();
+    const intv = setInterval(tick, 1000);
+    return () => clearInterval(intv);
+  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 p-8">
@@ -337,6 +399,53 @@ export default function MonitorEvaluationPage() {
             </div>
           </div>
         </div>
+
+        {/* Timer & Controls (When Active) */}
+        {sessionStatus === 'active' && evaluation && (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-md border-2 border-indigo-200 dark:border-indigo-900 mb-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="flex items-center gap-4">
+                <div className="text-lg font-bold text-zinc-700 dark:text-zinc-300">
+                  Soal {currentQuestionIndex + 1} dari {evaluation.questions?.length || 0}
+                </div>
+                <div className="w-16 h-16 rounded-full border-4 border-indigo-500 flex items-center justify-center font-black text-2xl text-indigo-700 dark:text-indigo-400">
+                  {timeLeft}s
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 border-l-2 border-zinc-200 dark:border-zinc-800 pl-6">
+                {isPaused ? (
+                  <Button onClick={handleResumeQuestion} className="bg-emerald-600 hover:bg-emerald-700 font-bold h-12 px-6">
+                    Resume Timer
+                  </Button>
+                ) : (
+                  <Button onClick={handlePauseQuestion} variant="outline" className="font-bold h-12 px-6 border-amber-500 text-amber-600 hover:bg-amber-50">
+                    Pause Timer
+                  </Button>
+                )}
+                
+                <Button 
+                  onClick={handleNextQuestion} 
+                  className="bg-indigo-600 hover:bg-indigo-700 font-bold text-white shadow-md shadow-indigo-600/20 h-12 px-6" 
+                  disabled={currentQuestionIndex >= (evaluation.questions?.length || 0) - 1}
+                >
+                  Next Soal
+                </Button>
+              </div>
+            </div>
+            
+            <div className="text-right hidden md:block">
+              <div className="text-sm text-zinc-500 font-bold uppercase tracking-wider mb-1">Status Kuis</div>
+              <div className="text-indigo-600 font-bold flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isPaused ? "bg-amber-400" : "bg-indigo-400")}></span>
+                  <span className={cn("relative inline-flex rounded-full h-3 w-3", isPaused ? "bg-amber-500" : "bg-indigo-500")}></span>
+                </span>
+                {isPaused ? "DIPAUSE" : "BERJALAN"}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

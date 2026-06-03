@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/lib/store";
 import { EvaluationMetadata, Question, calculateTotalPoints, calculateBloomDistribution, BloomDistribution, QuizGroup } from "@/lib/evaluation-types";
 import { EvaluationForm } from "@/components/admin/evaluation-form";
 import { QuestionBuilder } from "@/components/admin/question-builder";
@@ -15,6 +16,7 @@ const STORAGE_KEY = 'draft_evaluation';
 
 export default function CreateEvaluationPage() {
   const router = useRouter();
+  const { role } = useUserStore();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   
   const [metadata, setMetadata] = useState<EvaluationMetadata>({
@@ -74,7 +76,11 @@ export default function CreateEvaluationPage() {
         // Clear draft
         localStorage.removeItem(STORAGE_KEY);
         toast.success('Arena Evaluasi berhasil diterbitkan secara live!');
-        router.push('/admin/evaluations');
+        if (role === 'admin') {
+          router.push('/admin/evaluations');
+        } else {
+          router.push('/dosen/evaluations');
+        }
       } else {
         toast.error('Gagal menerbitkan evaluasi: Server Error');
       }

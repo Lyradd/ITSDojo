@@ -346,26 +346,57 @@ export default function EvaluationFullscreenPage() {
   }>({ show: false, isCorrect: false, points: 0, streak: 0, streakBonus: 0 });
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate remaining time
-  const getRemainingTime = () => {
-    if (!startTime || !currentEvaluation) return '00:00';
-    const durationSecs = currentEvaluation.duration * 60;
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const remaining = Math.max(0, durationSecs - elapsed);
-    const minutes = Math.floor(remaining / 60);
-    const seconds = remaining % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
+  // Server state polling
+  const [serverSessionStatus, setServerSessionStatus] = useState('waiting');
+  const [isPaused, setIsPaused] = useState(false);
+  const [questionStartedAt, setQuestionStartedAt] = useState<Date | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
 
-  const [remainingTime, setRemainingTime] = React.useState(getRemainingTime());
+  // Poll DB for current question index and timer
+  useEffect(() => {
+    if (!isEvaluationActive || !currentEvaluation) return;
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setRemainingTime(getRemainingTime());
-    }, 1000);
+    let cancelled = false;
+    const pollServerStatus = async () => {
+      const status = await getEvaluationSessionStatus(evaluationId);
+      if (cancelled || !status) return;
 
-    return () => clearInterval(interval);
-  }, [startTime, currentEvaluation]);
+      setServerSessionStatus(status.sessionStatus);
+      setIsPaused(status.isPaused);
+      setQuestionStartedAt(status.questionStartedAt ? new Date(status.questionStartedAt) : null);
+      
+      if (status.currentQuestionIndex !== undefined) {
+         useEvaluationStore.setState({ currentQuestionIndex: status.currentQuestionIndex });
+      }
+    };
+
+    pollServerStatus();
+    const interval = setInterval(pollServerStatus, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isEvaluationActive, currentEvaluation, evaluationId]);
+
+  // Timer tick for current question
+  useEffect(() => {
+    if (!currentEvaluation || !questionStartedAt || isPaused || serverSessionStatus !== 'active') return;
+    
+    const currentQ = currentEvaluation.questions?.[currentQuestionIndex];
+    if (!currentQ) return;
+    
+    const limit = currentQ.timeLimit || 30; // Default 30s
+    
+    const tick = () => {
+      const elapsed = (Date.now() - questionStartedAt.getTime()) / 1000;
+      const rem = Math.max(0, limit - elapsed);
+      setTimeLeft(Math.floor(rem));
+    };
+    
+    tick();
+    const intv = setInterval(tick, 1000);
+    return () => clearInterval(intv);
+  }, [currentEvaluation, currentQuestionIndex, questionStartedAt, isPaused, serverSessionStatus]);
 
   // Sync across tabs (when Dosen starts the session)
   useEffect(() => {
@@ -691,9 +722,11 @@ export default function EvaluationFullscreenPage() {
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
               <div>
-                <span className="font-bold text-lg font-mono">{remainingTime}</span>
+                <span className="font-bold text-lg font-mono text-amber-300">
+                  {timeLeft}s
+                </span>
                 <span className="text-blue-100 ml-2 text-xs">
-                  tersisa dari {currentEvaluation.duration} mnt
+                  tersisa di soal ini
                 </span>
               </div>
             </div>
@@ -802,9 +835,8 @@ export default function EvaluationFullscreenPage() {
                     return (
                       <button
                         key={q.id}
-                        onClick={() => useEvaluationStore.setState({ currentQuestionIndex: idx })}
                         className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base shrink-0 transition-all border-2",
+                          "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base shrink-0 transition-all border-2 cursor-default",
                           isCurrent 
                             ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 scale-105 shadow-md" 
                             : isAnswered 
@@ -825,46 +857,43 @@ export default function EvaluationFullscreenPage() {
         {/* Question Area */}
         <div className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-6 pb-20">
-            {/* Question Card */}
-            {currentQuestion && (
-              <QuestionCard
-                question={currentQuestion}
-                questionNumber={currentQuestionIndex + 1}
-                totalQuestions={totalQuestions}
-                onSubmit={handleSubmitAnswer}
-                isSubmitted={!!currentAnswer}
-                userAnswer={currentAnswer?.answer}
-              />
+            
+            {isPaused && (
+              <div className="bg-amber-100 border-2 border-amber-400 text-amber-800 p-4 rounded-xl flex items-center justify-center gap-3 font-bold shadow-sm mb-6 animate-pulse">
+                Sesi sedang di-pause oleh dosen...
+              </div>
+            )}
+            
+            {!isPaused && timeLeft === 0 && (
+              <div className="bg-red-100 border-2 border-red-400 text-red-800 p-4 rounded-xl flex items-center justify-center gap-3 font-bold shadow-sm mb-6">
+                <Clock className="w-5 h-5" />
+                Waktu Habis! Menunggu soal berikutnya...
+              </div>
             )}
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between gap-4">
-              <Button
-                variant="outline"
-                onClick={previousQuestion}
-                disabled={isFirstQuestion}
-                className="font-bold"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Sebelumnya
-              </Button>
-
-              <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                {userAnswers.size} / {totalQuestions} soal terjawab
+            {/* Question Card */}
+            {currentQuestion && (
+              <div className={cn("transition-opacity duration-300", (isPaused || timeLeft === 0) ? "opacity-50 pointer-events-none grayscale-[30%]" : "")}>
+                <QuestionCard
+                  question={currentQuestion}
+                  questionNumber={currentQuestionIndex + 1}
+                  totalQuestions={totalQuestions}
+                  onSubmit={handleSubmitAnswer}
+                  isSubmitted={!!currentAnswer}
+                  userAnswer={currentAnswer?.answer}
+                />
               </div>
+            )}
 
-              {!isLastQuestion ? (
-                <Button onClick={nextQuestion} className="bg-blue-600 hover:bg-blue-700 font-bold">
-                  Selanjutnya
-                  <ChevronRight className="w-4 h-4 ml-2" />
+            {/* Dosen Finish explicitly handles finishing, but students can manually finish when done */}
+            {isLastQuestion && (timeLeft === 0 || !!currentAnswer) && (
+              <div className="flex justify-center mt-8">
+                <Button onClick={handleFinish} className="bg-green-600 hover:bg-green-700 font-bold px-8 py-6 text-lg shadow-xl shadow-green-600/30">
+                  <Flag className="w-5 h-5 mr-3" />
+                  Selesaikan Evaluasi
                 </Button>
-              ) : (
-                <Button onClick={handleFinish} className="bg-green-600 hover:bg-green-700 font-bold">
-                  <Flag className="w-4 h-4 mr-2" />
-                  Selesai
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 

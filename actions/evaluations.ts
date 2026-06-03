@@ -94,10 +94,13 @@ export async function updateEvaluation(id: string, data: {
 
 export async function startEvaluationSession(evaluationId: string) {
   try {
-    await db
-      .update(evaluations)
-      .set({ sessionStatus: 'active', sessionStartedAt: new Date() })
-      .where(eq(evaluations.id, evaluationId));
+    await db.update(evaluations).set({
+      sessionStatus: 'active',
+      sessionStartedAt: new Date(),
+      currentQuestionIndex: 0,
+      questionStartedAt: new Date(),
+      isPaused: false,
+    }).where(eq(evaluations.id, evaluationId));
     return { success: true, startedAt: Date.now() };
   } catch (error) {
     console.error(`Failed to start session ${evaluationId}:`, error);
@@ -189,6 +192,10 @@ export async function getEvaluationSessionStatus(evaluationId: string) {
         sessionStatus: evaluations.sessionStatus,
         sessionStartedAt: evaluations.sessionStartedAt,
         isActive: evaluations.isActive,
+        currentQuestionIndex: evaluations.currentQuestionIndex,
+        questionStartedAt: evaluations.questionStartedAt,
+        isPaused: evaluations.isPaused,
+        pausedAt: evaluations.pausedAt,
       })
       .from(evaluations)
       .where(eq(evaluations.id, evaluationId));
@@ -478,6 +485,78 @@ export async function getEvaluationStats() {
       avgAccuracy: 0,
       perEvaluationParticipants: {},
     };
+  }
+}
+
+// ============================================
+// LIVE QUIZ CONTROL ACTIONS
+// ============================================
+
+export async function nextQuestion(evaluationId: string) {
+  try {
+    const original = await db.select().from(evaluations).where(eq(evaluations.id, evaluationId));
+    if (original.length === 0) return { success: false };
+    
+    const currentIndex = original[0].currentQuestionIndex;
+    const questions = original[0].questions as any[];
+    
+    // Check if we are at the end
+    if (currentIndex >= questions.length - 1) {
+      // Don't auto-finish here, let the dosen explicitly finish it, or just return success
+      return { success: false, reason: 'already_at_end' };
+    }
+    
+    await db.update(evaluations).set({
+      currentQuestionIndex: currentIndex + 1,
+      questionStartedAt: new Date(),
+      isPaused: false,
+      pausedAt: null
+    }).where(eq(evaluations.id, evaluationId));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to nextQuestion:", error);
+    return { success: false };
+  }
+}
+
+export async function pauseQuestion(evaluationId: string) {
+  try {
+    await db.update(evaluations).set({
+      isPaused: true,
+      pausedAt: new Date()
+    }).where(eq(evaluations.id, evaluationId));
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to pauseQuestion:", error);
+    return { success: false };
+  }
+}
+
+export async function resumeQuestion(evaluationId: string) {
+  try {
+    const original = await db.select().from(evaluations).where(eq(evaluations.id, evaluationId));
+    if (original.length === 0) return { success: false };
+    
+    const e = original[0];
+    if (!e.isPaused || !e.pausedAt || !e.questionStartedAt) return { success: true }; // already resumed
+    
+    // Calculate how much time was spent paused
+    const pausedDurationMs = new Date().getTime() - new Date(e.pausedAt).getTime();
+    
+    // Shift the questionStartedAt forward by the paused duration so the timer resumes correctly
+    const newStartedAt = new Date(new Date(e.questionStartedAt).getTime() + pausedDurationMs);
+    
+    await db.update(evaluations).set({
+      isPaused: false,
+      pausedAt: null,
+      questionStartedAt: newStartedAt
+    }).where(eq(evaluations.id, evaluationId));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to resumeQuestion:", error);
+    return { success: false };
   }
 }
 

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
 import { getActiveEvaluations, getStudentCompletedEvaluationIds } from '@/actions/evaluations';
 import { getAllCourses } from '@/actions/courses';
+import { getAngkatanFromSemester } from '@/lib/academic-utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -111,6 +112,7 @@ export default function EvaluationPage() {
   const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
   const [coursesList, setCoursesList] = useState<{ id: string; title: string; requiredSemester: number }[]>([]);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [globalRank, setGlobalRank] = useState<{rank: number | null, totalUsers: number}>({ rank: null, totalUsers: 0 });
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
@@ -120,14 +122,16 @@ export default function EvaluationPage() {
 
     if (isMounted && isLoggedIn) {
       (async () => {
-        const [data, courses, completed] = await Promise.all([
+        const [data, courses, completed, rankInfo] = await Promise.all([
           getActiveEvaluations(),
           getAllCourses(),
-          getStudentCompletedEvaluationIds(userId)
+          getStudentCompletedEvaluationIds(userId),
+          import('@/actions/leaderboard').then(m => m.getUserGlobalRank(userId, semester))
         ]);
         setEvaluationsList(data);
         setCoursesList(courses);
         setCompletedIds(completed);
+        setGlobalRank(rankInfo);
       })();
     }
   }, [isLoggedIn, router, isMounted, userId]);
@@ -163,7 +167,7 @@ export default function EvaluationPage() {
           <div className="flex items-center gap-3">
             <div className="px-4 py-2 rounded-full bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 font-bold text-sm flex items-center shadow-md">
               <Trophy className="w-4 h-4 mr-2" />
-              Rank kamu #3 dari 12
+              {globalRank.rank ? `Peringkat #${globalRank.rank} dari ${globalRank.totalUsers} (${getAngkatanFromSemester(semester)})` : 'Belum ada peringkat'}
             </div>
             <button
               onClick={() => { setTutorialStep(0); setShowTutorial(true); }}
@@ -337,6 +341,7 @@ export default function EvaluationPage() {
               evaluation={evaluation}
               getCourseName={getCourseName}
               name={name}
+              userId={userId}
               isCompletedByStudent={completedIds.includes(evaluation.id)}
               onStart={() => router.push(`/evaluation/${evaluation.id}`)}
             />
@@ -348,14 +353,24 @@ export default function EvaluationPage() {
 }
 
 // ─── Card Component with Warning Modal ──────────────────────────────────────
-function EvaluationCard({ evaluation, getCourseName, onStart, name, isCompletedByStudent }: {
+function EvaluationCard({ evaluation, getCourseName, onStart, name, userId, isCompletedByStudent }: {
   evaluation: any;
   getCourseName: (id: string) => string;
   onStart: () => void;
   name: string;
+  userId: string;
   isCompletedByStudent?: boolean;
 }) {
   const [showWarning, setShowWarning] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    import('@/actions/evaluations').then(({ getArenaStatsForEvaluation }) => {
+      getArenaStatsForEvaluation(evaluation.id, userId).then(res => {
+        if (res.success) setStats(res);
+      });
+    });
+  }, [evaluation.id, userId]);
 
   // Styling based on status
   const isCompleted = !evaluation.isActive;
@@ -383,7 +398,7 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, isCompletedB
             <div className="flex-[1.5] p-5 md:border-r border-emerald-100 dark:border-emerald-900/30">
               <p className="text-xs text-emerald-600 dark:text-emerald-400/80 font-medium mb-2 uppercase tracking-widest">Skor kamu</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">95 / 110</span>
+                <span className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{stats?.myScore ?? 0} / {evaluation.totalPoints}</span>
               </div>
               <p className="text-sm text-emerald-700 dark:text-emerald-600 font-bold mt-1">poin</p>
             </div>
@@ -391,15 +406,15 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, isCompletedB
             <div className="flex-1 p-5 border-t md:border-t-0 md:border-r border-emerald-100 dark:border-emerald-900/30 flex flex-col justify-center">
               <p className="text-xs text-emerald-600 dark:text-emerald-400/80 font-medium mb-2 uppercase tracking-widest">Posisi akhir</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-orange-500 dark:text-orange-400">#2</span>
+                <span className="text-3xl font-bold text-orange-500 dark:text-orange-400">#{stats?.rank ?? '-'}</span>
               </div>
-              <p className="text-xs text-orange-600 dark:text-orange-500/80 mt-1 font-medium">dari 12 peserta</p>
+              <p className="text-xs text-orange-600 dark:text-orange-500/80 mt-1 font-medium">dari {stats?.totalParticipants ?? 0} peserta</p>
             </div>
 
             <div className="flex-[1.2] p-5 border-t md:border-t-0 border-emerald-100 dark:border-emerald-900/30 flex flex-col justify-center">
               <p className="text-xs text-emerald-600 dark:text-emerald-400/80 font-medium mb-2 uppercase tracking-widest">Peringkat 1</p>
-              <p className="text-base font-bold text-orange-500 dark:text-orange-400 truncate">Aldi R.</p>
-              <p className="text-sm text-orange-600 dark:text-orange-500/80 mt-1 font-medium">110 / 110</p>
+              <p className="text-base font-bold text-orange-500 dark:text-orange-400 truncate">{stats?.highestScorer ?? 'Belum ada'}</p>
+              <p className="text-sm text-orange-600 dark:text-orange-500/80 mt-1 font-medium">{stats?.highestScore !== -1 && stats?.highestScore !== undefined ? stats.highestScore : '-'} / {evaluation.totalPoints}</p>
             </div>
           </div>
 
@@ -467,9 +482,9 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, isCompletedB
               </p>
             </div>
             <div className="flex-1 p-5 border-t md:border-t-0 border-indigo-100 dark:border-indigo-900/40 bg-zinc-100/50 dark:bg-slate-900/40">
-              <p className="text-xs text-indigo-500 dark:text-indigo-400/80 font-medium mb-1 uppercase tracking-widest">Lawan terkuat</p>
-              <p className="text-lg font-bold text-zinc-900 dark:text-white truncate">Aldi R.</p>
-              <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1 font-medium">#1 minggu ini</p>
+              <p className="text-xs text-indigo-500 dark:text-indigo-400/80 font-medium mb-1 uppercase tracking-widest">Skor Tertinggi Sementara</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-white truncate">{stats?.highestScorer ?? 'Belum ada'}</p>
+              <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1 font-medium">{stats?.highestScore !== -1 && stats?.highestScore !== undefined ? `${stats.highestScore} poin` : '-'}</p>
             </div>
           </div>
 
@@ -492,12 +507,17 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, isCompletedB
           {/* Participants */}
           <div className="flex items-center gap-3 mb-6">
             <div className="flex -space-x-3">
-              <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-40">AR</div>
-              <div className="w-8 h-8 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-30">BK</div>
-              <div className="w-8 h-8 rounded-full bg-orange-600 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-20">CL</div>
-              <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative z-10">DM</div>
+              {stats?.avatars?.length > 0 ? (
+                stats.avatars.map((a: any, i: number) => (
+                  <div key={i} className={`w-8 h-8 rounded-full border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-white relative`} style={{ zIndex: 40 - i, backgroundColor: ['#2563eb', '#059669', '#ea580c', '#3b82f6'][i % 4] }}>
+                    {a.initials}
+                  </div>
+                ))
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-zinc-500 relative z-40">?</div>
+              )}
             </div>
-            <span className="text-xs font-medium text-zinc-500 dark:text-indigo-300/80">+8 peserta aktif</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-indigo-300/80">{stats?.activeCount > 0 ? `${stats.activeCount} peserta aktif` : 'Belum ada peserta'}</span>
           </div>
 
           <Button onClick={() => setShowWarning(true)} className="w-full bg-white dark:bg-slate-950 text-indigo-700 dark:text-white hover:bg-indigo-50 dark:hover:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 font-bold h-12 rounded-xl transition-all shadow-md">

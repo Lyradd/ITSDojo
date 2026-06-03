@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress } from "@/actions/evaluations";
-import { Evaluation } from "@/lib/evaluation-types";
+import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress, updateEvaluation } from "@/actions/evaluations";
+import { Evaluation, Question } from "@/lib/evaluation-types";
+import { QuestionBuilder } from "@/components/admin/question-builder";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -21,7 +22,9 @@ import {
   Square,
   Zap,
   Trash2,
-  Download
+  Download,
+  Edit,
+  Save
 } from "lucide-react";
 import { useEvaluationStore } from "@/lib/evaluation-store";
 
@@ -42,6 +45,8 @@ export default function MonitorEvaluationPage() {
   const isStarting = countdownEndTime !== null;
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editorQuestions, setEditorQuestions] = useState<Question[]>([]);
 
   const handleStartSession = async () => {
     const res = await startEvaluationSession(evaluationId);
@@ -147,6 +152,36 @@ export default function MonitorEvaluationPage() {
       setLiveStudents(prev => prev.filter(s => s.studentId !== studentId));
     } else {
       toast.error(`Failed to delete progress`);
+    }
+  };
+
+  const handleEditSoalClick = () => {
+    if (!evaluation) return;
+    if (evaluation.sessionStatus === 'active') {
+      toast.error("Wajib pause (Hentikan Sesi) kuis dulu sebelum ngedit soal!");
+      return;
+    }
+    setEditorQuestions(evaluation.questions as Question[]);
+    setShowEditor(true);
+  };
+
+  const handleSaveSoal = async () => {
+    if (!evaluation) return;
+    const totalPoints = editorQuestions.reduce((acc, q) => acc + (q.points || 10), 0);
+    const res = await updateEvaluation(evaluation.id, {
+      title: evaluation.title,
+      description: evaluation.description,
+      duration: evaluation.duration,
+      totalPoints,
+      questions: editorQuestions,
+      courseId: evaluation.courseId,
+    });
+    if (res.success) {
+      toast.success("Soal berhasil diperbarui!");
+      setShowEditor(false);
+      setEvaluation(prev => prev ? { ...prev, questions: editorQuestions as any, totalPoints } : null);
+    } else {
+      toast.error("Gagal menyimpan soal");
     }
   };
 
@@ -289,6 +324,15 @@ export default function MonitorEvaluationPage() {
               >
                 <Download className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
                 Download CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditSoalClick}
+                className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Soal
               </Button>
             </div>
           </div>
@@ -518,6 +562,35 @@ export default function MonitorEvaluationPage() {
                   {isStopping ? "Menghentikan..." : "Ya, Hentikan"}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-50 dark:bg-zinc-950 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Edit className="w-5 h-5 text-blue-600" />
+                Edit Soal Evaluasi
+              </h2>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" onClick={() => setShowEditor(false)}>
+                  Batal
+                </Button>
+                <Button onClick={handleSaveSoal} className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                  <Save className="w-4 h-4 mr-2" />
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <QuestionBuilder
+                questions={editorQuestions}
+                onChange={setEditorQuestions}
+                courseId={evaluation.courseId}
+              />
             </div>
           </div>
         </div>

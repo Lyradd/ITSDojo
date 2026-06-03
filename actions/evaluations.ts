@@ -480,3 +480,71 @@ export async function getEvaluationStats() {
     };
   }
 }
+
+export async function getArenaStatsForEvaluation(evaluationId: string, studentId: string) {
+  try {
+    const { evaluationProgress } = await import("@/db/schema");
+
+    const liveProgress = await db.select()
+      .from(evaluationProgress)
+      .where(eq(evaluationProgress.evaluationId, evaluationId));
+
+    const results = await db.select({
+      id: evaluationResults.id,
+      studentId: evaluationResults.studentId,
+      score: evaluationResults.score,
+      studentName: users.name,
+      avatar: users.avatar
+    })
+    .from(evaluationResults)
+    .innerJoin(users, eq(users.id, evaluationResults.studentId))
+    .where(eq(evaluationResults.evaluationId, evaluationId))
+    .orderBy(desc(evaluationResults.score));
+
+    let highestScorer = null;
+    let highestScore = -1;
+
+    if (results.length > 0) {
+      highestScorer = { name: results[0].studentName, score: results[0].score };
+      highestScore = results[0].score;
+    }
+
+    for (const p of liveProgress) {
+      if (p.score > highestScore) {
+        highestScore = p.score;
+        highestScorer = { name: p.studentName, score: p.score };
+      }
+    }
+
+    let rank = 0;
+    let myScore = 0;
+    const totalParticipants = results.length;
+    const myResultIndex = results.findIndex(r => r.studentId === studentId);
+    if (myResultIndex !== -1) {
+      rank = myResultIndex + 1;
+      myScore = results[myResultIndex].score;
+    }
+
+    const activeParticipants = liveProgress.filter(p => p.status === 'active' || p.status === 'waiting' || p.status === 'stuck');
+    
+    const avatars = activeParticipants.slice(0, 4).map(p => ({
+      initials: p.studentName.substring(0, 2).toUpperCase(),
+      name: p.studentName
+    }));
+
+    return {
+      success: true,
+      highestScorer: highestScorer ? highestScorer.name : null,
+      highestScore,
+      rank,
+      myScore,
+      totalParticipants,
+      activeCount: activeParticipants.length,
+      avatars
+    };
+
+  } catch (error) {
+    console.error(error);
+    return { success: false };
+  }
+}

@@ -115,3 +115,26 @@ export async function getLeaderboardData(filter?: {
     return [];
   }
 }
+
+export async function getUserGlobalRank(userId: string, semester?: number) {
+  try {
+    const filters = [eq(users.role, 'mahasiswa')];
+    if (semester !== undefined) {
+      filters.push(eq(users.semester, semester));
+    }
+
+    const allUsers = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(...filters))
+      .orderBy(desc(users.xp));
+
+    const totalUsers = allUsers.length;
+    const rank = allUsers.findIndex(u => u.id === userId) + 1;
+
+    return { rank: rank > 0 ? rank : null, totalUsers };
+  } catch (error) {
+    console.error("Failed to get user global rank:", error);
+    return { rank: null, totalUsers: 0 };
+  }
+}

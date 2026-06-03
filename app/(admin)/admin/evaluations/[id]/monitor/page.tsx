@@ -176,7 +176,7 @@ export default function MonitorEvaluationPage() {
 
   const handleEditSoalClick = () => {
     if (!evaluation) return;
-    if (evaluation.sessionStatus === 'active') {
+    if ((evaluation as any).sessionStatus === 'active') {
       toast.error("Wajib pause (Hentikan Sesi) kuis dulu sebelum ngedit soal!");
       return;
     }
@@ -321,12 +321,11 @@ export default function MonitorEvaluationPage() {
                 <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
                   {evaluation.isActive ? "Live Monitoring" : "Final Results"}: {evaluation.title}
                 </h1>
-                <span className={cn(
-                  "px-3 py-1 rounded-full text-xs font-bold",
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                   evaluation.isActive 
                     ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
                     : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                )}>
+                }`}>
                   {evaluation.isActive ? '🟢 ACTIVE' : '⚫ CLOSED'}
                 </span>
               </div>
@@ -553,21 +552,19 @@ export default function MonitorEvaluationPage() {
                 {leaderboard.map((student, index) => (
                   <div
                     key={student.id}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg",
-                      index === 0 && "bg-yellow-50 dark:bg-yellow-950/20 border-2 border-yellow-300 dark:border-yellow-800",
-                      index === 1 && "bg-zinc-100 dark:bg-zinc-900",
-                      index === 2 && "bg-orange-50 dark:bg-orange-950/20"
-                    )}
+                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                      index === 0 ? "bg-yellow-50 dark:bg-yellow-950/20 border-2 border-yellow-300 dark:border-yellow-800" :
+                      index === 1 ? "bg-zinc-100 dark:bg-zinc-900" :
+                      index === 2 ? "bg-orange-50 dark:bg-orange-950/20" : ""
+                    }`}
                   >
                     <div
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
-                        index === 0 && "bg-yellow-500 text-white",
-                        index === 1 && "bg-zinc-400 text-white",
-                        index === 2 && "bg-orange-500 text-white",
-                        index > 2 && "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
-                      )}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        index === 0 ? "bg-yellow-500 text-white" :
+                        index === 1 ? "bg-zinc-400 text-white" :
+                        index === 2 ? "bg-orange-500 text-white" :
+                        "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
+                      }`}
                     >
                       {index + 1}
                     </div>

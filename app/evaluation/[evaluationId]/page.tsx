@@ -164,7 +164,7 @@ function WaitingRoomOverlay({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex flex-col items-center bg-zinc-950 text-white overflow-y-auto custom-scrollbar"
+      className="fixed inset-0 z-50 flex flex-col items-center bg-zinc-950 text-white overflow-y-auto custom-scrollbar"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -50 }}
@@ -216,10 +216,10 @@ function WaitingRoomOverlay({
         <button 
           onClick={() => setShowParticipants(!showParticipants)}
           className={cn(
-            "flex items-center gap-3 px-6 py-4 rounded-full border-2 transition-all cursor-pointer relative z-10",
+            "flex items-center gap-3 px-6 py-4 rounded-full transition-all cursor-pointer relative z-10",
             showParticipants 
-              ? "bg-blue-600 border-blue-500 text-white" 
-              : "bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10"
+              ? "bg-blue-600 border-2 border-blue-500 text-white" 
+              : "bg-white/5 border-2 border-white/10 text-zinc-400 hover:bg-white/10"
           )}
         >
           <div className={cn("w-3 h-3 rounded-full bg-green-500", !showParticipants && "animate-pulse")} />
@@ -276,8 +276,7 @@ function WaitingRoomOverlay({
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 2 }}
-            className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md"
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md"
           >
             <motion.div
               key={timeLeft}
@@ -832,17 +831,17 @@ export default function EvaluationFullscreenPage() {
                     const isAnswered = userAnswers.has(q.id);
                     const isCurrent = currentQuestionIndex === idx;
                     
+                    let stateClass = "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 hover:border-blue-300";
+                    if (isCurrent) {
+                      stateClass = "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 scale-105 shadow-md";
+                    } else if (isAnswered) {
+                      stateClass = "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 opacity-80 hover:opacity-100";
+                    }
+                    
                     return (
                       <button
                         key={q.id}
-                        className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base shrink-0 transition-all border-2 cursor-default",
-                          isCurrent 
-                            ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 scale-105 shadow-md" 
-                            : isAnswered 
-                              ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 opacity-80 hover:opacity-100" 
-                              : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 hover:border-blue-300"
-                        )}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base shrink-0 transition-all border-2 cursor-default ${stateClass}`}
                       >
                         {idx + 1}
                       </button>
@@ -873,7 +872,7 @@ export default function EvaluationFullscreenPage() {
 
             {/* Question Card */}
             {currentQuestion && (
-              <div className={cn("transition-opacity duration-300", (isPaused || timeLeft === 0) ? "opacity-50 pointer-events-none grayscale-[30%]" : "")}>
+              <div className={cn("transition-opacity duration-300", (isPaused || timeLeft === 0) ? "opacity-50 pointer-events-none grayscale" : "")}>
                 <QuestionCard
                   question={currentQuestion}
                   questionNumber={currentQuestionIndex + 1}

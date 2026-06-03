@@ -33,6 +33,7 @@ export function normalizeQuestion(raw: any): Question {
       options,
       correctAnswer: correctIndex >= 0 ? correctIndex : (typeof raw.correctAnswer === 'number' ? raw.correctAnswer : 0),
       points: typeof raw.points === 'number' ? raw.points : 10,
+      timeLimit: raw.timeLimit,
       explanation: raw.explanation,
     };
   }
@@ -51,6 +52,7 @@ export function normalizeQuestion(raw: any): Question {
       options: ['Benar', 'Salah'],
       correctAnswer: correctIndex,
       points: typeof raw.points === 'number' ? raw.points : 10,
+      timeLimit: raw.timeLimit,
       explanation: raw.explanation,
     };
   }
@@ -62,6 +64,7 @@ export function normalizeQuestion(raw: any): Question {
       question: raw.question || '',
       correctAnswer: String(raw.expectedAnswer ?? raw.correctAnswer ?? ''),
       points: typeof raw.points === 'number' ? raw.points : 10,
+      timeLimit: raw.timeLimit,
       explanation: raw.explanation,
     };
   }
@@ -75,6 +78,7 @@ export function normalizeQuestion(raw: any): Question {
       puzzlePairs: pairs.map((p: any) => ({ id: String(p.id), text: String(p.text || '') })),
       correctAnswer: Array.isArray(raw.correctAnswer) ? raw.correctAnswer : pairs.map((p: any) => String(p.id)),
       points: typeof raw.points === 'number' ? raw.points : 10,
+      timeLimit: raw.timeLimit,
       explanation: raw.explanation,
     };
   }
@@ -87,6 +91,7 @@ export function normalizeQuestion(raw: any): Question {
     options: [],
     correctAnswer: 0,
     points: typeof raw.points === 'number' ? raw.points : 10,
+    timeLimit: raw.timeLimit,
   };
 }
 
@@ -104,6 +109,7 @@ export interface Question {
   options?: string[]; // For multiple-choice and true-false
   correctAnswer: string | number | boolean | string[]; // Index for MC, string for short answer, boolean for T/F, string[] for puzzle
   points: number;
+  timeLimit?: number;
   explanation?: string;
   puzzlePairs?: { id: string; text: string }[];
 }

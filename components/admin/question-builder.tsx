@@ -22,11 +22,12 @@ import { cn } from "@/lib/utils";
 
 interface QuestionBuilderProps {
   courseId?: string;
+  importUsageType?: "lesson" | "evaluation" | "duel";
   questions: Question[];
   onChange: (questions: Question[]) => void;
 }
 
-export function QuestionBuilder({ questions, onChange, courseId }: QuestionBuilderProps) {
+export function QuestionBuilder({ questions, onChange, courseId, importUsageType }: QuestionBuilderProps) {
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(
     questions[0]?.id || null
   );
@@ -156,7 +157,7 @@ export function QuestionBuilder({ questions, onChange, courseId }: QuestionBuild
       {showImporter && courseId && (
         <QuestionBankImporter
           courseId={courseId}
-          usageType="evaluation"
+          usageType={importUsageType}
           onSelectItems={handleImport}
           onClose={() => setShowImporter(false)}
         />

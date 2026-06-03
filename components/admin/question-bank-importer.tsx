@@ -9,7 +9,7 @@ import { getQuestionPackages, getQuestionBankItems } from "@/actions/question-ba
 
 interface QuestionBankImporterProps {
   courseId: string;
-  usageType: "lesson" | "evaluation" | "duel";
+  usageType?: "lesson" | "evaluation" | "duel";
   onSelectItems: (items: any[]) => void;
   onClose: () => void;
   singleSelection?: boolean; // If true, only one item can be selected (useful for Lesson)

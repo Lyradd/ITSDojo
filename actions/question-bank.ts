@@ -17,13 +17,14 @@ export async function getQuestionPackageById(id: number) {
   }
 }
 
-export async function getQuestionPackages(courseId: string, usageType: "lesson" | "evaluation" | "duel") {
+export async function getQuestionPackages(courseId: string, usageType?: "lesson" | "evaluation" | "duel") {
   try {
+    const conditions = [eq(questionPackages.courseId, courseId)];
+    if (usageType) {
+      conditions.push(eq(questionPackages.usageType, usageType));
+    }
     const packages = await db.query.questionPackages.findMany({
-      where: and(
-        eq(questionPackages.courseId, courseId),
-        eq(questionPackages.usageType, usageType)
-      ),
+      where: and(...conditions),
       orderBy: [desc(questionPackages.createdAt)],
     });
     return { success: true, data: packages };

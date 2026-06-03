@@ -180,7 +180,8 @@ export default function CreateEvaluationPage() {
               <QuestionBuilder 
                 questions={questions} 
                 onChange={setQuestions} 
-                courseId={metadata.courseId} 
+                courseId={metadata.courseId}
+                importUsageType="evaluation"
               />
             </>
           )}

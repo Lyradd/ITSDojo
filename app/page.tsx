@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue, useVelocity } from "framer-motion";
 import { useUserStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,17 +10,89 @@ import {
   Swords, Flame, Gem, Lock, Map, Clock,
   Activity, ShieldAlert, Rocket
 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import MagneticButton from "@/components/MagneticButton";
 
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false });
+
+// --- INLINE COMPONENT: SpotlightCard (Reveal Border Lights ala Lando Norris / Linear) ---
+function SpotlightCard({ children, className = "", highlighted = false, onClick }: { children: React.ReactNode; className?: string; highlighted?: boolean; onClick?: () => void }) {
+  const divRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return;
+    const rect = divRef.current.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  return (
+    <div
+      ref={divRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsFocused(true)}
+      onMouseLeave={() => setIsFocused(false)}
+      onClick={onClick}
+      className={`relative rounded-[2rem] p-[1.5px] overflow-hidden transition-all duration-500 ${className}`}
+      style={{
+        background: isFocused
+          ? `radial-gradient(350px circle at ${position.x}px ${position.y}px, ${highlighted ? 'rgba(255,255,255,0.45)' : 'rgba(59,130,246,0.5)'}, rgba(255,255,255,0.05) 50%)`
+          : highlighted
+          ? "linear-gradient(to bottom, rgba(59,130,246,0.3), rgba(29,78,216,0.1))"
+          : "rgba(255, 255, 255, 0.05)"
+      }}
+    >
+      <div className="w-full h-full rounded-[1.95rem] bg-zinc-950/90 relative z-10 overflow-hidden flex flex-col">
+        {/* Inner subtle glow overlay */}
+        <div
+          className="pointer-events-none absolute -inset-px transition duration-300 z-0"
+          style={{
+            opacity: isFocused ? 1 : 0,
+            background: `radial-gradient(300px circle at ${position.x}px ${position.y}px, ${highlighted ? 'rgba(255,255,255,0.06)' : 'rgba(59,130,246,0.08)'}, transparent 40%)`,
+          }}
+        />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// --- INLINE COMPONENT: Kinetic Masked Text Reveal (ala Lando Norris) ---
+function MaskedText({ children, className = "", delay = 0 }: { children: string; className?: string; delay?: number }) {
+  return (
+    <motion.span
+      className={`inline-block will-change-transform ${className}`}
+      initial={{ y: 40, opacity: 0 }}
+      whileInView={{ y: 0, opacity: 1 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1], delay }}
+    >
+      {children}
+    </motion.span>
+  );
+}
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   const isLoggedIn = useUserStore((state) => state.isLoggedIn);
   const containerRef = useRef(null);
   const [isDesktop, setIsDesktop] = useState(true);
+
+  // --- MOUSE-REACTIVE BACKGROUND SHIFT (Ambient Tilt) ---
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springMouseX = useSpring(mouseX, { stiffness: 60, damping: 20 });
+  const springMouseY = useSpring(mouseY, { stiffness: 60, damping: 20 });
+
+  // Map mouse movement to translation offsets
+  const bgShiftXSlow = useTransform(springMouseX, [-0.5, 0.5], [15, -15]);
+  const bgShiftYSlow = useTransform(springMouseY, [-0.5, 0.5], [15, -15]);
+  const bgShiftXMedium = useTransform(springMouseX, [-0.5, 0.5], [25, -25]);
+  const bgShiftYMedium = useTransform(springMouseY, [-0.5, 0.5], [25, -25]);
+  const bgShiftXFast = useTransform(springMouseX, [-0.5, 0.5], [35, -35]);
+  const bgShiftYFast = useTransform(springMouseY, [-0.5, 0.5], [35, -35]);
 
   // --- SCROLL ANIMATIONS ---
   const { scrollY } = useScroll();
@@ -44,6 +116,9 @@ export default function LandingPage() {
     { id: 2, title: "Frontend Master", desc: "Bangun antarmuka UI interaktif dengan React.js dan TailwindCSS yang responsif.", status: "active", xp: "Progres 65%" },
     { id: 3, title: "Data Science", desc: "Pelajari analisis data, visualisasi, dan pemrosesan model dengan Python.", status: "locked", xp: "Butuh 5,000 XP" },
   ];
+
+  // --- STATE GAMIFIKASI INTERAKTIF ---
+  const [activeGamificationCard, setActiveGamificationCard] = useState<number>(1);
 
   // --- STATE LEADERBOARD INTERAKTIF ---
   const [leaderboardTab, setLeaderboardTab] = useState<"Mingguan" | "Musim 4">("Musim 4");
@@ -77,6 +152,14 @@ export default function LandingPage() {
     };
     checkDesktop();
     window.addEventListener('resize', checkDesktop);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) - 0.5;
+      const y = (e.clientY / window.innerHeight) - 0.5;
+      mouseX.set(x);
+      mouseY.set(y);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
 
     // Timer kuis di bagian bawah duel
     const timer = setInterval(() => {
@@ -113,6 +196,7 @@ export default function LandingPage() {
       clearInterval(timer);
       clearInterval(duelSequence);
       window.removeEventListener('resize', checkDesktop);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 
@@ -173,20 +257,32 @@ export default function LandingPage() {
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col min-h-screen bg-[#030712] text-zinc-100 selection:bg-blue-500/30 font-sans relative overflow-x-hidden">
-      {/* Global Grain Overlay for Glassmorphism */}
-      <div className="fixed inset-0 z-50 pointer-events-none opacity-[0.03] bg-[url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_Dissolve_Noise_Texture.png')] mix-blend-overlay"></div>
+    <div ref={containerRef} className="flex flex-col min-h-screen bg-[#050505] text-zinc-100 selection:bg-blue-500/30 font-sans relative overflow-x-hidden">
+      {/* Global Film Grain Overlay (CSS-only, no external URL) */}
+      <div className="fixed inset-0 z-[9998] pointer-events-none opacity-[0.035] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
 
-      {/* 1. ADVANCED BACKGROUND LAYER */}
+      {/* 1. ADVANCED BACKGROUND LAYER with Parallax Orbs (Shifted by Scroll & Mouse) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-20 animate-aurora bg-gradient-to-tr from-blue-900/40 via-indigo-900/40 to-cyan-900/40 blur-[100px]" />
-        <div className="absolute top-[10%] left-[10%] w-72 h-72 bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[140px]" />
-        <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#4f4f4f_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        {/* Orb 1: Blue - Slow movement */}
+        <motion.div style={{ x: bgShiftXSlow, y: bgShiftYSlow }} className="absolute top-[-5%] left-[5%] will-change-transform">
+          <motion.div style={{ y: parallaxSlow }} className="w-[500px] h-[500px] bg-blue-600/[0.07] rounded-full blur-[180px]" />
+        </motion.div>
+
+        {/* Orb 2: Cyan - Medium movement */}
+        <motion.div style={{ x: bgShiftXMedium, y: bgShiftYMedium }} className="absolute top-[40%] right-[0%] will-change-transform">
+          <motion.div style={{ y: parallaxMedium }} className="w-[600px] h-[600px] bg-cyan-500/[0.05] rounded-full blur-[200px]" />
+        </motion.div>
+
+        {/* Orb 3: Indigo - Fast movement */}
+        <motion.div style={{ x: bgShiftXFast, y: bgShiftYFast }} className="absolute bottom-[10%] left-[20%] will-change-transform">
+          <motion.div style={{ y: parallaxFast }} className="w-[400px] h-[400px] bg-indigo-600/[0.06] rounded-full blur-[160px]" />
+        </motion.div>
+
+        <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(to_right,#222_1px,transparent_1px),linear-gradient(to_bottom,#222_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
       {/* 2. NAVBAR */}
-      <nav className="fixed top-0 w-full z-[100] backdrop-blur-xl bg-[#030712]/70 border-b border-white/5">
+      <nav className="fixed top-0 w-full z-[100] backdrop-blur-xl bg-[#050505]/80 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform shadow-lg shadow-blue-500/20">
@@ -235,31 +331,44 @@ export default function LandingPage() {
       <section className="relative min-h-[95vh] flex items-center justify-center pt-20 overflow-hidden">
         {/* WebGL 3D Background - Loaded conditionally for Mobile Optimization */}
         {isDesktop && <HeroScene />}
-        
+
+        {/* Optimized Glassmorphism Background Elements (Zero Blur Filter) */}
+        <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
+          <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2], rotate: [0, 90, 0] }} transition={{ repeat: Infinity, duration: 20, ease: "linear" }} className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.25)_0,transparent_60%)] will-change-transform" />
+          <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.15, 0.3, 0.15], rotate: [0, -90, 0] }} transition={{ repeat: Infinity, duration: 25, ease: "linear" }} className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.25)_0,transparent_60%)] will-change-transform" />
+          <motion.div animate={{ y: [0, -50, 0], opacity: [0.2, 0.4, 0.2] }} transition={{ repeat: Infinity, duration: 15, ease: "easeInOut" }} className="absolute -bottom-[20%] left-[20%] w-[60%] h-[40%] bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.25)_0,transparent_60%)] will-change-transform" />
+        </div>
+
         <motion.div style={{ opacity: heroOpacity, y: heroY, scale: heroScale }} className="max-w-6xl mx-auto relative z-10 px-6 text-center pointer-events-none w-full">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
             className="pointer-events-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-8 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-              <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-              Bergabung dengan Dojo Pembelajaran
-            </div>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-8 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                Bergabung dengan Dojo Pembelajaran
+              </div>
+            </motion.div>
 
+            {/* Kinetic Masked Text Reveal — per-word stagger */}
             <h1 className="text-5xl md:text-7xl lg:text-[6.5rem] font-black tracking-tighter mb-8 leading-[1.1] text-white">
-              Evolusi Gamifikasi <br />
+              <MaskedText delay={0.1}>Evolusi</MaskedText>{" "}
+              <MaskedText delay={0.2}>Gamifikasi</MaskedText>
+              <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">
-                Pembelajaran IT
+                <MaskedText delay={0.35} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">Pembelajaran</MaskedText>{" "}
+                <MaskedText delay={0.45} className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">IT</MaskedText>
               </span>
             </h1>
 
-            <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
               ITSDojo mengubah cara mahasiswa IT belajar. Kuasai spesialisasi koding melalui quest interaktif, duel real-time, dan ekosistem gamifikasi yang memacu adrenalin.
-            </p>
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
                 <MagneticButton size="lg" className="h-16 px-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg shadow-[0_0_40px_rgba(37,99,235,0.4)] transition-all flex gap-2 group">
                   Tingkatkan Levelmu
@@ -269,7 +378,7 @@ export default function LandingPage() {
               <MagneticButton onClick={() => scrollTo('roadmap')} variant="outline" size="lg" className="h-16 px-10 rounded-full border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-bold text-lg backdrop-blur-sm transition-all shadow-sm">
                 Jelajahi Fitur
               </MagneticButton>
-            </div>
+            </motion.div>
           </motion.div>
         </motion.div>
 
@@ -296,12 +405,12 @@ export default function LandingPage() {
       </section>
 
       {/* 3.5 INFINITE SOCIAL PROOF MARQUEE */}
-      <section className="py-10 border-y border-white/5 bg-[#030712]/80 backdrop-blur-md relative z-10 overflow-hidden flex flex-col items-center">
+      <section className="py-10 border-y border-white/5 bg-[#050505]/80 backdrop-blur-md relative z-10 overflow-hidden flex flex-col items-center">
         <p className="text-zinc-500 text-sm font-bold tracking-widest uppercase mb-6">Teknologi yang Diajarkan & Digunakan</p>
         <div className="flex overflow-hidden w-full relative">
           {/* Gradient Masks */}
-          <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-[#030712] to-transparent z-10" />
-          <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#030712] to-transparent z-10" />
+          <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-[#050505] to-transparent z-10" />
+          <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#050505] to-transparent z-10" />
           
           <motion.div 
             animate={{ x: [0, -1035] }} 
@@ -336,82 +445,87 @@ export default function LandingPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 mb-6 border border-blue-500/20 shadow-sm">
               <Map className="w-8 h-8" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">Pohon Skill Interaktif</h2>
+            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">
+              <MaskedText>Pohon Skill</MaskedText>{" "}<MaskedText delay={0.15}>Interaktif</MaskedText>
+            </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-xl leading-relaxed">
               Klik setiap node untuk merancang takdirmu. Pilih spesialisasi, selesaikan modul untuk mengumpulkan XP, dan buka rahasia ilmu koding layaknya game RPG.
             </p>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
-            {/* Visual Tree */}
-            <div className="flex-1 p-8 rounded-[2rem] bg-zinc-900/40 border border-white/5 shadow-2xl relative">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_100%)] pointer-events-none" />
-              <div className="relative z-10 flex flex-col items-center gap-4 py-4">
-
-                {/* Node 1 */}
-                <div onClick={() => setActiveNode(1)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 1 ? 'scale-110' : 'hover:scale-105'}`}>
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg z-10 transition-colors ${activeNode === 1 ? 'bg-blue-600 text-white ring-4 ring-blue-500/40' : 'bg-blue-600/80 text-blue-100'}`}>
-                    <Code2 className="w-10 h-10" />
-                  </div>
-                  <span className={`font-bold mt-4 ${activeNode === 1 ? 'text-white' : 'text-zinc-400'}`}>Logika Dasar</span>
-                </div>
-
-                <div className="w-2 h-16 bg-gradient-to-b from-blue-500 to-blue-900/50 -my-4 z-0 rounded-full" />
-
-                {/* Split Nodes */}
-                <div className="flex gap-12 md:gap-24 items-start mt-4">
-                  <div onClick={() => setActiveNode(2)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 2 ? 'scale-110' : 'hover:scale-105'}`}>
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 2 ? 'bg-zinc-800 border-4 border-blue-500 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-900 border-4 border-zinc-700 text-zinc-500'}`}>
-                      <Monitor className="w-10 h-10" />
+            <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
+              {/* Visual Tree */}
+              <SpotlightCard className="flex-1 w-full">
+                <div className="p-8 flex flex-col items-center gap-4 py-4 w-full h-full relative z-10">
+                  {/* Node 1 */}
+                  <div onClick={() => setActiveNode(1)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 1 ? 'scale-110' : 'hover:scale-105'}`}>
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg z-10 transition-colors ${activeNode === 1 ? 'bg-blue-600 text-white ring-4 ring-blue-500/40' : 'bg-blue-600/80 text-blue-100'}`}>
+                      <Code2 className="w-10 h-10" />
                     </div>
-                    <span className={`font-bold mt-4 ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Frontend</span>
+                    <span className={`font-bold mt-4 ${activeNode === 1 ? 'text-white' : 'text-zinc-400'}`}>Logika Dasar</span>
                   </div>
 
-                  <div onClick={() => setActiveNode(3)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 3 ? 'scale-110' : 'hover:scale-105'}`}>
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 3 ? 'bg-zinc-800 border-4 border-zinc-500 text-zinc-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]' : 'bg-zinc-900 border-4 border-zinc-800 text-zinc-600'}`}>
-                      <BrainCircuit className="w-10 h-10" />
+                  <div className="w-2 h-16 bg-gradient-to-b from-blue-500 to-blue-900/50 -my-4 z-0 rounded-full" />
+
+                  {/* Split Nodes */}
+                  <div className="flex gap-12 md:gap-24 items-start mt-4">
+                    <div onClick={() => setActiveNode(2)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 2 ? 'scale-110' : 'hover:scale-105'}`}>
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 2 ? 'bg-zinc-800 border-4 border-blue-500 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-900 border-4 border-zinc-700 text-zinc-500'}`}>
+                        <Monitor className="w-10 h-10" />
+                      </div>
+                      <span className={`font-bold mt-4 ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Frontend</span>
                     </div>
-                    <span className={`font-bold mt-4 ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Data Science</span>
+
+                    <div onClick={() => setActiveNode(3)} className={`flex flex-col items-center cursor-pointer group transition-all ${activeNode === 3 ? 'scale-110' : 'hover:scale-105'}`}>
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 3 ? 'bg-zinc-800 border-4 border-zinc-500 text-zinc-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]' : 'bg-zinc-900 border-4 border-zinc-800 text-zinc-600'}`}>
+                        <BrainCircuit className="w-10 h-10" />
+                      </div>
+                      <span className={`font-bold mt-4 ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Data Science</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </SpotlightCard>
 
-            {/* Interactive Detail Panel */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeNode}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="w-full lg:w-96 bg-zinc-900/80 rounded-[2rem] border border-blue-500/30 p-8 shadow-2xl flex flex-col"
-              >
-                {(() => {
-                  const node = roadmapNodes.find(n => n.id === activeNode);
-                  return (
-                    <>
-                      <div className="flex justify-between items-start mb-6">
-                        <div className={`p-3 rounded-xl ${node?.status === 'completed' ? 'bg-green-500/20 text-green-400' : node?.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-500'}`}>
-                          {node?.id === 1 ? <Code2 className="w-6 h-6" /> : node?.id === 2 ? <Monitor className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+              {/* Interactive Detail Panel */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeNode}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="w-full lg:w-96 flex flex-col"
+                >
+                  {(() => {
+                    const node = roadmapNodes.find(n => n.id === activeNode);
+                    const isNodeActive = node?.status === 'active';
+                    return (
+                      <SpotlightCard className="w-full h-full flex-1" highlighted={isNodeActive}>
+                        <div className="p-8 flex flex-col h-full w-full justify-between relative z-10">
+                          <div>
+                            <div className="flex justify-between items-start mb-6">
+                              <div className={`p-3 rounded-xl ${node?.status === 'completed' ? 'bg-green-500/20 text-green-400' : node?.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                                {node?.id === 1 ? <Code2 className="w-6 h-6" /> : node?.id === 2 ? <Monitor className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                              </div>
+                              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${node?.status === 'completed' ? 'bg-green-500/10 border-green-500/30 text-green-400' : node?.status === 'active' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>
+                                {node?.xp}
+                              </span>
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2">{node?.title}</h3>
+                            <p className="text-zinc-400 mb-8 leading-relaxed">{node?.desc}</p>
+                          </div>
+
+                          <div className="mt-auto">
+                            <Button className={`w-full rounded-full font-bold h-12 ${node?.status === 'locked' ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-800 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}>
+                              {node?.status === 'locked' ? 'Terkunci' : 'Mulai Modul'}
+                            </Button>
+                          </div>
                         </div>
-                        <span className={`text-xs font-bold px-3 py-1 rounded-full border ${node?.status === 'completed' ? 'bg-green-500/10 border-green-500/30 text-green-400' : node?.status === 'active' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>
-                          {node?.xp}
-                        </span>
-                      </div>
-                      <h3 className="text-2xl font-black text-white mb-2">{node?.title}</h3>
-                      <p className="text-zinc-400 mb-8 leading-relaxed">{node?.desc}</p>
-
-                      <div className="mt-auto">
-                        <Button className={`w-full rounded-full font-bold h-12 ${node?.status === 'locked' ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-800 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}>
-                          {node?.status === 'locked' ? 'Terkunci' : 'Mulai Modul'}
-                        </Button>
-                      </div>
-                    </>
-                  )
-                })()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+                      </SpotlightCard>
+                    )
+                  })()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
         </motion.div>
       </section>
 
@@ -425,7 +539,9 @@ export default function LandingPage() {
           className="max-w-6xl mx-auto px-6"
         >
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">Didesain untuk Cara Kerja Otak</h2>
+            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">
+              <MaskedText>Didesain untuk</MaskedText>{" "}<MaskedText delay={0.15}>Cara Kerja Otak</MaskedText>
+            </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-xl">
               ITSDojo menggabungkan kurikulum terstruktur dan penghargaan instan untuk mendukung pembelajaran yang fokus dan adiktif.
             </p>
@@ -436,17 +552,22 @@ export default function LandingPage() {
               icon={<Flame className="w-8 h-8" />}
               title="Pertahankan Streak"
               description="Jaga api tetap menyala. Login dan selesaikan misi harian untuk membangun streak dan melipatgandakan perolehan XP Anda."
+              highlighted={activeGamificationCard === 0}
+              onClick={() => setActiveGamificationCard(0)}
             />
             <ValueCard
               icon={<Target className="w-10 h-10" />}
               title="Misi & Pencapaian"
               description="Selesaikan target misi harian. Dapatkan lencana eksklusif dan pamerkan dedikasi Anda di profil publik ke seluruh kampus."
-              highlighted
+              highlighted={activeGamificationCard === 1}
+              onClick={() => setActiveGamificationCard(1)}
             />
             <ValueCard
               icon={<Gem className="w-8 h-8" />}
               title="Toko Dojo (Shop)"
               description="Tukarkan Gems hasil jerih payah Anda dengan item kosmetik profil eksklusif, power-up, dan item pelindung streak."
+              highlighted={activeGamificationCard === 2}
+              onClick={() => setActiveGamificationCard(2)}
             />
           </div>
         </motion.div>
@@ -461,86 +582,89 @@ export default function LandingPage() {
           transition={{ duration: 0.8, ease: "easeOut" }} 
           className="max-w-6xl mx-auto px-6"
         >
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            <div className="flex-1 w-full order-2 lg:order-1">
-              <div className="bg-zinc-900/60 backdrop-blur-md border border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[50px]"></div>
+            <div className="flex flex-col lg:flex-row items-center gap-16">
+              <div className="flex-1 w-full order-2 lg:order-1">
+                <SpotlightCard className="w-full" highlighted={true}>
+                  <div className="p-6 md:p-8 w-full h-full relative z-10">
+                    {/* Leaderboard Interactive Tabs */}
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                      <h3 className="text-2xl font-black text-white">Peringkat Global</h3>
+                      <div className="flex bg-zinc-950 rounded-full p-1 border border-white/10">
+                        {(["Mingguan", "Musim 4"] as const).map(tab => (
+                          <button
+                            key={tab}
+                            onClick={() => setLeaderboardTab(tab)}
+                            className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${leaderboardTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-zinc-500 hover:text-white'}`}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Leaderboard Interactive Tabs */}
-                <div className="flex justify-between items-center mb-8 relative z-10">
-                  <h3 className="text-2xl font-black text-white">Peringkat Global</h3>
-                  <div className="flex bg-zinc-950 rounded-full p-1 border border-white/10">
-                    {(["Mingguan", "Musim 4"] as const).map(tab => (
-                      <button
-                        key={tab}
-                        onClick={() => setLeaderboardTab(tab)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${leaderboardTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-zinc-500 hover:text-white'}`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4 relative z-10">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={leaderboardTab}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="space-y-4"
-                    >
-                      {leaderboardData[leaderboardTab].map((user: any) => (
-                        <div key={user.rank} onClick={() => setExpandedUser(expandedUser === user.rank ? null : user.rank)} className="cursor-pointer group">
-                          <div className={`flex items-center p-4 rounded-2xl transition-all ${user.highlight ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:border-zinc-500'}`}>
-                            <div className={`w-8 font-black text-lg ${user.highlight ? 'text-blue-200' : 'text-zinc-500'}`}>#{user.rank}</div>
-                            <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-bold text-lg mr-4 ring-2 ${user.highlight ? 'bg-white text-blue-600 ring-blue-400' : `${user.bg} ${user.ring}`}`}>
-                              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover bg-white/10" />
-                            </div>
-                            <div className="flex-1 font-bold text-lg group-hover:translate-x-1 transition-transform">{user.name}</div>
-                            <div className="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full">
-                              <Zap className={`w-4 h-4 ${user.highlight ? 'text-yellow-300' : 'text-yellow-500'}`} />
-                              <span className="font-bold">{user.xp}</span>
-                            </div>
-                          </div>
-                          {/* Expandable Detail Panel */}
-                          <AnimatePresence>
-                            {expandedUser === user.rank && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="p-4 bg-zinc-950/80 mt-2 rounded-xl text-sm text-zinc-400 flex justify-between items-center border border-zinc-800/50">
-                                  <span className="font-mono">{user.stats}</span>
-                                  <button className="text-blue-400 font-bold hover:underline">Lihat Profil</button>
+                    <div className="space-y-4 relative z-10">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={leaderboardTab}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="space-y-4"
+                        >
+                          {leaderboardData[leaderboardTab].map((user: any) => (
+                            <div key={user.rank} onClick={() => setExpandedUser(expandedUser === user.rank ? null : user.rank)} className="cursor-pointer group">
+                              <div className={`flex items-center p-4 rounded-2xl transition-all ${user.highlight ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:border-zinc-500'}`}>
+                                <div className={`w-8 font-black text-lg ${user.highlight ? 'text-blue-200' : 'text-zinc-500'}`}>#{user.rank}</div>
+                                <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-bold text-lg mr-4 ring-2 ${user.highlight ? 'bg-white text-blue-600 ring-blue-400' : `${user.bg} ${user.ring}`}`}>
+                                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover bg-white/10" />
                                 </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ))}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
+                                <div className="flex-1 font-bold text-lg group-hover:translate-x-1 transition-transform">{user.name}</div>
+                                <div className="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full">
+                                  <Zap className={`w-4 h-4 ${user.highlight ? 'text-yellow-300' : 'text-yellow-500'}`} />
+                                  <span className="font-bold">{user.xp}</span>
+                                </div>
+                              </div>
+                              {/* Expandable Detail Panel */}
+                              <AnimatePresence>
+                                {expandedUser === user.rank && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="p-4 bg-zinc-950/80 mt-2 rounded-xl text-sm text-zinc-400 flex justify-between items-center border border-zinc-800/50">
+                                      <span className="font-mono">{user.stats}</span>
+                                      <button className="text-blue-400 font-bold hover:underline">Lihat Profil</button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          ))}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </SpotlightCard>
               </div>
-            </div>
 
-            <div className="flex-1 text-center lg:text-left order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
-                <Trophy className="w-4 h-4" /> Papan Peringkat Live
+              <div className="flex-1 text-center lg:text-left order-1 lg:order-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
+                  <Trophy className="w-4 h-4" /> Papan Peringkat Live
+                </div>
+                <h3 className="text-4xl md:text-5xl font-black mb-6 text-white leading-[1.1]">
+                  <MaskedText>Naik ke Puncak</MaskedText>{" "}
+                  <MaskedText delay={0.15}>Klasemen</MaskedText>
+                </h3>
+                <p className="text-zinc-400 text-lg leading-relaxed mb-8">
+                  Kompetisi yang sehat memicu kehebatan. Pantau progres Anda melawan teman sekelas secara real-time. Klik profil manapun untuk mengintip statistik mereka, lalu curi taktiknya!
+                </p>
+                <Button className="h-14 px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg">
+                  Lihat Semua Peringkat
+                </Button>
               </div>
-              <h3 className="text-4xl md:text-5xl font-black mb-6 text-white leading-[1.1]">Naik ke Puncak Klasemen</h3>
-              <p className="text-zinc-400 text-lg leading-relaxed mb-8">
-                Kompetisi yang sehat memicu kehebatan. Pantau progres Anda melawan teman sekelas secara real-time. Klik profil manapun untuk mengintip statistik mereka, lalu curi taktiknya!
-              </p>
-              <Button className="h-14 px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg">
-                Lihat Semua Peringkat
-              </Button>
             </div>
-          </div>
         </motion.div>
       </section>
 
@@ -571,7 +695,9 @@ export default function LandingPage() {
             >
               <Swords className="w-10 h-10" />
             </motion.div>
-            <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">Brain Duel: Arena Pertarungan</h2>
+            <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+              <MaskedText>Brain Duel:</MaskedText>{" "}<MaskedText delay={0.15}>Arena Pertarungan</MaskedText>
+            </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-xl leading-relaxed">
               Tabrak lawanmu secara langsung! Jawab akurat di bawah tekanan waktu, hancurkan pertahanan mereka, dan rebut XP di depan mata.
             </p>
@@ -730,34 +856,40 @@ export default function LandingPage() {
           className="max-w-7xl mx-auto px-6"
         >
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">Analitik Pembelajaran Cerdas</h2>
+            <h2 className="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">
+              <MaskedText>Analitik Pembelajaran</MaskedText>{" "}<MaskedText delay={0.15}>Cerdas</MaskedText>
+            </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed">
               Setiap klik membangun profil karaktermu. Sistem memantau gaya belajar Anda untuk merekomendasikan tantangan terbaik agar Anda tidak pernah bosan.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { title: "Heatmap Aktivitas", desc: "Pantau intensitas belajar Anda setiap hari layaknya jejak kontribusi commit di GitHub.", icon: <Activity />, color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20" },
-              { title: "Deteksi Kelemahan", desc: "Sistem gamifikasi kami mengidentifikasi secara instan konsep koding yang sering Anda jawab salah.", icon: <ShieldAlert />, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
-              { title: "Rekomendasi Terarah", desc: "Dapatkan saran tantangan spesifik berdasarkan tingkat skill dan XP yang saat ini Anda miliki.", icon: <Monitor />, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" }
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className={`p-8 rounded-3xl bg-zinc-900/50 border ${f.border} flex flex-col justify-center h-[280px] hover:bg-zinc-800/80 hover:shadow-xl transition-all group relative overflow-hidden`}
-              >
-                <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center ${f.bg} ${f.color} shadow-lg group-hover:scale-110 transition-transform`}>
-                  {f.icon}
-                </div>
-                <h3 className="text-white text-2xl font-bold mb-3">{f.title}</h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { title: "Heatmap Aktivitas", desc: "Pantau intensitas belajar Anda setiap hari layaknya jejak kontribusi commit di GitHub.", icon: <Activity />, color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20" },
+                { title: "Deteksi Kelemahan", desc: "Sistem gamifikasi kami mengidentifikasi secara instan konsep koding yang sering Anda jawab salah.", icon: <ShieldAlert />, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
+                { title: "Rekomendasi Terarah", desc: "Dapatkan saran tantangan spesifik berdasarkan tingkat skill dan XP yang saat ini Anda miliki.", icon: <Monitor />, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" }
+              ].map((f, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="w-full"
+                >
+                  <SpotlightCard className="h-[280px] w-full" highlighted={i === 2}>
+                    <div className="p-8 flex flex-col justify-center h-full w-full relative z-10">
+                      <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center ${f.bg} ${f.color} shadow-lg transition-transform`}>
+                        {f.icon}
+                      </div>
+                      <h3 className="text-white text-2xl font-bold mb-3">{f.title}</h3>
+                      <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
+                    </div>
+                  </SpotlightCard>
+                </motion.div>
+              ))}
+            </div>
         </motion.div>
       </section>
 
@@ -771,7 +903,10 @@ export default function LandingPage() {
         >
           <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-          <h2 className="text-4xl md:text-6xl font-black text-white mb-6 relative z-10 tracking-tight leading-tight">Siap untuk memasuki<br />Dojo?</h2>
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6 relative z-10 tracking-tight leading-tight">
+            <MaskedText>Siap untuk memasuki</MaskedText><br />
+            <MaskedText delay={0.15}>Dojo?</MaskedText>
+          </h2>
           <p className="text-blue-200 text-lg md:text-xl mb-10 max-w-xl mx-auto relative z-10 font-medium opacity-90 italic">"Waktu terbaik untuk memulai adalah kemarin. Waktu terbaik kedua adalah sekarang."</p>
 
           <Link href={mounted && isLoggedIn ? "/learn" : "/login"} className="relative z-10 inline-block">
@@ -787,7 +922,7 @@ export default function LandingPage() {
         {/* Curved Top SVG Divider */}
         <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-0">
           <svg className="relative block w-full h-[60px] md:h-[120px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="#030712"></path>
+            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="#050505"></path>
           </svg>
         </div>
 
@@ -817,40 +952,29 @@ export default function LandingPage() {
   );
 }
 
-function ValueCard({ icon, title, description, highlighted = false }: any) {
-  const divRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!divRef.current) return;
-    const rect = divRef.current.getBoundingClientRect();
-    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
-
+function ValueCard({ icon, title, description, highlighted = false, onClick }: any) {
   return (
     <motion.div
-      ref={divRef}
-      onMouseMove={handleMouseMove}
       whileHover={{ y: -10 }}
-      className={`p-10 rounded-[2rem] text-center transition-all flex flex-col justify-center relative overflow-hidden shadow-lg group ${highlighted
-        ? "bg-gradient-to-b from-blue-600 to-blue-900 border border-blue-500/50 shadow-[0_20px_40px_rgba(37,99,235,0.3)] z-10 md:scale-105 text-white"
-        : "bg-zinc-900/40 border border-white/5 hover:border-white/10 text-white"
-        }`}
+      whileTap={{ scale: 0.95 }}
+      className={`transition-all duration-300 cursor-pointer h-full ${highlighted ? "z-10 md:scale-105" : "opacity-60 hover:opacity-100"}`}
+      onClick={onClick}
     >
-      {/* Mouse Tracking Spotlight */}
-      <div
-        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100 z-0"
-        style={{
-          background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, ${highlighted ? 'rgba(255,255,255,0.1)' : 'rgba(59,130,246,0.15)'}, transparent 40%)`,
-        }}
-      />
-      {highlighted && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white to-transparent" />}
-      <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-8 shadow-sm relative z-10 ${highlighted ? "bg-white/10 text-white border border-white/20" : "bg-zinc-800/50 text-blue-400 border border-zinc-700"
-        }`}>
-        {icon}
-      </div>
-      <h3 className={`text-2xl font-bold mb-4 text-white relative z-10`}>{title}</h3>
-      <p className={`text-base leading-relaxed relative z-10 ${highlighted ? "text-blue-100" : "text-zinc-400"}`}>{description}</p>
+      <SpotlightCard highlighted={highlighted} className={`w-full h-full ${highlighted ? 'shadow-[0_0_40px_rgba(37,99,235,0.4)] ring-1 ring-blue-500/30' : ''}`}>
+        <div className={`p-10 flex flex-col justify-center text-center relative z-10 w-full h-full items-center transition-colors duration-500 ${highlighted ? 'bg-gradient-to-b from-blue-900/40 to-transparent' : ''}`}>
+          {highlighted && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent z-20 shadow-[0_0_15px_rgba(96,165,250,1)]" />}
+          
+          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-sm relative z-10 transition-all duration-500 ${
+            highlighted 
+              ? "bg-blue-600 text-white shadow-[0_0_30px_rgba(37,99,235,0.6)] scale-110" 
+              : "bg-zinc-800/80 text-zinc-400 border border-zinc-700"
+          }`}>
+            {icon}
+          </div>
+          <h3 className={`text-2xl font-bold mb-4 relative z-10 transition-colors duration-500 ${highlighted ? 'text-white drop-shadow-md' : 'text-zinc-300'}`}>{title}</h3>
+          <p className={`text-base leading-relaxed relative z-10 transition-colors duration-500 ${highlighted ? "text-blue-100 font-medium" : "text-zinc-500"}`}>{description}</p>
+        </div>
+      </SpotlightCard>
     </motion.div>
   );
 }

@@ -137,7 +137,7 @@ export default function QuestionPackageEditor({ pkg, initialItems }: QuestionPac
           </Button>
         </div>
         
-        <QuestionBuilder questions={questions} onChange={setQuestions} />
+        <QuestionBuilder questions={questions} onChange={setQuestions} courseId={pkg.courseId} />
       </div>
     </div>
   );

@@ -614,7 +614,7 @@ export const useUserStore = create<UserState>()(
         const state = get();
         if (state.gems < cost) return false;
         if (state.unlockedInventorySlotIds.includes(slotId)) return true;
-        set({ gems: state.gems - cost, unlockedInventorySlotIds: [...state.unlockedInventorySlotIds, slotId] });
+        set({ gems: state.gems - cost, unlockedInventorySlotIds: [...state.unlockedInventorySlotIds, slotId], lastProgressUpdate: Date.now() });
         return true;
       },
       
@@ -631,20 +631,20 @@ export const useUserStore = create<UserState>()(
 
         if (type === "freeze") {
           if (state.streakFreezeCount >= 3) return false;
-          set({ gems: state.gems - cost, streakFreezeCount: state.streakFreezeCount + 1, purchaseHistory: currentHistory });
+          set({ gems: state.gems - cost, streakFreezeCount: state.streakFreezeCount + 1, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
           return true;
         } else if (type === "multiplier") {
           const durationMs = 60 * 60 * 1000;
           const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() ? state.multiplierEndTime : Date.now();
-          set({ gems: state.gems - cost, xpMultiplier: 2, multiplierEndTime: currentEndTime + durationMs, purchaseHistory: currentHistory });
+          set({ gems: state.gems - cost, xpMultiplier: 2, multiplierEndTime: currentEndTime + durationMs, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
           return true;
         } else if (type === "shield-3x") {
           if (state.hasShieldPack) return false;
-          set({ gems: state.gems - cost, hasShieldPack: true, purchaseHistory: currentHistory });
+          set({ gems: state.gems - cost, hasShieldPack: true, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
           return true;
         } else if (type === "gem-miner") {
           if (state.hasGemMiner) return false;
-          set({ gems: state.gems - cost, hasGemMiner: true, purchaseHistory: currentHistory });
+          set({ gems: state.gems - cost, hasGemMiner: true, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
           return true;
         }
         return false;
@@ -653,7 +653,7 @@ export const useUserStore = create<UserState>()(
       useShieldPack: () => {
         const state = get();
         if (!state.hasShieldPack) return;
-        set({ streakFreezeCount: 3, hasShieldPack: false });
+        set({ streakFreezeCount: 3, hasShieldPack: false, lastProgressUpdate: Date.now() });
       },
 
       // --- ACTIONS: GOALS ---
@@ -731,6 +731,7 @@ export const useUserStore = create<UserState>()(
              updates.activityHistory = newActivityHistory;
           }
 
+          updates.lastProgressUpdate = Date.now();
           return updates;
         }
         return state;

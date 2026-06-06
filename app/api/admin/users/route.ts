@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-guard";
+import bcrypt from "bcryptjs";
 
 // GET /api/admin/users — Ambil semua user
 export async function GET(req: Request) {
@@ -29,10 +30,15 @@ export async function POST(req: Request) {
     const rolePrefix = body.role || 'mahasiswa';
     const userId = `${rolePrefix}-${Date.now()}`;
 
+    // Set default password or provided password
+    const plainPassword = body.password || "123456";
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
     const [newUser] = await db.insert(users).values({
       id: userId,
       name: body.name,
       email: body.email,
+      password: hashedPassword,
       role: body.role || 'mahasiswa',
       semester: body.semester || 1,
     }).returning();

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-guard";
+import bcrypt from "bcryptjs";
 
 // PUT /api/admin/users/[id] — Update user
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     // Password hanya di-update kalau ada (non-empty) — biar tidak overwrite jadi kosong
     // saat super admin edit profil tanpa ubah password.
     if (typeof body.password === 'string' && body.password.trim().length > 0) {
-      updateData.password = body.password.trim();
+      updateData.password = await bcrypt.hash(body.password.trim(), 10);
     }
 
     const [updated] = await db.update(users).set(updateData).where(eq(users.id, id)).returning();

@@ -5,6 +5,7 @@ import { users, enrollments, userProgress } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { MOCK_STUDENTS } from "@/lib/admin-data";
 import { createSession, destroySession } from "@/lib/session";
+import bcrypt from "bcryptjs";
 
 const VALID_ROLES = new Set(["mahasiswa", "asdos", "dosen", "admin"]);
 
@@ -29,6 +30,7 @@ export async function seedMockUsers() {
         id: s.id,
         name: s.name,
         email: s.email,
+        password: await bcrypt.hash("123456", 10),
         role,
         semester: s.semester ?? 1,
         level: s.level ?? 1,
@@ -67,9 +69,17 @@ export async function validateLogin(email: string, password: string) {
 
     const user = result[0];
 
-    // Compare password — plain text untuk sekarang. Bisa di-upgrade ke bcrypt nanti.
-    if (user.password !== password) {
-      return { success: false, error: "Password salah" };
+    // Compare password — menggunakan bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      // Fallback untuk migrasi password plain text lama ("123456")
+      if (user.password === password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.update(users).set({ password: hashedPassword }).where(eq(users.id, user.id));
+      } else {
+        return { success: false, error: "Password salah" };
+      }
     }
 
     // Fetch course IDs yang user sudah accepted di tabel enrollments

@@ -432,7 +432,9 @@ export default function EvaluationFullscreenPage() {
       if (userId) {
         const pastResult = await getStudentEvaluationResult(evaluationId, userId);
         if (pastResult) {
-          setIsPracticeMode(true);
+          alert("Akses Ditolak! Kamu sudah menyelesaikan evaluasi ini. Arena telah ditutup untuk mencegah kebocoran soal.");
+          router.replace('/evaluation');
+          return;
         }
       }
     };

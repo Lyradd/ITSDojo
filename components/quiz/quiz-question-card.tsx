@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Question } from '@/lib/quiz-mock-data';
 import { BloomBadge } from './bloom-badge';
-import { Timer, CheckCircle2 } from 'lucide-react';
+import { Timer, CheckCircle2, XCircle } from 'lucide-react';
 
 interface QuizQuestionCardProps {
   question: Question;
@@ -44,20 +44,46 @@ export function QuizQuestionCard({
         return (
           <RadioGroup value={answer} onValueChange={setAnswer} disabled={isSubmitted}>
             <div className="space-y-3">
-              {question.options?.map((option, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-3 rounded-lg border-2 border-zinc-200 dark:border-zinc-700 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  <RadioGroupItem value={option} id={`option-${index}`} />
-                  <Label
-                    htmlFor={`option-${index}`}
-                    className="flex-1 cursor-pointer font-medium text-base"
+              {question.options?.map((option, index) => {
+                const isSelected = answer === option;
+                const isCorrectOption = String(option).toLowerCase() === String(question.correctAnswer).toLowerCase();
+                
+                let optionStyle = "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800";
+                if (isSubmitted) {
+                  if (isCorrectOption) {
+                    optionStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300";
+                  } else if (isSelected) {
+                    optionStyle = "border-rose-500 bg-rose-50 dark:bg-rose-950/20 text-rose-900 dark:text-rose-300";
+                  } else {
+                    optionStyle = "border-zinc-200 dark:border-zinc-800 opacity-60";
+                  }
+                }
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center space-x-3 rounded-lg border-2 p-4 transition-all duration-200 ${optionStyle}`}
                   >
-                    {option}
-                  </Label>
-                </div>
-              ))}
+                    <RadioGroupItem value={option} id={`option-${index}`} />
+                    <Label
+                      htmlFor={`option-${index}`}
+                      className="flex-1 cursor-pointer font-medium text-base"
+                    >
+                      {option}
+                      {isSubmitted && isCorrectOption && (
+                        <span className="ml-2 inline-flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          (Jawaban Benar)
+                        </span>
+                      )}
+                      {isSubmitted && isSelected && !isCorrectOption && (
+                        <span className="ml-2 inline-flex items-center text-xs font-bold text-rose-600 dark:text-rose-400">
+                          (Jawaban Kamu)
+                        </span>
+                      )}
+                    </Label>
+                  </div>
+                );
+              })}
             </div>
           </RadioGroup>
         );
@@ -66,34 +92,88 @@ export function QuizQuestionCard({
         return (
           <RadioGroup value={answer} onValueChange={setAnswer} disabled={isSubmitted}>
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center justify-center space-x-3 rounded-lg border-2 border-zinc-200 dark:border-zinc-700 p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                <RadioGroupItem value="True" id="true" />
-                <Label htmlFor="true" className="cursor-pointer font-bold text-lg text-green-600">
-                  Benar
-                </Label>
-              </div>
-              <div className="flex items-center justify-center space-x-3 rounded-lg border-2 border-zinc-200 dark:border-zinc-700 p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                <RadioGroupItem value="False" id="false" />
-                <Label htmlFor="false" className="cursor-pointer font-bold text-lg text-red-600">
-                  Salah
-                </Label>
-              </div>
+              {['True', 'False'].map((val) => {
+                const labelText = val === 'True' ? 'Benar' : 'Salah';
+                const isSelected = answer === val;
+                const isCorrectOption = String(val).toLowerCase() === String(question.correctAnswer).toLowerCase();
+                
+                let optionStyle = "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800";
+                if (isSubmitted) {
+                  if (isCorrectOption) {
+                    optionStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20";
+                  } else if (isSelected) {
+                    optionStyle = "border-rose-500 bg-rose-50 dark:bg-rose-950/20";
+                  } else {
+                    optionStyle = "border-zinc-200 dark:border-zinc-800 opacity-60";
+                  }
+                }
+
+                return (
+                  <div
+                    key={val}
+                    className={`flex items-center justify-center space-x-3 rounded-lg border-2 p-6 transition-all duration-200 ${optionStyle}`}
+                  >
+                    <RadioGroupItem value={val} id={val.toLowerCase()} />
+                    <Label
+                      htmlFor={val.toLowerCase()}
+                      className={`cursor-pointer font-bold text-lg flex flex-col items-center ${
+                        isSubmitted
+                          ? isCorrectOption
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : isSelected
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : 'text-zinc-400'
+                          : val === 'True'
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                      }`}
+                    >
+                      <span>{labelText}</span>
+                      {isSubmitted && isCorrectOption && (
+                        <span className="text-xs font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+                          (Jawaban Benar)
+                        </span>
+                      )}
+                      {isSubmitted && isSelected && !isCorrectOption && (
+                        <span className="text-xs font-bold mt-1 text-rose-600 dark:text-rose-400">
+                          (Jawaban Kamu)
+                        </span>
+                      )}
+                    </Label>
+                  </div>
+                );
+              })}
             </div>
           </RadioGroup>
         );
 
       case 'short_answer':
+        const isCorrectText = answer !== '' && String(answer).trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
         return (
-          <Textarea
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Ketik jawaban Anda di sini..."
-            className="min-h-[120px] text-base"
-            disabled={isSubmitted}
-          />
+          <div className="space-y-3">
+            <Textarea
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Ketik jawaban Anda di sini..."
+              className={`min-h-[120px] text-base border-2 transition-all duration-200 ${
+                isSubmitted
+                  ? isCorrectText
+                    ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300'
+                    : 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-900 dark:text-rose-300'
+                  : 'border-zinc-200 dark:border-zinc-700'
+              }`}
+              disabled={isSubmitted}
+            />
+            {isSubmitted && !isCorrectText && (
+              <div className="text-sm font-semibold text-rose-600 dark:text-rose-400 mt-2">
+                Jawaban yang benar: <span className="underline">{String(question.correctAnswer)}</span>
+              </div>
+            )}
+          </div>
         );
 
       case 'slider':
+        const isCorrectSlider = answer !== '' && Number(answer) === Number(question.correctAnswer);
         return (
           <div className="space-y-4">
             <input
@@ -106,7 +186,18 @@ export function QuizQuestionCard({
               disabled={isSubmitted}
             />
             <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600">{answer || question.sliderMin || 0}</div>
+              <div className={`text-4xl font-bold transition-all duration-200 ${
+                isSubmitted
+                  ? isCorrectSlider
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                  : 'text-blue-600'
+              }`}>{answer || question.sliderMin || 0}</div>
+              {isSubmitted && !isCorrectSlider && (
+                <div className="text-sm font-semibold text-rose-600 dark:text-rose-400 mt-2">
+                  Jawaban yang benar: <span className="underline">{String(question.correctAnswer)}</span>
+                </div>
+              )}
               <div className="text-sm text-zinc-500 mt-1">
                 Range: {question.sliderMin} - {question.sliderMax}
               </div>
@@ -131,8 +222,8 @@ export function QuizQuestionCard({
         </div>
 
         <div className="flex items-center gap-2 text-lg font-bold">
-          <Timer className={`w-5 h-5 ${timeRemaining < 10 ? 'text-red-500' : 'text-blue-600'}`} />
-          <span className={timeRemaining < 10 ? 'text-red-500' : 'text-blue-600'}>
+          <Timer className={`w-5 h-5 transition-transform duration-200 ${timeRemaining < 10 ? 'text-red-500 animate-alarm-shake' : 'text-blue-600'}`} />
+          <span className={`transition-all duration-200 ${timeRemaining < 10 ? 'text-red-500 animate-alarm-pulse' : 'text-blue-600'}`}>
             {timeRemaining}s
           </span>
         </div>
@@ -151,15 +242,34 @@ export function QuizQuestionCard({
         <Button
           onClick={handleSubmit}
           disabled={!answer}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 rounded-xl"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-6 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           Submit Jawaban
         </Button>
       ) : (
-        <div className="flex items-center justify-center gap-2 py-4 bg-green-50 dark:bg-green-900/20 rounded-xl border-2 border-green-200 dark:border-green-800">
-          <CheckCircle2 className="w-5 h-5 text-green-600" />
-          <span className="font-bold text-green-600">Jawaban Terkirim!</span>
-        </div>
+        (() => {
+          let isCorrect = false;
+          if (question.questionType === 'multiple_choice' || question.questionType === 'true_false') {
+            isCorrect = answer !== '' && String(answer).toLowerCase() === String(question.correctAnswer).toLowerCase();
+          } else if (question.questionType === 'short_answer') {
+            isCorrect = answer !== '' && String(answer).trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
+          } else if (question.questionType === 'slider') {
+            isCorrect = answer !== '' && Number(answer) === Number(question.correctAnswer);
+          }
+
+          return (
+            <div className={`flex items-center justify-center gap-2 py-4 rounded-xl border-2 transition-all duration-200 animate-fade-in ${
+              isCorrect
+                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400'
+            }`}>
+              {isCorrect ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+              <span className="font-bold">
+                {isCorrect ? `Jawaban Benar! (+${question.bloomWeight} Poin)` : 'Jawaban Salah!'}
+              </span>
+            </div>
+          );
+        })()
       )}
     </div>
   );

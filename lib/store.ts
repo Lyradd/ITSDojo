@@ -110,6 +110,7 @@ export interface UserState {
   syncFromServer: (data: {
     level: number;
     profileXp: number;
+    xp: number;
     gems: number;
     streak: number;
     accuracy: number;
@@ -291,7 +292,7 @@ export const useUserStore = create<UserState>()(
           lastProgressUpdate: gData.lastUpdated || Date.now(),
           avatarUrl: data.avatar || null,
           enrolledCourseIds: data.enrolledCourseIds || [],
-          weeklyXp: 0,
+          weeklyXp: data.xp,
           bio: gData.bio || '',
           pendingCourseIds: [],
           rejectedCourseIds: [],
@@ -340,6 +341,7 @@ export const useUserStore = create<UserState>()(
           lastProgressUpdate: serverLastUpdated,
           level: data.level,
           xp: data.profileXp,
+          weeklyXp: data.xp,
           xpToNextLevel: calculatedXpToNextLevel,
           gems: data.gems,
           streak: data.streak,

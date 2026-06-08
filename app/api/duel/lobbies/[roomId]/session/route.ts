@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { duelRooms, duelSubject } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { duelRooms, duelSubject, users } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import {
   DuelSessionState,
   getDuelSession,
@@ -69,6 +69,159 @@ function calculateWinnerId(session: DuelSessionState, hostId: string, guestId: s
   }
 
   return null;
+}
+
+async function finalizeRoundSession(
+  lobby: any,
+  existing: DuelSessionState,
+  pendingScores: Record<string, number>,
+  roomKey: string
+): Promise<DuelSessionState> {
+  const hostScore = pendingScores[lobby.hostId] ?? 0;
+  const guestScore = pendingScores[lobby.guestId] ?? 0;
+
+  const chooserId = hostScore < guestScore
+    ? lobby.hostId
+    : guestScore < hostScore
+      ? lobby.guestId
+      : Math.random() < 0.5
+        ? lobby.hostId
+        : lobby.guestId;
+
+  const roundResult = {
+    roundNumber: existing.currentRound,
+    topicId: existing.currentTopicId,
+    hostScore,
+    guestScore,
+    chooserId,
+  };
+
+  const roundResults = [...existing.roundResults, roundResult];
+
+  if (roundResults.length >= MIN_DUEL_ROUNDS) {
+    const finishedSession: DuelSessionState = {
+      ...existing,
+      status: "finished",
+      chooserId: null,
+      pendingScores: {},
+      currentQuestionIndex: 0,
+      questionSubmissions: {},
+      roundResults,
+      winnerId: calculateWinnerId({ ...existing, roundResults }, lobby.hostId, lobby.guestId),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db
+      .update(duelRooms)
+      .set({
+        endedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(duelRooms.id, lobby.id as any));
+
+    // Calculate duel rewards and update user XP/profileXp/gems
+    const hostId = lobby.hostId;
+    const guestId = lobby.guestId;
+
+    const totals = roundResults.reduce(
+      (acc, round) => {
+        return {
+          host: acc.host + round.hostScore,
+          guest: acc.guest + round.guestScore,
+        };
+      },
+      { host: 0, guest: 0 }
+    );
+
+    const winnerId = finishedSession.winnerId;
+
+    let hostXpAdded = totals.host;
+    let guestXpAdded = totals.guest;
+    let hostProfileXpAdded = totals.host;
+    let guestProfileXpAdded = totals.guest;
+    let hostGemsAdded = 0;
+    let guestGemsAdded = 0;
+
+    if (winnerId === hostId) {
+      hostXpAdded += 50;
+      hostProfileXpAdded += 50;
+      hostGemsAdded += 10;
+
+      guestXpAdded += 10;
+      guestProfileXpAdded += 10;
+      guestGemsAdded += 2;
+    } else if (winnerId === guestId) {
+      guestXpAdded += 50;
+      guestProfileXpAdded += 50;
+      guestGemsAdded += 10;
+
+      hostXpAdded += 10;
+      hostProfileXpAdded += 10;
+      hostGemsAdded += 2;
+    } else {
+      // Draw
+      hostXpAdded += 25;
+      hostProfileXpAdded += 25;
+      hostGemsAdded += 5;
+
+      guestXpAdded += 25;
+      guestProfileXpAdded += 25;
+      guestGemsAdded += 5;
+    }
+
+    try {
+      if (hostId) {
+        await db
+          .update(users)
+          .set({
+            xp: sql`${users.xp} + ${hostXpAdded}`,
+            gems: sql`${users.gems} + ${hostGemsAdded}`,
+          })
+          .where(eq(users.id, hostId));
+      }
+
+      if (guestId) {
+        await db
+          .update(users)
+          .set({
+            xp: sql`${users.xp} + ${guestXpAdded}`,
+            gems: sql`${users.gems} + ${guestGemsAdded}`,
+          })
+          .where(eq(users.id, guestId));
+      }
+    } catch (dbErr) {
+      console.error("Failed to update user rewards on duel end:", dbErr);
+    }
+
+    // Broadcast updated leaderboard to all connected clients
+    try {
+      const io = (globalThis as any).__io;
+      if (io) {
+        const { getLeaderboardData } = await import("@/actions/leaderboard");
+        const fresh = await getLeaderboardData();
+        io.emit("leaderboard:update", fresh);
+      }
+    } catch (err) {
+      console.warn("Leaderboard broadcast failed (non-fatal):", err);
+    }
+
+    setDuelSession(roomKey, finishedSession);
+    return finishedSession;
+  }
+
+  const chooseTopicSession: DuelSessionState = {
+    ...existing,
+    status: "awaiting_topic_choice",
+    chooserId,
+    pendingScores: {},
+    currentQuestionIndex: 0,
+    questionSubmissions: {},
+    roundResults,
+    updatedAt: new Date().toISOString(),
+  };
+
+  setDuelSession(roomKey, chooseTopicSession);
+  return chooseTopicSession;
 }
 
 export async function GET(
@@ -197,9 +350,17 @@ export async function POST(
       [playerId]: questionIndex,
     };
 
+    const pendingScores = {
+      ...existing.pendingScores,
+    };
+    if (!Number.isNaN(score)) {
+      pendingScores[playerId] = score;
+    }
+
     const questionSession: DuelSessionState = {
       ...existing,
       questionSubmissions,
+      pendingScores,
       updatedAt: new Date().toISOString(),
     };
 
@@ -214,14 +375,15 @@ export async function POST(
     }
 
     if (body.isFinalQuestion) {
-      setDuelSession(roomKey, questionSession);
-      return NextResponse.json({ session: questionSession });
+      const finalized = await finalizeRoundSession(lobby, existing, pendingScores, roomKey);
+      return NextResponse.json({ session: finalized });
     }
 
     const advancedSession: DuelSessionState = {
       ...existing,
       currentQuestionIndex: existing.currentQuestionIndex + 1,
       questionSubmissions: {},
+      pendingScores,
       updatedAt: new Date().toISOString(),
     };
 
@@ -259,65 +421,6 @@ export async function POST(
     return NextResponse.json({ session: waitingSession });
   }
 
-  const hostScore = pendingScores[lobby.hostId] ?? 0;
-  const guestScore = pendingScores[lobby.guestId] ?? 0;
-
-  const chooserId = hostScore < guestScore
-    ? lobby.hostId
-    : guestScore < hostScore
-      ? lobby.guestId
-      : Math.random() < 0.5
-        ? lobby.hostId
-        : lobby.guestId;
-
-  const roundResult = {
-    roundNumber: existing.currentRound,
-    topicId: existing.currentTopicId,
-    hostScore,
-    guestScore,
-    chooserId,
-  };
-
-  const roundResults = [...existing.roundResults, roundResult];
-
-  if (roundResults.length >= MIN_DUEL_ROUNDS) {
-    const finishedSession: DuelSessionState = {
-      ...existing,
-      status: "finished",
-      chooserId: null,
-      pendingScores: {},
-      currentQuestionIndex: 0,
-      questionSubmissions: {},
-      roundResults,
-      winnerId: calculateWinnerId({ ...existing, roundResults }, lobby.hostId, lobby.guestId),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await db
-      .update(duelRooms)
-      .set({
-        endedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(duelRooms.id, lobby.id as any));
-
-    setDuelSession(roomKey, finishedSession);
-    return NextResponse.json({ session: finishedSession });
-  }
-
-
-
-  const chooseTopicSession: DuelSessionState = {
-    ...existing,
-    status: "awaiting_topic_choice",
-    chooserId,
-    pendingScores: {},
-    currentQuestionIndex: 0,
-    questionSubmissions: {},
-    roundResults,
-    updatedAt: new Date().toISOString(),
-  };
-
-  setDuelSession(roomKey, chooseTopicSession);
-  return NextResponse.json({ session: chooseTopicSession });
+  const finalized = await finalizeRoundSession(lobby, existing, pendingScores, roomKey);
+  return NextResponse.json({ session: finalized });
 }

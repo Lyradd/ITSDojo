@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 
 export default function LeaderboardPage() {
   const router = useRouter();
-  const { isLoggedIn, name, xp, level } = useUserStore();
+  const { isLoggedIn, name, xp, weeklyXp, level } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [scopeFilter, setScopeFilter] = useState<'angkatan' | 'course'>('angkatan');
@@ -68,7 +68,7 @@ export default function LeaderboardPage() {
           userId: 'current-user',
           name: `${name} (You)`,
           avatar: 'bg-blue-200 text-blue-700',
-          score: xp,
+          score: weeklyXp,
           totalQuestions: 0,
           answeredQuestions: 0,
           accuracy: 0,
@@ -193,7 +193,7 @@ export default function LeaderboardPage() {
                 <Zap className="w-4 h-4 text-blue-600" fill="currentColor" /> Total XP
               </div>
               <div className="text-3xl font-black tracking-tighter text-zinc-800 dark:text-zinc-100">
-                {xp}
+                {weeklyXp}
               </div>
               <div className="text-[10px] text-blue-600 font-black mt-2 uppercase tracking-widest">
                 Level {level} Master
@@ -387,7 +387,7 @@ export default function LeaderboardPage() {
               <div className="flex justify-between items-center text-[14px]">
                 <span className="text-zinc-500 dark:text-zinc-400 font-medium">Total XP</span>
                 <span className="font-bold text-zinc-900 dark:text-zinc-100 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-500 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <Zap className="w-3 h-3" fill="currentColor" /> {xp}
+                  <Zap className="w-3 h-3" fill="currentColor" /> {weeklyXp}
                 </span>
               </div>
               <div className="flex justify-between items-center text-[14px]">

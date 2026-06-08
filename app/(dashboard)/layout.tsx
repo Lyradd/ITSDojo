@@ -38,6 +38,7 @@ export default function DashboardLayout({
           syncFromServer({
             level: res.user.level,
             profileXp: res.user.profileXp,
+            xp: res.user.xp,
             gems: res.user.gems,
             streak: res.user.streak,
             accuracy: res.user.accuracy,

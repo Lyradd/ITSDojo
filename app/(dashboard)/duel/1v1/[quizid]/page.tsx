@@ -43,6 +43,7 @@ type DuelSession = {
   chooserId: string | null;
   pendingScores: Record<string, number>;
   questionSubmissions: Record<string, number>;
+  scores?: Record<string, number>;
   roundResults: RoundSummary[];
   winnerId: string | null;
   updatedAt: string;
@@ -84,9 +85,10 @@ export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { id, email, name, role, syncFromServer } = useUserStore();
+  const { id, email, name, role, isLoggedIn, syncFromServer } = useUserStore();
   const roomId = searchParams.get("room");
   const routeTopicId = typeof params.quizid === "string" ? params.quizid : undefined;
+  const [isMounted, setIsMounted] = useState(false);
   const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
   const [room, setRoom] = useState<LobbyRoom | null>(null);
   const [roomError, setRoomError] = useState<string | null>(null);
@@ -98,6 +100,10 @@ export default function QuizPage() {
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [submittingRoundScore, setSubmittingRoundScore] = useState(false);
   const [choosingTopic, setChoosingTopic] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     fetch("/api/topics")
@@ -297,7 +303,7 @@ export default function QuizPage() {
   const opponentName =
     room?.[opponentKey]?.name ?? searchParams.get("opponentName") ?? "Lawan";
   const waitingForLobby = Boolean(roomId) && (!room || room.status !== "started");
-  
+
   const activeStatus = delayedSessionStatus ?? duelSession?.status;
   const finished = activeStatus === "finished";
   const isPlayerChoosingTopic =
@@ -342,15 +348,21 @@ export default function QuizPage() {
 
   const currentRoundPlayerScore = (activeStatus === "awaiting_topic_choice" || finished)
     ? 0
-    : (cPlayerId && duelSession?.pendingScores?.[cPlayerId]) !== undefined
+    : (cPlayerId && duelSession?.pendingScores?.[cPlayerId] !== undefined)
       ? (duelSession?.pendingScores?.[cPlayerId] ?? 0)
-      : liveRoundScore;
+      : Object.keys(answers).length > 0
+        ? liveRoundScore
+        : (cPlayerId && duelSession?.scores?.[cPlayerId] !== undefined)
+          ? (duelSession?.scores?.[cPlayerId] ?? 0)
+          : 0;
 
   const currentRoundOpponentScore = (activeStatus === "awaiting_topic_choice" || finished)
     ? 0
-    : (oPlayerId && duelSession?.pendingScores?.[oPlayerId]) !== undefined
+    : (oPlayerId && duelSession?.pendingScores?.[oPlayerId] !== undefined)
       ? (duelSession?.pendingScores?.[oPlayerId] ?? 0)
-      : 0;
+      : (oPlayerId && duelSession?.scores?.[oPlayerId] !== undefined)
+        ? (duelSession?.scores?.[oPlayerId] ?? 0)
+        : 0;
 
   const inProgressPlayerScore = totalPlayerScore + currentRoundPlayerScore;
   const totalOpponentScore = totalOpponentScoreBase + currentRoundOpponentScore;
@@ -606,79 +618,7 @@ export default function QuizPage() {
     return () => clearTimeout(timer);
   }, [startCountdown]);
 
-  useEffect(() => {
-    if (
-      finished ||
-      questions.length === 0 ||
-      waitingForLobby ||
-      isPlayerChoosingTopic ||
-      waitingForOpponentTopicChoice ||
-      waitingForOpponentScore ||
-      isSubmitted ||
-      startCountdown > 0
-    ) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          setIsSubmitted(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [finished, currentIndex, isSubmitted, questions.length, waitingForLobby, isPlayerChoosingTopic, waitingForOpponentTopicChoice, waitingForOpponentScore, startCountdown]);
-
-  useEffect(() => {
-    const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
-    if (
-      isFinalQuestion &&
-      bothQuestionSubmitted &&
-      !hasCurrentPlayerSubmitted &&
-      !submittingRoundScore
-    ) {
-      void finalizeRound();
-    }
-  }, [
-    currentIndex,
-    bothQuestionSubmitted,
-    hasCurrentPlayerSubmitted,
-    submittingRoundScore,
-    questions.length,
-    finalizeRound,
-  ]);
-
-  const currentQuestion = questions[currentIndex];
-  const totalScore = inProgressPlayerScore;
-
-  const handleSubmit = (answer: string | number) => {
-    if (!currentQuestion || isSubmitted) return;
-
-    const isCorrect =
-      String(answer).toLowerCase() === String(currentQuestion.correctAnswer).toLowerCase();
-
-    const points = isCorrect ? currentQuestion.bloomWeight : 0;
-    const newAnswers = {
-      ...answers,
-      [currentQuestion.id]: {
-        answer,
-        correct: isCorrect,
-        points,
-      },
-    };
-
-    setAnswers(newAnswers);
-    setIsSubmitted(true);
-
-    const currentScore = Object.values(newAnswers).reduce((sum, item) => sum + item.points, 0);
-    void syncQuestionSubmission(currentIndex, currentScore);
-  };
-
-  const syncQuestionSubmission = async (questionIndex: number, currentScore: number) => {
+  const syncQuestionSubmission = useCallback(async (questionIndex: number, currentScore: number) => {
     if (!roomId || !currentPlayerId || !room) {
       return;
     }
@@ -709,7 +649,95 @@ export default function QuizPage() {
     } catch {
       setSessionError("Gagal sinkronisasi jawaban.");
     }
-  };
+  }, [roomId, currentPlayerId, room, questions]);
+
+  const currentQuestion = questions[currentIndex];
+  const totalScore = inProgressPlayerScore;
+
+  const handleSubmit = useCallback((answer: string | number) => {
+    if (!currentQuestion || isSubmitted) return;
+
+    let isCorrect = false;
+    const qType = currentQuestion.questionType;
+
+    if (qType === "multiple_choice" || qType === "true_false") {
+      isCorrect = answer !== "" && String(answer).toLowerCase().trim() === String(currentQuestion.correctAnswer).toLowerCase().trim();
+    } else if (qType === "short_answer") {
+      isCorrect = answer !== "" && String(answer).trim().toLowerCase() === String(currentQuestion.correctAnswer).trim().toLowerCase();
+    } else if (qType === "slider") {
+      isCorrect = answer !== "" && Number(answer) === Number(currentQuestion.correctAnswer);
+    } else {
+      isCorrect = String(answer).toLowerCase().trim() === String(currentQuestion.correctAnswer).toLowerCase().trim();
+    }
+
+    const points = isCorrect ? currentQuestion.bloomWeight : 0;
+    const newAnswers = {
+      ...answers,
+      [currentQuestion.id]: {
+        answer,
+        correct: isCorrect,
+        points,
+      },
+    };
+
+    setAnswers(newAnswers);
+    setIsSubmitted(true);
+
+    const currentScore = Object.values(newAnswers).reduce((sum, item) => sum + item.points, 0);
+    void syncQuestionSubmission(currentIndex, currentScore);
+  }, [currentQuestion, isSubmitted, answers, currentIndex, syncQuestionSubmission]);
+
+  useEffect(() => {
+    if (
+      finished ||
+      questions.length === 0 ||
+      waitingForLobby ||
+      isPlayerChoosingTopic ||
+      waitingForOpponentTopicChoice ||
+      waitingForOpponentScore ||
+      isSubmitted ||
+      startCountdown > 0
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [finished, currentIndex, isSubmitted, questions.length, waitingForLobby, isPlayerChoosingTopic, waitingForOpponentTopicChoice, waitingForOpponentScore, startCountdown]);
+
+  // Auto-submit empty answer when timer runs out
+  useEffect(() => {
+    if (timeRemaining === 0 && !isSubmitted && currentQuestion) {
+      handleSubmit("");
+    }
+  }, [timeRemaining, isSubmitted, currentQuestion, handleSubmit]);
+
+  useEffect(() => {
+    const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
+    if (
+      isFinalQuestion &&
+      bothQuestionSubmitted &&
+      !hasCurrentPlayerSubmitted &&
+      !submittingRoundScore
+    ) {
+      void finalizeRound();
+    }
+  }, [
+    currentIndex,
+    bothQuestionSubmitted,
+    hasCurrentPlayerSubmitted,
+    submittingRoundScore,
+    questions.length,
+    finalizeRound,
+  ]);
 
 
 
@@ -760,6 +788,29 @@ export default function QuizPage() {
   const handleNext = () => {
     void finalizeRound();
   };
+
+  if (!isMounted) {
+    return null;
+  }
+
+  if (!isLoggedIn) {
+    const currentPath = window.location.pathname + window.location.search;
+    const loginUrl = `/login?redirectTo=${encodeURIComponent(currentPath)}`;
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex items-center justify-center">
+        <Card className="w-full p-8 text-center max-w-md shadow-2xl border-2 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
+          <Swords className="mx-auto mb-4 h-12 w-12 text-blue-600 dark:text-blue-400 animate-bounce" />
+          <h1 className="text-2xl font-bold mb-2">Belum Masuk Akun</h1>
+          <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+            Kamu mendapatkan undangan untuk duel 1v1 ini. Silakan masuk akun terlebih dahulu untuk bertanding!
+          </p>
+          <Button onClick={() => router.push(loginUrl)} className="w-full h-11 font-bold bg-blue-600 hover:bg-blue-700">
+            Masuk Akun
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (roomId && roomError) {
     return (
@@ -978,7 +1029,7 @@ export default function QuizPage() {
                 const isDraw = winnerId === null;
                 const bonusXp = isWinner ? 50 : isDraw ? 25 : 10;
                 const gemsGained = isWinner ? 10 : isDraw ? 5 : 2;
-                
+
                 return (
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/50 shadow-sm transition-all duration-200 hover:scale-[1.02]">
@@ -1090,10 +1141,6 @@ export default function QuizPage() {
 
               {isSubmitted && (
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <p className="text-sm text-zinc-500">Skor saat ini</p>
-                    <p className="text-3xl font-bold text-zinc-800">{liveRoundScore}</p>
-                  </div>
                   {currentIndex < questions.length - 1 ? (
                     <div className="flex w-full items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 sm:w-auto">
                       {waitingForOpponentQuestion
@@ -1122,30 +1169,6 @@ export default function QuizPage() {
         </section>
 
         <aside className="space-y-4">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 border-b border-zinc-100 pb-2 dark:border-zinc-800">Skor Duel</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-xl bg-blue-50 dark:bg-blue-950/30 p-3 border border-blue-100 dark:border-blue-900/50">
-                <div>
-                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Kamu</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Total Skor</p>
-                </div>
-                <p className="text-2xl font-black text-blue-700 dark:text-blue-400">{totalScore}</p>
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl bg-rose-50 dark:bg-rose-950/30 p-3 border border-rose-100 dark:border-rose-900/50">
-                <div>
-                  <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{opponentName}</p>
-                  <p className="text-xs text-rose-600 dark:text-rose-400">Lawan</p>
-                </div>
-                <p className="text-2xl font-black text-rose-700 dark:text-rose-400">{totalOpponentScore}</p>
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 space-y-1">
-              <p>Ronde aktif: {Math.min(currentRound, duelSession?.minRounds ?? MIN_DUEL_ROUNDS)} / {duelSession?.minRounds ?? MIN_DUEL_ROUNDS}</p>
-            </div>
-          </Card>
-
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-3">Progres</h3>
             <div className="h-3 overflow-hidden rounded-full bg-zinc-200">

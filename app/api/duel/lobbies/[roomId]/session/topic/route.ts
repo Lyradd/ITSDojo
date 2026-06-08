@@ -70,6 +70,7 @@ export async function POST(
     chooserId: null,
     pendingScores: {},
     questionSubmissions: {},
+    scores: {},
     updatedAt: new Date().toISOString(),
   };
 

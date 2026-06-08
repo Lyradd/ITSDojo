@@ -29,6 +29,7 @@ function createInitialSession(roomKey: string, topicId: string): DuelSessionStat
     chooserId: null,
     pendingScores: {},
     questionSubmissions: {},
+    scores: {},
     roundResults: [],
     winnerId: null,
     updatedAt: new Date().toISOString(),
@@ -41,6 +42,7 @@ function normalizeSession(session: DuelSessionState): DuelSessionState {
     currentQuestionIndex: session.currentQuestionIndex ?? 0,
     pendingScores: session.pendingScores ?? {},
     questionSubmissions: session.questionSubmissions ?? {},
+    scores: session.scores ?? {},
   };
 }
 
@@ -106,6 +108,7 @@ async function finalizeRoundSession(
       pendingScores: {},
       currentQuestionIndex: 0,
       questionSubmissions: {},
+      scores: {},
       roundResults,
       winnerId: calculateWinnerId({ ...existing, roundResults }, lobby.hostId, lobby.guestId),
       updatedAt: new Date().toISOString(),
@@ -216,6 +219,7 @@ async function finalizeRoundSession(
     pendingScores: {},
     currentQuestionIndex: 0,
     questionSubmissions: {},
+    scores: {},
     roundResults,
     updatedAt: new Date().toISOString(),
   };
@@ -350,17 +354,15 @@ export async function POST(
       [playerId]: questionIndex,
     };
 
-    const pendingScores = {
-      ...existing.pendingScores,
+    const scores = {
+      ...existing.scores,
+      [playerId]: score,
     };
-    if (!Number.isNaN(score)) {
-      pendingScores[playerId] = score;
-    }
 
     const questionSession: DuelSessionState = {
       ...existing,
       questionSubmissions,
-      pendingScores,
+      scores,
       updatedAt: new Date().toISOString(),
     };
 
@@ -375,15 +377,15 @@ export async function POST(
     }
 
     if (body.isFinalQuestion) {
-      const finalized = await finalizeRoundSession(lobby, existing, pendingScores, roomKey);
-      return NextResponse.json({ session: finalized });
+      setDuelSession(roomKey, questionSession);
+      return NextResponse.json({ session: questionSession });
     }
 
     const advancedSession: DuelSessionState = {
       ...existing,
       currentQuestionIndex: existing.currentQuestionIndex + 1,
       questionSubmissions: {},
-      pendingScores,
+      scores,
       updatedAt: new Date().toISOString(),
     };
 

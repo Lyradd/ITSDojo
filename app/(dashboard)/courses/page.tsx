@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -221,22 +222,20 @@ export default function CoursesPage() {
 
       {/* Empty State: Saved filter active but nothing bookmarked */}
       {sortedCourses.length === 0 && showSavedOnly ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-            <Bookmark className="w-8 h-8 text-zinc-400" />
-          </div>
-          <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-1">Belum ada kursus yang disimpan</h3>
-          <p className="text-sm text-zinc-500 max-w-sm">Klik ikon bookmark pada kursus untuk menyimpannya agar mudah diakses kembali.</p>
-          <Button variant="outline" className="mt-4" onClick={() => setShowSavedOnly(false)}>Tampilkan Semua Kursus</Button>
-        </div>
+        <EmptyState 
+          icon={<Bookmark className="w-10 h-10" />}
+          title="Belum ada kursus yang disimpan"
+          description="Klik ikon bookmark pada kursus untuk menyimpannya agar mudah diakses kembali."
+          animate="float"
+          action={<Button variant="outline" onClick={() => setShowSavedOnly(false)}>Tampilkan Semua Kursus</Button>}
+        />
       ) : sortedCourses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-            <Search className="w-8 h-8 text-zinc-400" />
-          </div>
-          <h3 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tidak ada hasil ditemukan</h3>
-          <p className="text-sm text-zinc-500 max-w-sm">Coba ubah kata kunci pencarian Anda.</p>
-        </div>
+        <EmptyState 
+          icon={<Search className="w-10 h-10" />}
+          title="Tidak ada hasil ditemukan"
+          description="Coba ubah kata kunci pencarian Anda."
+          animate="float"
+        />
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedCourses.map((course) => (

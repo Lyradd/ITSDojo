@@ -27,8 +27,9 @@ import { playSuccessSound } from "@/lib/sounds";
 import { StatWidget } from "@/components/shared/stat-widget";
 import { DailyGoalWidget } from "@/components/shared/daily-goal-widget";
 import { LeaderboardWidget } from "@/components/shared/leaderboard-widget";
-import { RoadmapNode, ComputedLessonNode } from "@/components/learn/roadmap-node";
+import { ComputedLessonNode, RoadmapNode } from "@/components/learn/roadmap-node";
 import { AlertModal } from "@/components/shared/alert-modal";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Helper: Warna tema berdasarkan kursus aktif
 const getCourseTheme = (courseId: string) => {
@@ -288,10 +289,17 @@ export default function LearnPage() {
 
           {/* 2. UNIT-BASED ROADMAP — Setiap unit terpisah seperti Duolingo */}
           {allUnits.length === 0 ? (
-            <div className="text-center py-16 text-zinc-500">
-              <p className="font-bold">Belum ada unit.</p>
-              <p className="text-sm mt-1">Admin perlu menambahkan unit dan lesson terlebih dahulu.</p>
-            </div>
+            <EmptyState 
+              icon={<GraduationCap className="w-12 h-12" />}
+              title="Dojo Masih Kosong"
+              description="Master belum memberikan gulungan instruksi. Silakan kembali nanti atau eksplorasi kelas lain sementara admin menyusun materi."
+              animate="bounce"
+              action={
+                <Link href="/courses">
+                  <Button variant="outline" className="font-bold">Kembali ke Daftar Kelas</Button>
+                </Link>
+              }
+            />
           ) : (
             allUnits.map((unit: any, unitIdx: number) => {
               const unitLessons = unit.lessons || [];

@@ -25,7 +25,8 @@ import {
   Minimize2,
   Paperclip,
   MessageSquare,
-  Send
+  Send,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -72,8 +73,18 @@ export default function LessonIDEPage() {
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
   const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
-  const [chatInput, setChatInput] = useState("");
+  const chatInputRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Fetch diskusi dari Database berdasarkan lessonId
   const fetchDiscussions = useCallback(async () => {
@@ -112,6 +123,7 @@ export default function LessonIDEPage() {
     };
     setMessages(prev => [...prev, optimisticMsg]);
     setChatInput("");
+    chatInputRef.current = "";
 
     // POST to Database
     try {
@@ -133,6 +145,11 @@ export default function LessonIDEPage() {
       console.error("Failed to post discussion", e);
     }
   };
+
+  const [chatInput, setChatInput] = useState("");
+  useEffect(() => {
+    chatInputRef.current = chatInput;
+  }, [chatInput]);
 
   const renderDiscussionSheet = () => (
     <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col p-0">
@@ -292,15 +309,13 @@ export default function LessonIDEPage() {
     );
   }
 
-  // Helper: eksekusi kode via Piston API
+  // Helper: eksekusi kode via Backend API (diteruskan ke Judge0 RapidAPI)
   const executeCode = async (stdin?: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_PISTON_API_URL || "https://emkc.org/api/v2/piston/execute";
-    const response = await fetch(apiUrl, {
+    const response = await fetch("/api/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         language: language,
-        version: "*",
         files: [{ content: code }],
         stdin: stdin || "",
       })
@@ -612,6 +627,12 @@ export default function LessonIDEPage() {
   // ============================================
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+      {isMobile && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/50 dark:border-amber-900/50 px-6 py-3 text-xs md:text-sm text-amber-850 dark:text-amber-300 flex items-center gap-2 font-semibold shrink-0 z-10">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>Tahap Praktik lebih optimal dikerjakan di Desktop/Tablet.</span>
+        </div>
+      )}
       {/* TOP HEADER BREADCRUMB */}
       <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b-2 border-zinc-200 dark:border-zinc-800 shrink-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-sm font-bold">

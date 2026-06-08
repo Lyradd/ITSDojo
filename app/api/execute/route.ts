@@ -1,115 +1,243 @@
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { getSession } from '@/lib/session';
+
+// ============================================
+// KONFIGURASI KEAMANAN & CACHE
+// ============================================
+
+/** Batas ukuran sumber kode: 64KB */
+const MAX_CODE_SIZE = 64 * 1024;
+const MAX_STDIN_SIZE = 16 * 1024;
+
+/** Judge0 RapidAPI Credentials */
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "YOUR_RAPIDAPI_KEY_HERE";
+const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || "judge0-ce.p.rapidapi.com";
+const JUDGE0_BASE_URL = `https://${RAPIDAPI_HOST}`;
+
+// ============================================
+// RATE LIMITER & DEDUPLICATION CACHE
+// ============================================
+
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 5; // 5 eksekusi per menit untuk menghemat kuota berbayar
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+// Simple LRU Cache (In-Memory) untuk menghindari pemanggilan berulang kode identik
+const executionCache = new Map<string, any>();
+
+// Bersihkan cache dan rate limit setiap 10 menit
+if (typeof globalThis !== 'undefined') {
+  const cleanupKey = '__judge0CleanupInterval';
+  if (!(globalThis as any)[cleanupKey]) {
+    (globalThis as any)[cleanupKey] = setInterval(() => {
+      const now = Date.now();
+      for (const [key, val] of rateLimitMap) {
+        if (now > val.resetTime) rateLimitMap.delete(key);
+      }
+      executionCache.clear(); // Hapus cache secara berkala
+    }, 10 * 60_000);
+  }
+}
+
+// ============================================
+// UTILS
+// ============================================
+
+interface ExecuteResponse {
+  language: string;
+  version: string;
+  run: {
+    stdout: string;
+    stderr: string;
+    output: string;
+    code: number;
+    signal: string | null;
+  };
+}
+
+function errorResponse(language: string, message: string): NextResponse {
+  return NextResponse.json({
+    language,
+    version: "Judge0",
+    run: {
+      stdout: "",
+      stderr: message,
+      output: message,
+      code: 1,
+      signal: null
+    }
+  } satisfies ExecuteResponse);
+}
+
+// Helper untuk Base64
+const encodeBase64 = (str: string) => Buffer.from(str, 'utf-8').toString('base64');
+const decodeBase64 = (str: string | null) => str ? Buffer.from(str, 'base64').toString('utf-8') : "";
+
+// ============================================
+// MAIN HANDLER
+// ============================================
 
 export async function POST(req: Request) {
+  let language = "unknown";
+
   try {
+    // ━━━ 1. AUTENTIKASI & RATE LIMIT ━━━
+    const session = await getSession();
+    if (!session?.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!checkRateLimit(session.userId)) {
+      return errorResponse(language, "Rate limit terlampaui. Tunggu 1 menit sebelum mencoba lagi.");
+    }
+
+    // ━━━ 2. VALIDASI CREDENTIALS ━━━
+    if (RAPIDAPI_KEY === "YOUR_RAPIDAPI_KEY_HERE" || !process.env.RAPIDAPI_KEY) {
+      return errorResponse(language, "Server Error: Kredensial Judge0 RapidAPI belum dikonfigurasi di file .env.");
+    }
+
+    // ━━━ 3. PARSING INPUT ━━━
     const body = await req.json();
-    const { language, files, stdin } = body;
-    const code = files?.[0]?.content || "";
+    language = body.language || "unknown";
+    const code = body.files?.[0]?.content || "";
+    const stdin = body.stdin || "";
 
-    // 1. PISTON API EXECUTION UNTUK PYTHON & JAVASCRIPT (SECURE SANDBOX)
-    if (language === 'python' || language === 'javascript') {
-      try {
-        const pistonVersion = language === 'python' ? '3.10.0' : '18.15.0';
-
-        const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            language: language,
-            version: pistonVersion,
-            files: [{ content: code }],
-            stdin: stdin || "",
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Piston API Error: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-
-        // Handle error output from Piston correctly
-        if (result.message) {
-          throw new Error(result.message);
-        }
-
-        return NextResponse.json({
-          language,
-          version: "Piston",
-          run: {
-            stdout: result.run.stdout || "",
-            stderr: result.run.stderr || "",
-            output: result.run.output || "",
-            code: result.run.code || 0,
-            signal: result.run.signal || null
-          }
-        });
-
-      } catch (error: any) {
-        const errMsg = error.message || "Execution failed";
-        return NextResponse.json({
-          language,
-          version: "Piston",
-          run: {
-            stdout: "",
-            stderr: errMsg,
-            output: errMsg,
-            code: 1,
-            signal: null
-          }
-        });
-      }
+    if (code.length > MAX_CODE_SIZE || stdin.length > MAX_STDIN_SIZE) {
+      return errorResponse(language, "Ukuran kode atau input melebihi batas maksimum.");
     }
 
-    // 2. MOCK EXECUTION (Hanya untuk C / C++ / SQL karena tidak ada compiler)
-    let output = "";
-    const trimmedStdin = (stdin || "").trim();
-    const nums = trimmedStdin.split(/\s+/).map(Number);
+    // ━━━ 4. LANGUAGE MAPPING (JUDGE0) ━━━
+    let languageId = 0;
+    if (language === 'python') languageId = 71; // Python 3.8.1
+    else if (language === 'javascript') languageId = 63; // Node.js 12.14.0
+    else if (language === 'c') languageId = 50; // GCC 9.2.0
+    else if (language === 'cpp') languageId = 54; // GCC 9.2.0
+    else if (language === 'sql') languageId = 82; // SQLite 3.27.2
 
-    // Mock Dasar Pemrograman (C/C++)
-    if (nums.length === 2 && !nums.some(isNaN)) {
-      if (code.includes("+") || code.includes("a+b") || code.includes("a + b") || code.includes("sum")) {
-        output = String(nums[0] + nums[1]);
-      } else if (code.includes("-") || code.includes("a-b") || code.includes("a - b")) {
-        output = String(nums[0] - nums[1]);
-      } else {
-        output = "0";
-      }
-    } else {
-      // Regex cetak standar untuk C/C++
-      const printfMatch = code.match(/printf\s*\(\s*"([^"]*)"/);
-      const coutMatch = code.match(/cout\s*<<\s*"([^"]*)"/);
-
-      if (printfMatch) {
-        output = printfMatch[1].replace(/\\n/g, "\n");
-      } else if (coutMatch) {
-        output = coutMatch[1];
-      } else if (language === "sql") {
-        output = "CREATE INDEX idx_name ON users(name);";
-      } else {
-        output = "Program finished with no output or mock unavailable.";
-      }
+    if (languageId === 0) {
+      return errorResponse(language, `Bahasa "${language}" tidak didukung oleh arsitektur Judge0 kami.`);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 300)); // Delay artifisial
+    // ━━━ 5. DEDUPLICATION CACHE ━━━
+    // Jika mahasiswa menekan "Run" berkali-kali tanpa mengubah kode
+    const cacheKey = `${languageId}:${encodeBase64(code)}:${encodeBase64(stdin)}`;
+    if (executionCache.has(cacheKey)) {
+      return NextResponse.json(executionCache.get(cacheKey));
+    }
 
-    return NextResponse.json({
-      language,
-      version: "Mock",
-      run: {
-        stdout: output,
-        stderr: "",
-        output: output,
-        code: 0,
-        signal: null
-      }
+    // ━━━ 6. TAHAP 1: KIRIM KODE KE JUDGE0 (POST) ━━━
+    const submissionResponse = await fetch(`${JUDGE0_BASE_URL}/submissions?base64_encoded=true&wait=false`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": RAPIDAPI_HOST
+      },
+      body: JSON.stringify({
+        language_id: languageId,
+        source_code: encodeBase64(code),
+        stdin: encodeBase64(stdin)
+      })
     });
 
-  } catch (error) {
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    if (!submissionResponse.ok) {
+      const errTxt = await submissionResponse.text();
+      console.error("Judge0 Submission Error:", errTxt);
+      return errorResponse(language, `Gagal menghubungi compiler API (HTTP ${submissionResponse.status})`);
+    }
+
+    const { token } = await submissionResponse.json();
+    if (!token) {
+      return errorResponse(language, "Gagal mendapatkan token eksekusi dari Judge0.");
+    }
+
+    // ━━━ 7. TAHAP 2: ASYNCHRONOUS POLLING (GET) ━━━
+    let attempt = 0;
+    const MAX_ATTEMPTS = 15; // Maksimal 15 detik menunggu
+    let finalResult = null;
+
+    while (attempt < MAX_ATTEMPTS) {
+      // Jeda 1 detik setiap iterasi polling
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempt++;
+
+      const checkResponse = await fetch(`${JUDGE0_BASE_URL}/submissions/${token}?base64_encoded=true`, {
+        method: "GET",
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY,
+          "X-RapidAPI-Host": RAPIDAPI_HOST
+        }
+      });
+
+      if (!checkResponse.ok) continue; // Coba lagi jika ada gangguan koneksi sesaat
+
+      const data = await checkResponse.json();
+      
+      // Status ID Judge0:
+      // 1 = In Queue, 2 = Processing
+      // 3 = Accepted, 4 = Wrong Answer, 5 = Time Limit Exceeded, 6 = Compilation Error, dll
+      if (data.status?.id === 1 || data.status?.id === 2) {
+        continue; // Masih diproses, loop lagi
+      }
+
+      // Selesai diproses (bisa sukses atau error)
+      finalResult = data;
+      break;
+    }
+
+    if (!finalResult) {
+      return errorResponse(language, "Waktu tunggu habis. Server eksekusi terlalu sibuk.");
+    }
+
+    // ━━━ 8. PEMROSESAN RESPONSE & BASE64 DECODING ━━━
+    const stdoutRaw = decodeBase64(finalResult.stdout);
+    const stderrRaw = decodeBase64(finalResult.stderr);
+    const compileOutputRaw = decodeBase64(finalResult.compile_output);
+
+    // Deteksi jika terjadi Error Logika atau Kompilasi
+    const statusId = finalResult.status?.id;
+    let isError = statusId !== 3; // 3 adalah Accepted (Sukses)
+    
+    // Rangkai pesan error dari berbagai sumber
+    let finalStderr = stderrRaw;
+    if (statusId === 5) finalStderr = "Waktu Eksekusi Melebihi Batas (Time Limit Exceeded). Pastikan tidak ada infinite loop.";
+    else if (statusId === 6) finalStderr = compileOutputRaw || "Kompilasi Gagal.";
+    else if (statusId >= 7 && statusId <= 12) finalStderr = `Runtime Error (Status: ${finalResult.status?.description || statusId})\n${stderrRaw}`;
+
+    // Gabungkan stdout dan stderr untuk kemudahan display di IDE mahasiswa
+    const combinedOutput = [stdoutRaw, finalStderr].filter(Boolean).join("\n\n");
+
+    const responsePayload: ExecuteResponse = {
+      language,
+      version: "Judge0",
+      run: {
+        stdout: stdoutRaw,
+        stderr: finalStderr,
+        output: combinedOutput || "Program selesai dijalankan (Tidak ada output).",
+        code: isError ? 1 : 0,
+        signal: null
+      }
+    };
+
+    // Simpan ke Cache jika sukses atau error sintaks (bukan error internal server)
+    executionCache.set(cacheKey, responsePayload);
+
+    return NextResponse.json(responsePayload);
+
+  } catch (error: any) {
+    console.error("Execute API Error:", error.message);
+    return errorResponse(language, "Terjadi kesalahan internal pada server eksekusi.");
   }
 }

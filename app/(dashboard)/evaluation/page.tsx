@@ -520,9 +520,15 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, userId, isCo
             <span className="text-xs font-medium text-zinc-500 dark:text-indigo-300/80">{stats?.activeCount > 0 ? `${stats.activeCount} peserta aktif` : 'Belum ada peserta'}</span>
           </div>
 
-          <Button onClick={() => setShowWarning(true)} className="w-full bg-white dark:bg-slate-950 text-indigo-700 dark:text-white hover:bg-indigo-50 dark:hover:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 font-bold h-12 rounded-xl transition-all shadow-md">
-            <Swords className="w-4 h-4 mr-2" /> {isCompletedByStudent ? "Masuk Arena (Latihan)" : "Masuk Arena"}
-          </Button>
+          {!isCompletedByStudent ? (
+            <Button onClick={() => setShowWarning(true)} className="w-full bg-white dark:bg-slate-950 text-indigo-700 dark:text-white hover:bg-indigo-50 dark:hover:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 font-bold h-12 rounded-xl transition-all shadow-md">
+              <Swords className="w-4 h-4 mr-2" /> Masuk Arena
+            </Button>
+          ) : (
+            <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 font-bold h-12 rounded-xl flex items-center justify-center shadow-inner opacity-80 cursor-not-allowed">
+              <CheckCircle2 className="w-5 h-5 mr-2" /> Kamu Sudah Menyelesaikan Tantangan Ini
+            </div>
+          )}
         </div>
       </Card>
 
@@ -543,7 +549,7 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, userId, isCo
 
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
               <p>📌 Kuis ini berjalan secara <strong>real-time sinkronus</strong>. Kamu akan masuk ke ruang tunggu (lobby) sebelum Dosen memulai kuis.</p>
-              <p>🎯 Kalau kamu sudah pernah mengerjakan, kamu <strong>bisa mengulanginya untuk belajar</strong>, tapi poin dan leaderboard tidak akan berubah lagi.</p>
+              <p>🔒 <strong>Akses 1x Saja:</strong> Pastikan koneksimu stabil. Setelah di-submit, kamu tidak bisa masuk kembali ke arena ini.</p>
               <p>⏱️ Durasi: <strong>{evaluation.duration} menit</strong> — timer berjalan otomatis ketika Dosen memulai sesi.</p>
             </div>
 

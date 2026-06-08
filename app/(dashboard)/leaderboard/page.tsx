@@ -183,9 +183,6 @@ export default function LeaderboardPage() {
                 #{currentUserEntry?.rank || '-'}
                 <span className="text-lg font-bold opacity-80">/{totalParticipants}</span>
               </div>
-              <div className="mt-4 h-1 w-full bg-white/20 rounded-full overflow-hidden">
-                 <div className="h-full bg-white w-2/3" />
-              </div>
             </Card>
 
             <Card className="p-5 rounded-3xl border-2 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-none hover:border-blue-500/50 hover:-translate-y-1 transition-all duration-300">

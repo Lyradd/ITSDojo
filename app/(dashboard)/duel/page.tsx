@@ -10,10 +10,10 @@ export default function DuelPage() {
   const params = useParams();
   const { isLoggedIn, name } = useUserStore();
 
-  // if (!isLoggedIn) {
-  //   router.push('/login');
-  //   return;
-  // }
+  if (!isLoggedIn) {
+    router.push('/login');
+    return;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
@@ -37,7 +37,7 @@ export default function DuelPage() {
   bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900
   hover:from-blue-400 hover:to-blue-600 dark:hover:from-blue-700 dark:hover:to-blue-600
   hover:text-zinc-100 dark:hover:text-zinc-100 transition-colors duration-300 shadow-lg cursor-pointer"
-          onClick={() => router.push('/duel/1v1')}>
+            onClick={() => router.push('/duel/1v1')}>
             <div className="flex justify-center mb-2">
               <span className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/30">
                 <Crown className="w-16 h-16" />
@@ -55,7 +55,7 @@ export default function DuelPage() {
   bg-linear-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900
   hover:from-green-400 hover:to-green-600 dark:hover:from-green-700 dark:hover:to-green-600
   hover:text-zinc-100 dark:hover:text-zinc-100 transition-colors duration-300 shadow-lg cursor-pointer"
-          onClick={() => router.push('/duel/arena')}>
+            onClick={() => router.push('/duel/arena')}>
             <div className="flex justify-center mb-2">
               <span className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/30">
                 <Globe className="w-16 h-16" />

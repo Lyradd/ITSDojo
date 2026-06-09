@@ -326,3 +326,21 @@ export const lessonsRelations = relations(lessons, ({ one, many }) => ({
 export const testCasesRelations = relations(testCases, ({ one }) => ({
   lesson: one(lessons, { fields: [testCases.lessonId], references: [lessons.id] }),
 }));
+
+// ==========================================
+// Arena Rooms (Multiplayer Gamemode)
+// ==========================================
+export const arenaRooms = pgTable('arena_rooms', {
+  id: serial('id').primaryKey(),
+  topicId: integer('topic_id')
+    .references(() => duelSubject.id, { onDelete: 'cascade' })
+    .notNull(),
+  hostId: text('host_id').notNull(),
+  players: jsonb('players').default([]).notNull(), // Array of player objects { id, name, email, avatar }
+  status: text('status').default('waiting').notNull(), // 'waiting', 'started', 'ended', 'cancelled'
+  inviteCode: text('invite_code').unique().notNull(),
+  startedAt: timestamp('started_at'),
+  endedAt: timestamp('ended_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

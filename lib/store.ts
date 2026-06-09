@@ -509,6 +509,7 @@ export const useUserStore = create<UserState>()(
       completeLesson: (lessonId, isPerfect, xpReward, gemReward) => {
         let earnedXp = 0;
         let earnedGems = 0;
+        let streakIncreased = false;
         set((state) => {
           const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'lesson') {
@@ -549,6 +550,7 @@ export const useUserStore = create<UserState>()(
             const yesterdayStr = formatLocalDate(yesterday);
             if (newLastActiveDate === yesterdayStr || newStreak === 0) {
               newStreak += 1;
+              streakIncreased = true;
             } else {
               newStreak = 1;
             }
@@ -593,6 +595,7 @@ export const useUserStore = create<UserState>()(
             streak: newStreak, lastActiveDate: newLastActiveDate
           };
         });
+        if (streakIncreased) get().incrementProgress('cons-2', 1);
         if (earnedXp > 0) get().addXp(earnedXp);
         if (earnedGems > 0) get().triggerReward('gem', 5);
         get().forceSyncProgress(); // GUARANTEE IMMEDIATE SYNC
@@ -692,90 +695,105 @@ export const useUserStore = create<UserState>()(
         const state = get();
         if (!state.hasShieldPack) return;
         set({ streakFreezeCount: 3, hasShieldPack: false, lastProgressUpdate: Date.now() });
+        get().forceSyncProgress();
       },
 
       // --- ACTIONS: GOALS ---
-      checkDailyReset: () => set((state) => {
-        const now = new Date();
-        const today = formatLocalDate(now);
-        const hasOldSchema = state.dailyGoals.length > 0 && state.dailyGoals[0].targetValue === undefined;
-        
-        if (state.lastDailyReset !== today || state.dailyGoals.length < 3 || hasOldSchema) {
-          const updates: any = { dailyGoals: generateDailyGoals(today), lastDailyReset: today };
+      checkDailyReset: () => {
+        let requiresServerSync = false;
+
+        set((state) => {
+          const now = new Date();
+          const today = formatLocalDate(now);
+          const hasOldSchema = state.dailyGoals.length > 0 && state.dailyGoals[0].targetValue === undefined;
           
-          // Robust weekly reset check
-          const lastResetDate = new Date(state.lastDailyReset);
-          const diffDays = Math.floor((now.getTime() - lastResetDate.getTime()) / (1000 * 60 * 60 * 24));
-          const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
-          const lastResetDayOfWeek = lastResetDate.getDay() === 0 ? 7 : lastResetDate.getDay();
-          
-          if (diffDays >= 7 || currentDayOfWeek < lastResetDayOfWeek) {
-            updates.weeklyActiveDays = 0;
-            updates.claimedWeeklyMilestones = [];
-            updates.weeklyXp = 0;
-          }
+          if (state.lastDailyReset !== today || state.dailyGoals.length < 3 || hasOldSchema) {
+            const updates: any = { dailyGoals: generateDailyGoals(today), lastDailyReset: today };
+            
+            // Robust weekly reset check
+            const [lrYear, lrMonth, lrDay] = state.lastDailyReset.split('-').map(Number);
+            const lastResetDate = new Date(lrYear, lrMonth - 1, lrDay, 0, 0, 0, 0);
+            
+            const diffDaysWeekly = Math.floor((now.getTime() - lastResetDate.getTime()) / (1000 * 60 * 60 * 24));
+            const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+            const lastResetDayOfWeek = lastResetDate.getDay() === 0 ? 7 : lastResetDate.getDay();
+            
+            if (diffDaysWeekly >= 7 || currentDayOfWeek < lastResetDayOfWeek) {
+              updates.weeklyActiveDays = 0;
+              updates.claimedWeeklyMilestones = [];
+              updates.weeklyXp = 0;
+            }
 
-          // Reset monthly reward if the month has changed
-          const lastResetDateObj = new Date(state.lastDailyReset);
-          if (lastResetDateObj.getMonth() !== now.getMonth() || lastResetDateObj.getFullYear() !== now.getFullYear()) {
-            updates.monthlyCompletedGoals = 0;
-            updates.claimedMonthlyMilestones = [];
-          }
+            // Reset monthly reward if the month has changed
+            if (lastResetDate.getMonth() !== now.getMonth() || lastResetDate.getFullYear() !== now.getFullYear()) {
+              updates.monthlyCompletedGoals = 0;
+              updates.claimedMonthlyMilestones = [];
+            }
 
-          let newStreakFreezeCount = state.streakFreezeCount;
-          let newStreak = state.streak;
-          let newActivityHistory = [...state.activityHistory];
-          let updatedStreakOrFreeze = false;
+            let newStreakFreezeCount = state.streakFreezeCount;
+            let newStreak = state.streak;
+            let newActivityHistory = [...state.activityHistory];
+            let updatedStreakOrFreeze = false;
 
-          if (state.lastActiveDate) {
-             const lastActiveObj = new Date(state.lastActiveDate);
-             lastActiveObj.setHours(0,0,0,0);
-             const todayObj = new Date(now);
-             todayObj.setHours(0,0,0,0);
-             
-             const diffTime = todayObj.getTime() - lastActiveObj.getTime();
-             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-             const missedDays = Math.max(0, diffDays - 1);
+            if (state.lastActiveDate) {
+               // [FIX 1]: Parsing Zona Waktu Lokal yang Aman
+               // Hindari parsing "YYYY-MM-DD" secara langsung menggunakan new Date()
+               const [year, month, day] = state.lastActiveDate.split('-').map(Number);
+               const lastActiveObj = new Date(year, month - 1, day, 0, 0, 0, 0);
+               
+               const todayObj = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+               
+               const diffTime = todayObj.getTime() - lastActiveObj.getTime();
+               const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+               const missedDays = Math.max(0, diffDays - 1);
 
-             if (missedDays > 0 && newStreak > 0) {
-               updatedStreakOrFreeze = true;
-               for (let i = 1; i <= missedDays; i++) {
-                 if (newStreakFreezeCount > 0) {
-                   newStreakFreezeCount--;
-                   const missedDate = new Date(state.lastActiveDate);
-                   missedDate.setDate(missedDate.getDate() + i);
-                   newActivityHistory.push({
-                     date: formatLocalDate(missedDate),
-                     count: 0,
-                     xpEarned: 0,
-                     freezeUsed: true
-                   });
-                 } else {
-                   newStreak = 0;
-                   break;
+               if (missedDays > 0 && newStreak > 0) {
+                 updatedStreakOrFreeze = true;
+                 for (let i = 1; i <= missedDays; i++) {
+                   if (newStreakFreezeCount > 0) {
+                     newStreakFreezeCount--;
+                     const missedDate = new Date(lastActiveObj);
+                     missedDate.setDate(missedDate.getDate() + i);
+                     newActivityHistory.push({
+                       date: formatLocalDate(missedDate),
+                       count: 0,
+                       xpEarned: 0,
+                       freezeUsed: true
+                     });
+                   } else {
+                     newStreak = 0; // HANGUS!
+                     break;
+                   }
+                 }
+                 
+                 // Jika freeze berhasil menutupi semua hari bolong
+                 if (newStreak > 0) {
+                   const yesterday = new Date(now);
+                   yesterday.setDate(yesterday.getDate() - 1);
+                   updates.lastActiveDate = formatLocalDate(yesterday);
                  }
                }
-               // Jika freeze berhasil menutupi semua hari bolong, update lastActiveDate ke kemarin
-               // agar saat mengerjakan hari ini streak dilanjutkan, bukan direset.
-               if (newStreak > 0) {
-                 const yesterday = new Date(now);
-                 yesterday.setDate(yesterday.getDate() - 1);
-                 updates.lastActiveDate = formatLocalDate(yesterday);
-               }
-             }
-          }
-          
-          if (updatedStreakOrFreeze) {
-             updates.streakFreezeCount = newStreakFreezeCount;
-             updates.streak = newStreak;
-             updates.activityHistory = newActivityHistory;
-          }
+            }
+            
+            if (updatedStreakOrFreeze) {
+               updates.streakFreezeCount = newStreakFreezeCount;
+               updates.streak = newStreak;
+               updates.activityHistory = newActivityHistory;
+               requiresServerSync = true; // [FIX 2]: Flag untuk memaksa sync DB
+            }
 
-          updates.lastProgressUpdate = Date.now();
-          return updates;
+            updates.lastProgressUpdate = Date.now();
+            return updates;
+          }
+          return state;
+        });
+
+        // [FIX 2 Lanjutan]: Paksa database menerima bahwa streak telah hangus (0), 
+        // sehingga proses fetch profile dari server tidak menimpa ulang data kita.
+        if (requiresServerSync) {
+          get().forceSyncProgress();
         }
-        return state;
-      }),
+      },
 
       claimWeeklyMilestone: (milestone: number) => {
         const state = get();
@@ -788,9 +806,11 @@ export const useUserStore = create<UserState>()(
 
         set((s) => ({ 
           gems: s.gems + reward, 
-          claimedWeeklyMilestones: [...s.claimedWeeklyMilestones, milestone] 
+          claimedWeeklyMilestones: [...s.claimedWeeklyMilestones, milestone],
+          lastProgressUpdate: Date.now()
         }));
         get().triggerReward('gem', Math.min(reward / 10, 25)); // Visual feedback
+        get().forceSyncProgress();
       },
 
       claimMonthlyMilestone: (milestone, reward, tier) => {
@@ -813,9 +833,11 @@ export const useUserStore = create<UserState>()(
         set((s) => ({ 
           gems: s.gems + reward, 
           claimedMonthlyMilestones: [...s.claimedMonthlyMilestones, milestone],
-          earnedBadges: newEarnedBadges
+          earnedBadges: newEarnedBadges,
+          lastProgressUpdate: Date.now()
         }));
         get().triggerReward('gem', Math.min(reward / 10, 25));
+        get().forceSyncProgress();
       },
 
       claimGoalReward: (goalId) => {
@@ -847,9 +869,9 @@ export const useUserStore = create<UserState>()(
         stateNow.forceSyncProgress();
       },
 
-      incrementProgress: (missionId, amount) => {
+      incrementProgress: (missionIdOrType, amount) => {
         set((state) => {
-          const goalIndex = state.dailyGoals.findIndex(g => g.id === missionId);
+          const goalIndex = state.dailyGoals.findIndex(g => g.id === missionIdOrType || g.type === missionIdOrType);
           if (goalIndex === -1) return state;
           const goal = state.dailyGoals[goalIndex];
           if (goal.isCompleted) return state;

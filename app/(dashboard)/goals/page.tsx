@@ -264,7 +264,7 @@ export default function GoalsPage() {
                                   }`}>
                                     {goal.category}
                                   </span>
-                                  <h3 className={`font-bold text-sm sm:text-base truncate transition-colors duration-500 ${goal.isClaimed ? 'text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                  <h3 className={`font-bold text-sm sm:text-base line-clamp-1 break-words transition-colors duration-500 ${goal.isClaimed ? 'text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-200'}`}>
                                     {goal.title}
                                   </h3>
                                 </div>
@@ -272,7 +272,7 @@ export default function GoalsPage() {
                                   {goal.currentProgress} / {goal.targetValue}
                                 </span>
                               </div>
-                              <p className={`text-xs sm:text-sm mb-2 sm:mb-2.5 ${goal.isClaimed ? 'text-zinc-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                              <p className={`text-xs sm:text-sm mb-2 sm:mb-2.5 line-clamp-2 break-words ${goal.isClaimed ? 'text-zinc-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
                                 {goal.description}
                               </p>
                             </div>
@@ -290,12 +290,12 @@ export default function GoalsPage() {
                         </div>
 
                         {/* Button Action / Reward Preview */}
-                        <div className="shrink-0 w-full sm:w-28 flex justify-end">
+                        <div className="shrink-0 w-full sm:w-[140px] flex justify-end items-center h-12">
                           {goal.isClaimed ? (
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="text-zinc-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center w-full sm:w-auto gap-1 py-2 sm:py-0"
+                              className="text-zinc-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center w-full gap-1"
                             >
                               <CheckCircle className="w-4 h-4 sm:w-3 sm:h-3" /> Terklaim
                             </motion.div>
@@ -303,13 +303,19 @@ export default function GoalsPage() {
                             <Button
                               onClick={() => handleClaim(goal.id)}
                               disabled={claimingGoals.has(goal.id)}
-                              className="w-full h-12 sm:h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 transition-transform active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:active:scale-100"
+                              className="w-full h-12 bg-green-500 hover:bg-green-600 text-white font-black shadow-[0_0_20px_rgba(34,197,94,0.6)] animate-[pulse_2s_infinite] transition-transform active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:active:scale-100"
                             >
-                              <span className="relative z-10">{claimingGoals.has(goal.id) ? 'Klaim...' : 'Klaim'}</span>
-                              {!claimingGoals.has(goal.id) && <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />}
+                              <span className="relative z-10 flex items-center justify-center gap-2">
+                                {claimingGoals.has(goal.id) ? 'Klaim...' : (
+                                  <>
+                                    <Gift className="w-4 h-4" /> KLAIM
+                                  </>
+                                )}
+                              </span>
+                              {!claimingGoals.has(goal.id) && <div className="absolute inset-0 bg-white/30 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />}
                             </Button>
                           ) : (
-                            <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-1 text-zinc-400 w-full sm:w-auto bg-zinc-50 dark:bg-zinc-900/30 sm:bg-transparent rounded-xl sm:rounded-none p-2 sm:p-0 h-12 sm:h-auto">
+                            <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-1 text-zinc-400 w-full bg-zinc-50 dark:bg-zinc-900/30 sm:bg-transparent rounded-xl sm:rounded-none h-12">
                               <div className="flex items-center gap-2">
                                 {goal.rewardXP > 0 && (
                                   <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 shadow-sm">

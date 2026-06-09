@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { Menu } from 'lucide-react';
@@ -24,6 +24,7 @@ export default function ClientLayout({
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { checkDailyReset, isLoggedIn, id, syncFromServer } = useUserStore();
+  const earlyBirdChecked = useRef(false);
 
   useEffect(() => {
     checkDailyReset();
@@ -32,6 +33,14 @@ export default function ClientLayout({
   // Sinkronisasi data ke bawah (dari server ke client) saat dashboard dimuat
   useEffect(() => {
     if (isLoggedIn && id) {
+      // Guard untuk Misi Login Pagi (Maksimal 1x check per session load)
+      if (!earlyBirdChecked.current) {
+        earlyBirdChecked.current = true;
+        if (new Date().getHours() < 9) {
+          useUserStore.getState().incrementProgress('cons-1', 1);
+        }
+      }
+
       const fetchProfile = async () => {
         const res = await getUserProfile(id);
         if (res.success && res.user) {

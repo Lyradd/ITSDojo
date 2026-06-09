@@ -99,7 +99,9 @@ function CustomCursor() {
   // The delay the user felt was literally the spring physics themselves.
 
   useEffect(() => {
-    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    // Better touch detection: checks if the primary input is touch (pointer: coarse)
+    // This allows laptops with touchscreens (which have pointer: fine) to still show the custom cursor
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
     setIsTouchDevice(isTouch);
     if (isTouch) return;
 
@@ -582,7 +584,7 @@ export default function LandingPage() {
 
   return (
     <div ref={containerRef} className="flex flex-col min-h-screen bg-[#050505] text-zinc-100 selection:bg-blue-500/30 font-sans relative overflow-x-hidden">
-
+      <CustomCursor />
       {/* Global Film Grain Overlay (CSS-only, no external URL) */}
       <div className="fixed inset-0 z-[9998] pointer-events-none opacity-[0.035] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
 

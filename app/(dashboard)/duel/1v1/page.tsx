@@ -149,14 +149,33 @@ export default function DuelPage() {
     };
   }, [roomId, selectedTopic]);
 
-  if (!isMounted || !isLoggedIn) return null;
-
-  const activeTopicId = hoveredTopic ?? selectedTopic;
-  const activeTopicData = topics.find((topic) => topic.id === activeTopicId);
-
   const handleTopicSelect = async (topicId: string) => {
     setError(null);
     setCreatingLobby(true);
+
+    if (roomId) {
+      try {
+        const response = await fetch(`/api/duel/lobbies/${roomId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ topicId }),
+        });
+
+        if (!response.ok) {
+          setError(await readJsonError(response));
+          return;
+        }
+
+        setSelectedTopic(topicId);
+      } catch {
+        setError("Gagal mengubah topik duel.");
+      } finally {
+        setCreatingLobby(false);
+      }
+      return;
+    }
 
     try {
       const response = await fetch("/api/duel/lobbies", {
@@ -192,6 +211,13 @@ export default function DuelPage() {
       setCreatingLobby(false);
     }
   };
+
+  if (!isMounted || !isLoggedIn) return null;
+
+  const activeTopicId = hoveredTopic ?? selectedTopic;
+  const activeTopicData = topics.find((topic) => topic.id === activeTopicId);
+
+
 
   const handleCopyLink = async () => {
     if (!inviteLink) return;

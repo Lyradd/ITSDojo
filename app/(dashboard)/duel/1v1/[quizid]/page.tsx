@@ -224,6 +224,9 @@ export default function QuizPage() {
   const currentTopicId = duelSession?.currentTopicId ?? routeTopicId;
   const currentRound = duelSession?.currentRound ?? 1;
   const roundSummaries = duelSession?.roundResults ?? [];
+  const playedTopicIds = useMemo(() => {
+    return roundSummaries.map((r) => String(r.topicId));
+  }, [roundSummaries]);
 
   useEffect(() => {
     if (!currentTopicId) {
@@ -289,6 +292,7 @@ export default function QuizPage() {
 
   const questions = useMemo(() => getRoundQuestions(topicQuestions, currentRound), [topicQuestions, currentRound]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
   const [answers, setAnswers] = useState<Record<string, { answer: string | number; correct: boolean; points: number }>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(questions[0]?.timeLimit ?? 30);
@@ -506,8 +510,6 @@ export default function QuizPage() {
       return;
     }
 
-    const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
-
     if (
       (duelSession.status === "awaiting_topic_choice" || duelSession.status === "finished") &&
       isFinalQuestion &&
@@ -520,7 +522,7 @@ export default function QuizPage() {
     } else {
       setDelayedSessionStatus(duelSession.status);
     }
-  }, [duelSession?.status, currentIndex, isSubmitted, questions.length]);
+  }, [duelSession?.status, isFinalQuestion, isSubmitted]);
 
   const leaveLobby = async () => {
     if (!roomId || !currentPlayerId || !room) {
@@ -721,25 +723,25 @@ export default function QuizPage() {
   }, [timeRemaining, isSubmitted, currentQuestion, handleSubmit]);
 
   useEffect(() => {
-    const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
     if (
       isFinalQuestion &&
       bothQuestionSubmitted &&
       !hasCurrentPlayerSubmitted &&
       !submittingRoundScore
     ) {
-      void finalizeRound();
+      const timer = setTimeout(() => {
+        void finalizeRound();
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
   }, [
-    currentIndex,
+    isFinalQuestion,
     bothQuestionSubmitted,
     hasCurrentPlayerSubmitted,
     submittingRoundScore,
-    questions.length,
     finalizeRound,
   ]);
-
-
 
   const chooseNextTopic = async (topicId: string) => {
     if (!roomId || !currentPlayerId || choosingTopic) {
@@ -1085,9 +1087,42 @@ export default function QuizPage() {
                 Sesuai aturan duel, pemain dengan skor lebih rendah memilih topik round berikutnya.
               </p>
 
+              {/* Scoreboard display */}
+              {(() => {
+                const latestRound = roundSummaries[roundSummaries.length - 1];
+                const latestPlayerScore = latestRound
+                  ? (currentPlayerId === room?.host?.id ? latestRound.hostScore : latestRound.guestScore)
+                  : 0;
+                const latestOpponentScore = latestRound
+                  ? (currentPlayerId === room?.host?.id ? latestRound.guestScore : latestRound.hostScore)
+                  : 0;
+
+                return (
+                  <div className="mb-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50 dark:bg-zinc-900/50">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3 text-center">Hasil Duel Sementara</h4>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-zinc-500 block">Kamu</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-zinc-400">Ronde ini: <strong className="text-blue-600 dark:text-blue-400">{latestPlayerScore}</strong></span>
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Total: {totalPlayerScore}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1 border-l border-zinc-200 dark:border-zinc-800">
+                        <span className="text-xs font-semibold text-zinc-500 block">{opponentName}</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-zinc-400">Ronde ini: <strong className="text-zinc-600 dark:text-zinc-400">{latestOpponentScore}</strong></span>
+                          <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Total: {totalOpponentScoreBase}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid gap-3">
                 {topicOptions
-                  .filter((topic) => topic.id !== currentTopicId)
+                  .filter((topic) => !playedTopicIds.includes(topic.id))
                   .map((topic) => (
                     <Button
                       key={topic.id}
@@ -1100,7 +1135,7 @@ export default function QuizPage() {
                   ))}
               </div>
 
-              {topicOptions.filter((topic) => topic.id !== currentTopicId).length === 0 ? (
+              {topicOptions.filter((topic) => !playedTopicIds.includes(topic.id)).length === 0 ? (
                 <Button className="mt-6" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "")}>
                   Lanjutkan dengan topik saat ini
                 </Button>
@@ -1114,12 +1149,25 @@ export default function QuizPage() {
               </p>
             </Card>
           ) : waitingForOpponentScore ? (
-            <Card className="p-8 text-center">
-              <h2 className="text-2xl font-semibold mb-3">Menunggu jawaban lawan</h2>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Skor round kamu sudah terkirim. Menunggu {opponentName} menyelesaikan {QUESTIONS_PER_ROUND} soal.
-              </p>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="p-8 text-center flex flex-col items-center justify-center min-h-[300px] border-zinc-200 dark:border-zinc-800 shadow-lg bg-white dark:bg-zinc-950 rounded-3xl">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/30 rounded-full blur-xl animate-pulse scale-150" />
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-100 dark:border-blue-900">
+                    <Swords className="h-8 w-8 animate-pulse" />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-3 tracking-tight">Menunggu Lawan Lainnya</h2>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm leading-relaxed">
+                  Semua soal di ronde ini telah kamu jawab. Menunggu <strong className="text-zinc-700 dark:text-zinc-300">{opponentName}</strong> menyelesaikan ronde.
+                </p>
+              </Card>
+            </motion.div>
           ) : questionLoading && questions.length === 0 ? (
             <Card className="p-8 text-center">
               <Swords className="mx-auto mb-4 h-10 w-10 text-blue-600" />
@@ -1250,13 +1298,46 @@ export default function QuizPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800">
-            <div className="flex flex-col items-center text-center gap-3">
+            <div className="flex flex-col items-center text-center gap-3 w-full">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Pilih Topik Berikutnya</h3>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Kamu memiliki skor lebih rendah pada ronde ini. Pilih topik untuk ronde berikutnya.</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">Kamu memiliki skor lebih rendah pada ronde ini. Pilih topik untuk ronde berikutnya.</p>
+
+              {/* Scoreboard display */}
+              {(() => {
+                const latestRound = roundSummaries[roundSummaries.length - 1];
+                const latestPlayerScore = latestRound
+                  ? (currentPlayerId === room?.host?.id ? latestRound.hostScore : latestRound.guestScore)
+                  : 0;
+                const latestOpponentScore = latestRound
+                  ? (currentPlayerId === room?.host?.id ? latestRound.guestScore : latestRound.hostScore)
+                  : 0;
+
+                return (
+                  <div className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50 dark:bg-zinc-900/50">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3 text-center">Hasil Duel Sementara</h4>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-zinc-500 block">Kamu</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-zinc-400">Ronde ini: <strong className="text-blue-600 dark:text-blue-400">{latestPlayerScore}</strong></span>
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Total: {totalPlayerScore}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1 border-l border-zinc-200 dark:border-zinc-800">
+                        <span className="text-xs font-semibold text-zinc-500 block">{opponentName}</span>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-zinc-400">Ronde ini: <strong className="text-zinc-600 dark:text-zinc-400">{latestOpponentScore}</strong></span>
+                          <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">Total: {totalOpponentScoreBase}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="w-full mt-4 grid gap-3">
                 {topicOptions
-                  .filter((topic) => topic.id !== currentTopicId)
+                  .filter((topic) => !playedTopicIds.includes(topic.id))
                   .map((topic) => (
                     <Button
                       key={topic.id}
@@ -1269,7 +1350,7 @@ export default function QuizPage() {
                     </Button>
                   ))}
 
-                {topicOptions.filter((topic) => topic.id !== currentTopicId).length === 0 ? (
+                {topicOptions.filter((topic) => !playedTopicIds.includes(topic.id)).length === 0 ? (
                   <Button className="mt-2" disabled={choosingTopic} onClick={() => void chooseNextTopic(currentTopicId ?? routeTopicId ?? "")}>
                     Lanjutkan dengan topik saat ini
                   </Button>

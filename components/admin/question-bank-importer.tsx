@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Database, Search, Download, Loader2, ArrowLeft, X } from "lucide-react";
+import { Database, Search, Download, Loader2, ArrowLeft, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getQuestionPackages, getQuestionBankItems } from "@/actions/question-bank";
+import { cn } from "@/lib/utils";
 
 interface QuestionBankImporterProps {
   courseId: string;
@@ -24,6 +25,19 @@ export function QuestionBankImporter({ courseId, usageType, onSelectItems, onClo
   const [loadingItems, setLoadingItems] = useState(false);
   
   const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedPackage]);
+
+  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [items, currentPage]);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -154,7 +168,7 @@ export function QuestionBankImporter({ courseId, usageType, onSelectItems, onClo
                       </div>
                     )}
                     
-                    {items.map(item => (
+                    {paginatedItems.map(item => (
                       <div 
                         key={item.id}
                         onClick={() => toggleItemSelection(item.id)}
@@ -194,6 +208,65 @@ export function QuestionBankImporter({ courseId, usageType, onSelectItems, onClo
                         </div>
                       </div>
                     ))}
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4 text-xs">
+                        <div className="text-zinc-500 dark:text-zinc-400">
+                          Menampilkan <span className="font-semibold text-zinc-700 dark:text-zinc-200">{Math.min(items.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}</span>-
+                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{Math.min(items.length, currentPage * ITEMS_PER_PAGE)}</span> dari{" "}
+                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{items.length}</span> soal
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                            const isNear = Math.abs(page - currentPage) <= 1;
+                            const isFirstOrLast = page === 1 || page === totalPages;
+                            if (!isNear && !isFirstOrLast) {
+                              if (page === 2 || page === totalPages - 1) {
+                                return <span key={`ellipsis-${page}`} className="px-2 text-zinc-400">...</span>;
+                              }
+                              return null;
+                            }
+                            return (
+                              <Button
+                                key={page}
+                                type="button"
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className={cn(
+                                  "h-8 w-8 p-0",
+                                  currentPage === page
+                                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                    : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                )}
+                              >
+                                {page}
+                              </Button>
+                            );
+                          })}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

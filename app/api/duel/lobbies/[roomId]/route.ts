@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getLobbyState, upsertLobbyState } from "@/lib/lobby-bus";
 
 export async function GET(
   req: Request,
@@ -53,4 +54,50 @@ export async function GET(
     host: host ?? hostFallback,
     guest: guest[0] ?? guestFallback,
   });
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const requestedRoomId = resolvedParams.roomId;
+
+    const body = await req.json();
+    const topicId = Number(body.topicId);
+
+    if (!topicId || Number.isNaN(topicId)) {
+      return NextResponse.json({ error: "Invalid topicId" }, { status: 400 });
+    }
+
+    const rooms = await db.select().from(duelRooms);
+    const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+
+    if (!lobby) {
+      return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
+    }
+
+    // Update in database
+    await db
+      .update(duelRooms)
+      .set({ topicId, updatedAt: new Date() })
+      .where(eq(duelRooms.id, lobby.id));
+
+    // Update in lobby bus cache
+    const cacheKey = lobby.inviteCode;
+    const currentCache = getLobbyState(cacheKey);
+    if (currentCache) {
+      upsertLobbyState({
+        ...currentCache,
+        topicId,
+        updatedAt: new Date(),
+      });
+    }
+
+    return NextResponse.json({ success: true, topicId });
+  } catch (error) {
+    console.error("[duel/lobbies] PATCH failed:", error);
+    return NextResponse.json({ error: "Failed to update topic" }, { status: 500 });
+  }
 }

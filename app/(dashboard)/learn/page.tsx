@@ -27,6 +27,8 @@ import { playSuccessSound } from "@/lib/sounds";
 import { StatWidget } from "@/components/shared/stat-widget";
 import { DailyGoalWidget } from "@/components/shared/daily-goal-widget";
 import { LeaderboardWidget } from "@/components/shared/leaderboard-widget";
+import { CourseSelectorDropdown } from "@/components/shared/course-selector-dropdown";
+import { StreakCalendarWidget } from "@/components/shared/streak-calendar-widget";
 import { ComputedLessonNode, RoadmapNode } from "@/components/learn/roadmap-node";
 import { AlertModal } from "@/components/shared/alert-modal";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -55,7 +57,8 @@ export default function LearnPage() {
     dailyGoals,
     completeLesson,
     completedLessonIds,
-    resetProgress
+    resetProgress,
+    activityHistory
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -64,6 +67,7 @@ export default function LearnPage() {
 
   // Data dari API
   const [activeCourse, setActiveCourse] = useState<any>(null);
+  const [allCoursesList, setAllCoursesList] = useState<any[]>([]);
   const [allUnits, setAllUnits] = useState<any[]>([]);
   const [lessonNodes, setLessonNodes] = useState<any[]>([]);
 
@@ -73,6 +77,7 @@ export default function LearnPage() {
       // Fetch course info
       const coursesRes = await fetch('/api/courses');
       const allCourses = await coursesRes.json();
+      setAllCoursesList(allCourses);
       const course = allCourses.find((c: any) => c.id === activeCourseId) || allCourses[0];
       setActiveCourse(course);
 
@@ -179,8 +184,8 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_max-content] gap-8">
 
         {/* =========================================
             KOLOM KIRI: MAIN CONTENT
@@ -189,9 +194,13 @@ export default function LearnPage() {
 
           {/* STAT WIDGETS (MOBILE ONLY) */}
           <div className="flex lg:hidden items-center justify-between gap-2">
-            <StatWidget icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" />
+            <CourseSelectorDropdown courses={allCoursesList} />
+            <StatWidget 
+              icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+              hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+            />
             <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={`#${userRank}`} />
+            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
           </div>
 
           {/* 0. CONTINUE BANNER or COMPLETION STATE */}
@@ -442,9 +451,15 @@ export default function LearnPage() {
            ========================================= */}
         <div className="flex flex-col gap-6">
           <div className="hidden lg:flex items-center justify-between gap-2">
-            <StatWidget icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" />
-            <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={`#${userRank}`} />
+            <CourseSelectorDropdown courses={allCoursesList} />
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <StatWidget 
+                icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+              />
+              <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
+              <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+            </div>
           </div>
 
           <DailyGoalWidget dailyGoals={dailyGoals} />

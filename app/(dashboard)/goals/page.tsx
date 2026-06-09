@@ -37,8 +37,8 @@ const getGoalCardStyle = (goal: any) => {
 const getGoalIconBoxStyle = (goal: any) => {
   if (goal.isClaimed) return "bg-zinc-200 text-zinc-400 scale-95 dark:bg-zinc-700 dark:text-zinc-500";
   if (goal.isCompleted) return "bg-green-500 text-white shadow-green-200 scale-110 dark:shadow-green-900";
-  if (goal.type === "xp") return "bg-blue-100 text-blue-500 dark:bg-blue-900/40 dark:text-blue-400";
-  if (goal.type === "perfect") return "bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-400";
+  if (goal.category === "academic") return "bg-blue-100 text-blue-500 dark:bg-blue-900/40 dark:text-blue-400";
+  if (goal.category === "competitive") return "bg-orange-100 text-orange-500 dark:bg-orange-900/40 dark:text-orange-400";
   return "bg-purple-100 text-purple-500 dark:bg-purple-900/40 dark:text-purple-400";
 };
 
@@ -50,9 +50,9 @@ const getGoalProgressBarStyle = (goal: any) => {
 
 const GoalIcon = ({ goal }: { goal: any }) => {
   if (goal.isClaimed) return <CheckCircle className="w-8 h-8" />;
-  if (goal.type === "xp") return <Zap className="w-7 h-7 fill-current" />;
-  if (goal.type === "perfect") return <Trophy className="w-7 h-7" />;
-  return <BookOpen className="w-7 h-7" />;
+  if (goal.category === "academic") return <BookOpen className="w-7 h-7" />;
+  if (goal.category === "competitive") return <Trophy className="w-7 h-7" />;
+  return <Target className="w-7 h-7" />;
 };
 
 export default function GoalsPage() {
@@ -242,62 +242,87 @@ export default function GoalsPage() {
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Card className={`p-5 rounded-2xl border-2 transition-all duration-500 ${getGoalCardStyle(goal)}`}>
-                      <div className="flex items-center gap-4">
-                        {/* Icon Box */}
-                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-2xl transition-all duration-500 ${getGoalIconBoxStyle(goal)}`}>
-                          <GoalIcon goal={goal} />
-                        </div>
-
-                        {/* Content Progress */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center mb-1">
-                            <h3 className={`font-bold text-lg truncate transition-colors duration-500 ${goal.isClaimed ? 'text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-200'}`}>
-                              {goal.title}
-                            </h3>
-                            <span className="text-sm font-bold text-zinc-500">
-                              {goal.current} / {goal.target}
-                            </span>
+                    <Card className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-500 ${getGoalCardStyle(goal)}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        
+                        {/* Wrapper Icon & Progress untuk Mobile */}
+                        <div className="flex items-center gap-3 sm:gap-4 w-full flex-1">
+                          {/* Icon Box */}
+                          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0 text-xl sm:text-2xl transition-all duration-500 ${getGoalIconBoxStyle(goal)}`}>
+                            <GoalIcon goal={goal} />
                           </div>
 
-                          {/* Progress Bar */}
-                          <div className="h-3 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
-                            <motion.div
-                              className={`h-full rounded-full transition-colors duration-500 ${getGoalProgressBarStyle(goal)}`}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min((goal.current / goal.target) * 100, 100)}%` }}
-                              transition={{ duration: 1, ease: "easeOut" }}
-                            />
+                          {/* Content Progress */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col">
+                              <div className="flex justify-between items-start sm:items-center mb-0.5 gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md ${
+                                    goal.category === 'academic' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' :
+                                    goal.category === 'competitive' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' :
+                                    'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400'
+                                  }`}>
+                                    {goal.category}
+                                  </span>
+                                  <h3 className={`font-bold text-sm sm:text-base truncate transition-colors duration-500 ${goal.isClaimed ? 'text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                    {goal.title}
+                                  </h3>
+                                </div>
+                                <span className="text-xs font-bold text-zinc-500 shrink-0 whitespace-nowrap mt-0.5 sm:mt-0">
+                                  {goal.currentProgress} / {goal.targetValue}
+                                </span>
+                              </div>
+                              <p className={`text-xs sm:text-sm mb-2 sm:mb-2.5 ${goal.isClaimed ? 'text-zinc-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                                {goal.description}
+                              </p>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="h-2.5 sm:h-3 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+                              <motion.div
+                                className={`h-full rounded-full transition-colors duration-500 ${getGoalProgressBarStyle(goal)}`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min((goal.currentProgress / goal.targetValue) * 100, 100)}%` }}
+                                transition={{ duration: 1, ease: "easeOut" }}
+                              />
+                            </div>
                           </div>
                         </div>
 
                         {/* Button Action / Reward Preview */}
-                        <div className="shrink-0 w-28 flex justify-end">
+                        <div className="shrink-0 w-full sm:w-28 flex justify-end">
                           {goal.isClaimed ? (
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="text-zinc-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1"
+                              className="text-zinc-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center w-full sm:w-auto gap-1 py-2 sm:py-0"
                             >
-                              <CheckCircle className="w-3 h-3" /> Terklaim
+                              <CheckCircle className="w-4 h-4 sm:w-3 sm:h-3" /> Terklaim
                             </motion.div>
                           ) : isClaimable ? (
                             <Button
                               onClick={() => handleClaim(goal.id)}
                               disabled={claimingGoals.has(goal.id)}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 transition-transform active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:active:scale-100"
+                              className="w-full h-12 sm:h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 transition-transform active:scale-95 group relative overflow-hidden disabled:opacity-50 disabled:active:scale-100"
                             >
                               <span className="relative z-10">{claimingGoals.has(goal.id) ? 'Klaim...' : 'Klaim'}</span>
                               {!claimingGoals.has(goal.id) && <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />}
                             </Button>
                           ) : (
-                            // Tampilan Hadiah (Belum Selesai)
-                            <div className="flex flex-col items-center justify-center gap-1 text-zinc-400">
-                              <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-                                {goal.rewardType === 'gem' ? <Gem className="w-4 h-4 text-blue-400" /> : <Zap className="w-4 h-4 text-purple-400" />}
-                              </div>
-                              <div className="text-[10px] font-bold uppercase text-zinc-500">
-                                {goal.rewardType === 'gem' ? `+${goal.rewardValue} Gems` : `${goal.rewardValue}m 2x XP`}
+                            <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-1 text-zinc-400 w-full sm:w-auto bg-zinc-50 dark:bg-zinc-900/30 sm:bg-transparent rounded-xl sm:rounded-none p-2 sm:p-0 h-12 sm:h-auto">
+                              <div className="flex items-center gap-2">
+                                {goal.rewardXP > 0 && (
+                                  <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                                    <Zap className="w-3.5 h-3.5 text-purple-400 fill-current" />
+                                    <span className="text-[10px] sm:text-xs font-bold text-zinc-600 dark:text-zinc-300">+{goal.rewardXP}</span>
+                                  </div>
+                                )}
+                                {goal.rewardGems > 0 && (
+                                  <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                                    <Gem className="w-3.5 h-3.5 text-blue-400 fill-current" />
+                                    <span className="text-[10px] sm:text-xs font-bold text-zinc-600 dark:text-zinc-300">+{goal.rewardGems}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -318,7 +343,7 @@ export default function GoalsPage() {
         <div className="flex flex-col gap-6">
 
           {/* Streak Calendar Card */}
-          <Card className="p-6 rounded-2xl border-2">
+          <Card className="p-4 sm:p-6 rounded-2xl border-2">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Streak Kamu</h3>
               <div className="flex items-center gap-1 text-orange-500 font-bold">
@@ -333,25 +358,25 @@ export default function GoalsPage() {
             >
               <div className="flex flex-1 justify-between items-center">
                 {streakHistory.map((item, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-2">
-                    <span className={`text-xs font-bold uppercase ${item.isToday ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
+                  <div key={idx} className="flex flex-col items-center gap-1 sm:gap-2">
+                    <span className={`text-[10px] sm:text-xs font-bold uppercase ${item.isToday ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
                       {item.day}
                     </span>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border-2 transition-all ${
                       item.active
                         ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
                         : item.isFreeze
                           ? 'bg-blue-100 border-blue-200 text-blue-500 dark:bg-blue-900/40 dark:border-blue-800 shadow-sm'
                           : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
                       }`}>
-                      {item.isFreeze ? <Snowflake className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                      {item.isFreeze ? <Snowflake className="w-3 h-3 sm:w-5 sm:h-5" /> : <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex flex-col items-center justify-center ml-4 text-zinc-300 group-hover/cal:text-orange-500 transition-colors border-l pl-4 dark:border-zinc-800">
+              <div className="flex flex-col items-center justify-center ml-2 sm:ml-4 text-zinc-300 group-hover/cal:text-orange-500 transition-colors border-l pl-2 sm:pl-4 dark:border-zinc-800 shrink-0">
                 <ChevronRightIcon className="w-5 h-5" />
-                <span className="text-[8px] font-bold uppercase mt-1">Detail</span>
+                <span className="text-[8px] font-bold uppercase mt-1 hidden sm:block">Detail</span>
               </div>
             </div>
 

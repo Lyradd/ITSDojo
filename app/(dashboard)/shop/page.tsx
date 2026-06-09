@@ -416,24 +416,24 @@ export default function ShopPage() {
                  </p>
                  
                  <div className="w-full mt-auto">
-                    <div className="w-full flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl mb-3">
+                    <div className="w-full flex flex-wrap items-center justify-between gap-2 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl mb-3">
                        <div className="flex items-center gap-1.5 font-black text-lg text-blue-600 dark:text-blue-400">
                          <Gem className="w-4 h-4 fill-current" /> {item.cost}
                        </div>
                        
                        {gems < item.cost && !item.isFull && !item.isActive && (
-                         <div className="flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase tracking-tighter">
-                            <AlertCircle className="w-3 h-3" /> Gem tidak cukup
+                         <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-red-500 uppercase tracking-tighter">
+                            <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> Gem tidak cukup
                          </div>
                        )}
                     </div>
                     
                     {item.isFull ? (
-                       <Button disabled className="w-full bg-zinc-200 text-zinc-500 dark:bg-zinc-800 font-bold rounded-xl h-11 opacity-80 border-none">
+                       <Button disabled className="w-full bg-zinc-200 text-zinc-500 dark:bg-zinc-800 font-bold rounded-xl h-12 opacity-80 border-none">
                           {item.fullText}
                        </Button>
                     ) : item.isActive ? (
-                       <Button disabled className="w-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-bold rounded-xl h-11 border-none flex gap-2">
+                       <Button disabled className="w-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-bold rounded-xl h-12 border-none flex gap-2">
                           {item.fullText ? (
                             item.fullText
                           ) : (
@@ -444,7 +444,7 @@ export default function ShopPage() {
                        <Button 
                           onClick={() => setSelectedItem({ ...item, actionType: 'buy' })}
                           disabled={gems < item.cost}
-                          className={`w-full font-bold rounded-xl h-11 shadow-md transition-all active:scale-95 ${gems >= item.cost ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'}`}
+                          className={`w-full font-bold rounded-xl h-12 shadow-md transition-all active:scale-95 ${gems >= item.cost ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'}`}
                        >
                           {gems >= item.cost ? 'Beli Sekarang' : 'Gem Kurang'}
                        </Button>

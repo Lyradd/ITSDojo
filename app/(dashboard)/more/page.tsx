@@ -28,14 +28,14 @@ interface FeatureCardProps {
 function FeatureCard({ icon: Icon, title, description, href, color }: FeatureCardProps) {
   return (
     <Link href={href}>
-      <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer border-2 hover:border-blue-300 dark:hover:border-blue-700">
-        <div className="flex flex-col items-center text-center gap-3">
-          <div className={`p-4 rounded-xl ${color}`}>
-            <Icon className="w-8 h-8 text-white" />
+      <Card className="p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer border-2 hover:border-blue-300 dark:hover:border-blue-700 h-full flex flex-col justify-center">
+        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+          <div className={`p-3 sm:p-4 rounded-xl ${color}`}>
+            <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-lg">{title}</h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            <h3 className="font-bold text-sm sm:text-lg leading-tight">{title}</h3>
+            <p className="text-[11px] sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
               {description}
             </p>
           </div>
@@ -65,36 +65,36 @@ export default function MorePage() {
     },
     {
       icon: CalendarDays,
-      title: "Calendar",
+      title: "Kalender",
       description: "Jadwal dan events",
       href: "/calendar",
       color: "bg-linear-to-br from-purple-500 to-purple-600",
     },
     {
       icon: Target,
-      title: "Daily Goals",
+      title: "Misi",
       description: "Target harian kamu",
       href: "/goals",
       color: "bg-linear-to-br from-green-500 to-green-600",
     },
     {
       icon: ShoppingBag,
-      title: "Dojo Store",
+      title: "Toko",
       description: "Beli power-ups",
       href: "/shop",
       color: "bg-linear-to-br from-red-500 to-red-600",
     },
     {
       icon: Settings,
-      title: "Settings",
+      title: "Pengaturan",
       description: "Pengaturan akun",
       href: "/settings",
       color: "bg-linear-to-br from-zinc-500 to-zinc-600",
     },
     {
       icon: User,
-      title: "Profile",
-      description: "Lihat profile kamu",
+      title: "Profil",
+      description: "Lihat profil kamu",
       href: "/profile",
       color: "bg-linear-to-br from-cyan-500 to-cyan-600",
     },
@@ -139,7 +139,7 @@ export default function MorePage() {
       </Card>
 
       {/* Features Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
         {features.map((feature) => (
           <FeatureCard key={feature.href} {...feature} />
         ))}

@@ -82,15 +82,26 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors",
+              "relative flex flex-col items-center justify-center w-full h-full gap-1 transition-colors [-webkit-tap-highlight-color:transparent]",
               isActive 
                 ? "text-blue-600 dark:text-blue-400" 
                 : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             )}
           >
-            <item.icon className={cn("w-6 h-6", isActive && "fill-current")} />
+            {/* Indikator aktif atas (Garis kecil) selalu di-render tapi opacity diatur */}
+            <div 
+              className={cn(
+                "absolute top-0 w-8 h-1 bg-blue-600 dark:bg-blue-400 rounded-b-full transition-opacity duration-200",
+                isActive ? "opacity-100" : "opacity-0"
+              )} 
+            />
 
-            <span className="text-[10px] font-bold uppercase tracking-wide">
+            <item.icon 
+              className="w-6 h-6 transition-colors duration-200" 
+              strokeWidth={2}
+            />
+
+            <span className="text-[10px] uppercase tracking-wide font-bold transition-colors duration-200">
               {item.label}
             </span>
           </Link>

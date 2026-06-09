@@ -128,7 +128,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
           const isActive = pathname === item.href;
 
           // Unified colors for both roles (Blue/Cyan theme)
-          const activeColors = "bg-linear-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-300 border-2 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-400 dark:border-blue-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30";
+          const activeColors = "bg-linear-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-300 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-400 dark:border-blue-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30";
 
           const hoverColors = "hover:bg-linear-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-950/20 dark:hover:to-cyan-950/20 hover:border-blue-200 dark:hover:border-blue-800";
 
@@ -142,10 +142,10 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group border border-transparent",
+                  "relative flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group border-2",
                   isActive
                     ? activeColors
-                    : cn("text-zinc-600 dark:text-zinc-400", hoverColors)
+                    : cn("border-transparent text-zinc-600 dark:text-zinc-400", hoverColors)
                 )}
               >
                 <div className={cn(
@@ -160,15 +160,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
                   )} />
                 </div>
 
-                <span className={cn(
-                  "block font-bold text-sm tracking-wide transition-all duration-300",
-                  isActive && "scale-105"
-                )}>
+                <span className="block font-bold text-sm tracking-wide transition-all duration-300 pr-4">
                   {item.label}
                 </span>
 
                 {isActive && (
-                  <div className="ml-auto w-2 h-2 rounded-full animate-pulse bg-blue-600" />
+                  <div className="absolute right-4 w-2 h-2 rounded-full animate-pulse bg-blue-600" />
                 )}
               </Link>
             </motion.div>

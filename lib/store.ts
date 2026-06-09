@@ -49,29 +49,63 @@ const parseGamificationData = (data: any) => {
 export type DailyGoal = {
   id: string;
   title: string;
-  target: number;
-  current: number;
-  type: 'xp' | 'lesson' | 'streak' | 'perfect';
+  description: string;
+  category: 'academic' | 'competitive' | 'consistency';
+  type: string;
+  targetValue: number;
+  currentProgress: number;
   isCompleted: boolean;
-  isClaimed: boolean; 
-  rewardType: 'xp' | 'gem' | 'multiplier';
-  rewardValue: number;
+  isClaimed: boolean;
+  rewardXP: number;
+  rewardGems: number;
 };
 
-const INITIAL_GOALS: DailyGoal[] = [
-  { 
-    id: 'xp-goal', title: 'Raih 50 XP', target: 50, current: 0, type: 'xp', 
-    isCompleted: false, isClaimed: false, rewardType: 'gem', rewardValue: 20 
-  },
-  { 
-    id: 'lesson-goal', title: 'Selesaikan 1 Pelajaran', target: 1, current: 0, type: 'lesson', 
-    isCompleted: false, isClaimed: false, rewardType: 'multiplier', rewardValue: 15
-  },
-  { 
-    id: 'perfect-goal', title: 'Dapatkan 1 Perfect Lesson', target: 1, current: 0, type: 'perfect', 
-    isCompleted: false, isClaimed: false, rewardType: 'gem', rewardValue: 30 
-  },
+export const MASTER_MISSIONS_POOL: Omit<DailyGoal, 'currentProgress' | 'isCompleted' | 'isClaimed'>[] = [
+  // Akademik
+  { id: 'acad-1', category: 'academic', type: 'lesson', title: 'Pemanasan Otak', description: 'Selesaikan 1 Materi Baru', targetValue: 1, rewardXP: 50, rewardGems: 10 },
+  { id: 'acad-2', category: 'academic', type: 'perfect', title: 'Tanpa Celah', description: 'Dapatkan 1 Perfect Lesson', targetValue: 1, rewardXP: 100, rewardGems: 30 },
+  { id: 'acad-3', category: 'academic', type: 'xp', title: 'Pengejar Ilmu', description: 'Raih 150 XP hari ini', targetValue: 150, rewardXP: 0, rewardGems: 25 },
+  // Kompetitif
+  { id: 'comp-1', category: 'competitive', type: 'duel', title: 'Tantang Dunia', description: 'Mainkan 1x Brain Duel', targetValue: 1, rewardXP: 40, rewardGems: 15 },
+  { id: 'comp-2', category: 'competitive', type: 'duel_win', title: 'Gladiator Dojo', description: 'Menang 1v1 Brain Duel', targetValue: 1, rewardXP: 100, rewardGems: 50 },
+  { id: 'comp-3', category: 'competitive', type: 'leaderboard', title: 'Pemantau Peringkat', description: 'Cek Papan Peringkat', targetValue: 1, rewardXP: 20, rewardGems: 5 },
+  // Konsistensi
+  { id: 'cons-1', category: 'consistency', type: 'login_early', title: 'Burung Pagi', description: 'Login sebelum jam 9 pagi', targetValue: 1, rewardXP: 30, rewardGems: 10 },
+  { id: 'cons-2', category: 'consistency', type: 'streak', title: 'Kobarkan Api', description: 'Perpanjang Streak', targetValue: 1, rewardXP: 25, rewardGems: 5 },
+  { id: 'cons-3', category: 'consistency', type: 'accuracy_streak', title: 'Fokus Tajam', description: 'Jawab 3 soal beruntun benar', targetValue: 3, rewardXP: 80, rewardGems: 20 },
 ];
+
+export const generateDailyGoals = (seedStr: string): DailyGoal[] => {
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    seed = (seed * 9301 + seedStr.charCodeAt(i) * 49297) % 233280;
+  }
+  
+  const rng = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
+  const academic = MASTER_MISSIONS_POOL.filter(m => m.category === 'academic');
+  const competitive = MASTER_MISSIONS_POOL.filter(m => m.category === 'competitive');
+  const consistency = MASTER_MISSIONS_POOL.filter(m => m.category === 'consistency');
+
+  const pickOne = (arr: any[]) => arr[Math.floor(rng() * arr.length)];
+
+  // Pastikan kita mendapat minimal 3 misi yang berbeda kategori
+  const selected = [
+    pickOne(academic),
+    pickOne(competitive),
+    pickOne(consistency),
+  ];
+
+  return selected.map(m => ({
+    ...m,
+    currentProgress: 0,
+    isCompleted: false,
+    isClaimed: false
+  }));
+};
 
 // --- STORE INTERFACE ---
 
@@ -189,6 +223,7 @@ export interface UserState {
   claimWeeklyMilestone: (milestone: number) => void;
   claimMonthlyMilestone: (milestone: number, reward: number, tier: string) => void; // NEW: Method to claim monthly reward
   claimGoalReward: (goalId: string) => void;
+  incrementProgress: (missionId: string, amount: number) => void;
 
   // 5. UI State & Animations
   isLevelUpModalOpen: boolean;
@@ -255,7 +290,7 @@ export const useUserStore = create<UserState>()(
       hasGemMiner: false,
       hasShieldPack: false,
 
-      dailyGoals: INITIAL_GOALS,
+      dailyGoals: generateDailyGoals(formatLocalDate(new Date())),
       lastActiveDate: formatLocalDate(new Date()),
       lastDailyReset: formatLocalDate(new Date()),
       monthlyCompletedGoals: 0,
@@ -302,7 +337,7 @@ export const useUserStore = create<UserState>()(
           earnedBadges: gData.earnedBadges || [],
           unlockedAchievements: gData.unlockedAchievements || [],
           bookmarkedCourseIds: gData.bookmarkedCourseIds || [],
-          dailyGoals: gData.dailyGoals || INITIAL_GOALS,
+          dailyGoals: gData.dailyGoals || generateDailyGoals(formatLocalDate(new Date())),
           purchaseHistory: gData.purchaseHistory || [],
           streakFreezeCount: gData.streakFreezeCount || 0,
           hasGemMiner: gData.hasGemMiner || false,
@@ -355,7 +390,7 @@ export const useUserStore = create<UserState>()(
             earnedBadges: gData.earnedBadges || [],
             unlockedAchievements: gData.unlockedAchievements || [],
             bookmarkedCourseIds: gData.bookmarkedCourseIds || [],
-            dailyGoals: gData.dailyGoals || INITIAL_GOALS,
+            dailyGoals: gData.dailyGoals || generateDailyGoals(formatLocalDate(new Date())),
             purchaseHistory: gData.purchaseHistory || [],
             streakFreezeCount: gData.streakFreezeCount || 0,
             hasGemMiner: gData.hasGemMiner || false,
@@ -421,8 +456,8 @@ export const useUserStore = create<UserState>()(
           
           const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'xp') {
-              const newCurrent = Math.min(goal.current + amount, goal.target);
-              return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
+              const newCurrent = Math.min(goal.currentProgress + amount, goal.targetValue);
+              return { ...goal, currentProgress: newCurrent, isCompleted: newCurrent >= goal.targetValue };
             }
             return goal;
           });
@@ -477,12 +512,12 @@ export const useUserStore = create<UserState>()(
         set((state) => {
           const updatedGoals = state.dailyGoals.map((goal) => {
             if (goal.type === 'lesson') {
-              const newCurrent = Math.min(goal.current + 1, goal.target);
-              return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
+              const newCurrent = Math.min(goal.currentProgress + 1, goal.targetValue);
+              return { ...goal, currentProgress: newCurrent, isCompleted: newCurrent >= goal.targetValue };
             }
             if (goal.type === 'perfect' && isPerfect) {
-              const newCurrent = Math.min(goal.current + 1, goal.target);
-              return { ...goal, current: newCurrent, isCompleted: newCurrent >= goal.target };
+              const newCurrent = Math.min(goal.currentProgress + 1, goal.targetValue);
+              return { ...goal, currentProgress: newCurrent, isCompleted: newCurrent >= goal.targetValue };
             }
             return goal;
           });
@@ -560,6 +595,7 @@ export const useUserStore = create<UserState>()(
         });
         if (earnedXp > 0) get().addXp(earnedXp);
         if (earnedGems > 0) get().triggerReward('gem', 5);
+        get().forceSyncProgress(); // GUARANTEE IMMEDIATE SYNC
       },
 
       setActiveCourse: (courseId) => set((state) => ({
@@ -662,8 +698,10 @@ export const useUserStore = create<UserState>()(
       checkDailyReset: () => set((state) => {
         const now = new Date();
         const today = formatLocalDate(now);
-        if (state.lastDailyReset !== today || state.dailyGoals.length !== INITIAL_GOALS.length) {
-          const updates: any = { dailyGoals: INITIAL_GOALS, lastDailyReset: today };
+        const hasOldSchema = state.dailyGoals.length > 0 && state.dailyGoals[0].targetValue === undefined;
+        
+        if (state.lastDailyReset !== today || state.dailyGoals.length < 3 || hasOldSchema) {
+          const updates: any = { dailyGoals: generateDailyGoals(today), lastDailyReset: today };
           
           // Robust weekly reset check
           const lastResetDate = new Date(state.lastDailyReset);
@@ -781,39 +819,54 @@ export const useUserStore = create<UserState>()(
       },
 
       claimGoalReward: (goalId) => {
-        let rewardType: 'xp' | 'gem' | 'multiplier' | undefined;
-        let rewardValue = 0;
+        let earnedXP = 0;
+        let earnedGems = 0;
         set((state) => {
           const goalIndex = state.dailyGoals.findIndex((g) => g.id === goalId);
           if (goalIndex === -1) return state;
           const goal = state.dailyGoals[goalIndex];
           if (!goal.isCompleted || goal.isClaimed) return state;
 
-          rewardType = goal.rewardType;
-          rewardValue = goal.rewardValue;
+          earnedXP = goal.rewardXP || 0;
+          earnedGems = goal.rewardGems || 0;
           const updatedGoals = [...state.dailyGoals];
           updatedGoals[goalIndex] = { ...goal, isClaimed: true };
 
-          const newState: any = { 
+          return { 
             lastProgressUpdate: Date.now(),
             dailyGoals: updatedGoals,
-            monthlyCompletedGoals: state.monthlyCompletedGoals + 1
+            monthlyCompletedGoals: (state.monthlyCompletedGoals || 0) + 1,
+            gems: state.gems + earnedGems
           };
-          if (goal.rewardType === 'gem') newState.gems = state.gems + goal.rewardValue;
-          else if (goal.rewardType === 'multiplier') {
-            const durationMs = goal.rewardValue * 60 * 1000; 
-            newState.xpMultiplier = 2;
-            const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() ? state.multiplierEndTime : Date.now();
-            newState.multiplierEndTime = currentEndTime + durationMs;
-          }
-          return newState;
         });
-        if (rewardType === 'gem') get().triggerReward('gem', 8);
-        if (rewardType === 'xp') {
-          get().addXp(rewardValue);
-        }
         
-        // Panggil immediate sync!
+        const stateNow = get();
+        if (earnedGems > 0) stateNow.triggerReward('gem', Math.min(earnedGems, 10));
+        if (earnedXP > 0) stateNow.addXp(earnedXP);
+        
+        stateNow.forceSyncProgress();
+      },
+
+      incrementProgress: (missionId, amount) => {
+        set((state) => {
+          const goalIndex = state.dailyGoals.findIndex(g => g.id === missionId);
+          if (goalIndex === -1) return state;
+          const goal = state.dailyGoals[goalIndex];
+          if (goal.isCompleted) return state;
+
+          const newCurrent = Math.min(goal.currentProgress + amount, goal.targetValue);
+          const updatedGoals = [...state.dailyGoals];
+          updatedGoals[goalIndex] = { 
+            ...goal, 
+            currentProgress: newCurrent, 
+            isCompleted: newCurrent >= goal.targetValue 
+          };
+
+          return {
+            dailyGoals: updatedGoals,
+            lastProgressUpdate: Date.now()
+          };
+        });
         get().forceSyncProgress();
       },
 

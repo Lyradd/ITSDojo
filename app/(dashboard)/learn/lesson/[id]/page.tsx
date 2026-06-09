@@ -76,6 +76,8 @@ export default function LessonIDEPage() {
   const chatInputRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showExitPrompt, setShowExitPrompt] = useState(false);
+  const [targetHref, setTargetHref] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -85,6 +87,40 @@ export default function LessonIDEPage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // NAVIGATION LOCKING: Mencegah keluar IDE tidak sengaja
+  useEffect(() => {
+    if (step !== 'practice') return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as Element).closest('a');
+      if (
+        target && 
+        target.href && 
+        !target.href.includes(window.location.pathname) && 
+        target.target !== '_blank'
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        setTargetHref(target.href);
+        setShowExitPrompt(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    // Use capture phase to intercept clicks before they reach Next.js router
+    document.addEventListener('click', handleClick, { capture: true });
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleClick, { capture: true });
+    };
+  }, [step]);
 
   // Fetch diskusi dari Database berdasarkan lessonId
   const fetchDiscussions = useCallback(async () => {
@@ -893,6 +929,22 @@ export default function LessonIDEPage() {
         <Sheet open={isDiscussionOpen} onOpenChange={setIsDiscussionOpen}>
           {renderDiscussionSheet()}
         </Sheet>
+
+        <ConfirmModal
+          isOpen={showExitPrompt}
+          onClose={() => {
+            setShowExitPrompt(false);
+            setTargetHref(null);
+          }}
+          onConfirm={() => {
+            if (targetHref) window.location.href = targetHref;
+          }}
+          title="Yakin Ingin Keluar?"
+          message="Anda sedang berada di tengah sesi praktik. Progres kode Anda mungkin tidak tersimpan. Lanjutkan keluar?"
+          confirmText="Ya, Keluar"
+          cancelText="Tetap di Sini"
+          variant="danger"
+        />
       </div>
   );
 }

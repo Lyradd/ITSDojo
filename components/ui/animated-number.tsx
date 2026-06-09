@@ -6,9 +6,10 @@ import CountUp from "react-countup";
 interface AnimatedNumberProps {
   value: number;
   className?: string;
+  prefix?: string;
 }
 
-export function AnimatedNumber({ value, className }: AnimatedNumberProps) {
+export function AnimatedNumber({ value, className, prefix }: AnimatedNumberProps) {
   const prevValue = useRef(value);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export function AnimatedNumber({ value, className }: AnimatedNumberProps) {
       end={value}               
       duration={1.5}          
       separator="."
+      prefix={prefix}
       className={className}
       preserveValue={true}
     />

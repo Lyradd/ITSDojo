@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUserStore } from '@/lib/store';
-import { MOCK_STUDENTS, MOCK_ACTIVITY_LOGS, MOCK_ANALYTICS } from '@/lib/admin-data';
-import { SAMPLE_EVALUATIONS } from '@/lib/evaluation-data';
+import { getAllStudents } from '@/actions/students';
+import { getActiveEvaluations, getEvaluationStats, getRecentActivities } from '@/actions/evaluations';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -32,27 +32,74 @@ export default function DosenDashboardPage() {
   const { role, name } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
 
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    activeToday: 0,
+    averageScore: 0,
+    activeEvaluations: 0,
+  });
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [activeEvaluations, setActiveEvaluations] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState({
+    completionRate: 0,
+    totalSubmissions: 0,
+    averageScore: 0,
+  });
+
   useEffect(() => {
     setIsMounted(true);
     // Redirect if not dosen
-    if (isMounted && role !== 'dosen') {
+    if (role !== 'dosen' && role !== '') {
       if (role === 'admin') router.push('/admin');
       else if (role === 'asdos') router.push('/asdos');
       else router.push('/learn');
+    } else if (role === 'dosen') {
+      const loadData = async () => {
+        const [students, activeEvals, evalStats, recentLogs] = await Promise.all([
+          getAllStudents(),
+          getActiveEvaluations(),
+          getEvaluationStats(),
+          getRecentActivities(5)
+        ]);
+        
+        const activeTodayCount = students.filter(s => {
+          const last = typeof s.lastActiveAt === 'string' ? new Date(s.lastActiveAt) : s.lastActiveAt;
+          return Date.now() - last.getTime() < 24 * 60 * 60 * 1000;
+        }).length;
+        
+        const avgScore = students.length > 0 ? Math.round(students.reduce((acc, s) => acc + s.accuracy, 0) / students.length) : 0;
+        
+        setStats({
+          totalStudents: students.length,
+          activeToday: activeTodayCount,
+          averageScore: avgScore,
+          activeEvaluations: activeEvals.length,
+        });
+
+        setActiveEvaluations(activeEvals);
+        setRecentActivities(recentLogs);
+        
+        // Use real stats for analytics
+        const totalSubmissions = Object.values(evalStats.perEvaluationParticipants).reduce((acc: number, val: any) => acc + val, 0);
+        // We need a proxy for completionRate. Let's just estimate based on submissions vs total students.
+        const evalCount = activeEvals.length || 1; // avoid div 0
+        const expectedSubmissions = students.length * evalCount;
+        const completionRate = expectedSubmissions > 0 ? Math.min(100, Math.round((totalSubmissions as number / expectedSubmissions) * 100)) : 0;
+        
+        setAnalytics({
+          completionRate,
+          totalSubmissions: totalSubmissions as number,
+          averageScore: evalStats.avgAccuracy,
+        });
+      };
+      
+      loadData();
+      const interval = setInterval(loadData, 5000);
+      return () => clearInterval(interval);
     }
-  }, [isMounted, role, router]);
+  }, [role, router]);
 
   if (!isMounted || role !== 'dosen') return null;
-
-  const stats = {
-    totalStudents: MOCK_STUDENTS.length,
-    activeToday: MOCK_STUDENTS.filter(s => s.lastActive.includes('hour') || s.lastActive.includes('minute')).length,
-    averageScore: Math.round(MOCK_STUDENTS.reduce((acc, s) => acc + s.accuracy, 0) / MOCK_STUDENTS.length),
-    activeEvaluations: SAMPLE_EVALUATIONS.filter(e => e.isActive).length,
-  };
-
-  const recentActivities = MOCK_ACTIVITY_LOGS.slice(0, 5);
-  const activeEvaluations = SAMPLE_EVALUATIONS.filter(e => e.isActive);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
@@ -274,15 +321,15 @@ export default function DosenDashboardPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-zinc-600 dark:text-zinc-400">Completion Rate</span>
-                  <span className="font-bold text-blue-600">{MOCK_ANALYTICS.completionRate}%</span>
+                  <span className="font-bold text-blue-600">{analytics.completionRate}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-zinc-600 dark:text-zinc-400">Total Submissions</span>
-                  <span className="font-bold text-purple-600">{MOCK_ANALYTICS.totalSubmissions}</span>
+                  <span className="font-bold text-purple-600">{analytics.totalSubmissions}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-zinc-600 dark:text-zinc-400">Avg Score</span>
-                  <span className="font-bold text-green-600">{MOCK_ANALYTICS.averageScore}%</span>
+                  <span className="font-bold text-green-600">{analytics.averageScore}%</span>
                 </div>
               </div>
             </Card>

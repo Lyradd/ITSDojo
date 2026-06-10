@@ -116,6 +116,106 @@ export async function deleteQuestionPackage(id: number) {
   }
 }
 
+export async function getAllBankItemsByCourse(courseId: string, questionTypeFilter?: string) {
+  try {
+    const pkgs = await db.query.questionPackages.findMany({
+      where: eq(questionPackages.courseId, courseId),
+    });
+    if (pkgs.length === 0) return { success: true, data: [] };
+
+    const allItems: any[] = [];
+    for (const pkg of pkgs) {
+      const items = await db.query.questionBankItems.findMany({
+        where: eq(questionBankItems.packageId, pkg.id),
+        orderBy: [questionBankItems.order],
+      });
+      items.forEach(item => {
+        allItems.push({
+          ...item,
+          _packageName: pkg.name,
+          _packageUsageType: pkg.usageType,
+        });
+      });
+    }
+
+    if (questionTypeFilter && questionTypeFilter !== 'all') {
+      return { success: true, data: allItems.filter(i => i.questionType === questionTypeFilter) };
+    }
+    return { success: true, data: allItems };
+  } catch (error) {
+    console.error("Failed to fetch all bank items:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+export async function getQuestionPackagesWithCount(courseId: string, usageType?: "lesson" | "evaluation" | "duel") {
+  try {
+    const conditions = [eq(questionPackages.courseId, courseId)];
+    if (usageType) {
+      conditions.push(eq(questionPackages.usageType, usageType));
+    }
+    const pkgs = await db.query.questionPackages.findMany({
+      where: and(...conditions),
+      orderBy: [desc(questionPackages.createdAt)],
+    });
+
+    const result = [];
+    for (const pkg of pkgs) {
+      const items = await db.query.questionBankItems.findMany({
+        where: eq(questionBankItems.packageId, pkg.id),
+      });
+      result.push({ ...pkg, _itemCount: items.length });
+    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Failed to fetch packages with count:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+export async function addItemsToPackage(packageId: number, itemIds: number[]) {
+  try {
+    // Copy items from other packages into this package
+    const sourceItems = [];
+    for (const id of itemIds) {
+      const item = await db.query.questionBankItems.findFirst({
+        where: eq(questionBankItems.id, id),
+      });
+      if (item) sourceItems.push(item);
+    }
+
+    if (sourceItems.length === 0) return { success: false, error: "No items found" };
+
+    // Get current max order in target package
+    const existing = await db.query.questionBankItems.findMany({
+      where: eq(questionBankItems.packageId, packageId),
+      orderBy: [desc(questionBankItems.order)],
+    });
+    let maxOrder = existing.length > 0 ? (existing[0].order || 0) : 0;
+
+    const newItems = sourceItems.map(item => ({
+      packageId,
+      questionText: item.questionText,
+      questionType: item.questionType,
+      options: item.options,
+      correctAnswer: item.correctAnswer,
+      puzzlePairs: item.puzzlePairs,
+      bloomLevel: item.bloomLevel,
+      difficulty: item.difficulty,
+      points: item.points,
+      timeLimit: item.timeLimit,
+      order: ++maxOrder,
+    }));
+
+    await db.insert(questionBankItems).values(newItems);
+    revalidatePath("/dosen/question-bank");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to add items to package:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
 export async function syncQuestionBankItems(packageId: number, items: Partial<typeof questionBankItems.$inferInsert>[]) {
   try {
     // Gunakan Transaction untuk mencegah data loss saat koneksi putus

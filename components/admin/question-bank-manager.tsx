@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, Plus, Search, BookOpen, Swords, ClipboardCheck, ArrowRight, X, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getQuestionPackages, createQuestionPackage, deleteQuestionPackage } from "@/actions/question-bank";
+import { getQuestionPackagesWithCount, createQuestionPackage, deleteQuestionPackage } from "@/actions/question-bank";
 import { getAllCourses } from "@/actions/courses";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -51,7 +51,7 @@ export function QuestionBankManager() {
     
     const fetchPackages = async () => {
       setLoadingPackages(true);
-      const res = await getQuestionPackages(selectedCourse, activeTab);
+      const res = await getQuestionPackagesWithCount(selectedCourse, activeTab);
       if (res.success) {
         setPackages(res.data || []);
       } else {
@@ -287,9 +287,12 @@ export function QuestionBankManager() {
                 <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-2">
                   {pkg.name}
                 </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6 flex-1">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3 flex-1 line-clamp-2">
                   {pkg.description || "Tidak ada deskripsi."}
                 </p>
+                <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-3">
+                  📝 {pkg._itemCount || 0} soal dalam paket
+                </div>
                 
                 <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
                   <span className="text-xs text-zinc-500">Oleh: {pkg.createdBy || "Admin"}</span>

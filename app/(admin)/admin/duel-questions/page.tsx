@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 type TopicOption = {
@@ -79,6 +80,13 @@ export default function DuelQuestionsAdminPage() {
   const [topicFilter, setTopicFilter] = useState("all");
   const [form, setForm] = useState<QuestionFormState>(DEFAULT_FORM);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, topicFilter]);
+
   useEffect(() => {
     setIsMounted(true);
     if (role !== "admin") {
@@ -137,6 +145,12 @@ export default function DuelQuestionsAdminPage() {
     });
   }, [questions, searchQuery, topicFilter]);
 
+  const totalPages = Math.ceil(filteredQuestions.length / ITEMS_PER_PAGE);
+  const paginatedQuestions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredQuestions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredQuestions, currentPage]);
+
   const selectedTopicId = Number(form.topicId);
   const questionCountForSelectedTopic = questions.filter((question) => question.topicId === selectedTopicId).length;
 
@@ -158,17 +172,15 @@ export default function DuelQuestionsAdminPage() {
     const nextState: QuestionFormState = {
       ...form,
       questionType,
-      correctAnswer: questionType === "true_false" ? "True" : form.correctAnswer,
-      options: questionType === "multiple_choice" || questionType === "true_false"
-        ? form.options.length > 0
-          ? form.options
-          : ["", "", "", ""]
-        : ["", "", "", ""],
+      correctAnswer: questionType === "true_false" ? "True" : (questionType === "slider" ? "5" : ""),
+      options: questionType === "true_false"
+        ? ["True", "False"]
+        : questionType === "multiple_choice"
+          ? form.options.length === 4
+            ? form.options
+            : ["", "", "", ""]
+          : ["", "", "", ""],
     };
-
-    if (questionType === "slider") {
-      nextState.correctAnswer = nextState.correctAnswer || "5";
-    }
 
     setForm(nextState);
   };
@@ -176,8 +188,14 @@ export default function DuelQuestionsAdminPage() {
   const handleOptionChange = (index: number, value: string) => {
     setForm((current) => {
       const nextOptions = [...current.options];
+      const oldValue = nextOptions[index];
       nextOptions[index] = value;
-      return { ...current, options: nextOptions };
+      const isCorrect = current.correctAnswer !== "" && current.correctAnswer === oldValue;
+      return {
+        ...current,
+        options: nextOptions,
+        correctAnswer: isCorrect ? value : current.correctAnswer,
+      };
     });
   };
 
@@ -203,8 +221,27 @@ export default function DuelQuestionsAdminPage() {
       return;
     }
 
-    if (form.questionType === "multiple_choice" && form.options.filter((option) => option.trim()).length < 2) {
-      toast.error("Minimal dua opsi jawaban diperlukan.");
+    if (form.questionType === "multiple_choice") {
+      const trimmedOptions = form.options.map((option) => option.trim()).filter(Boolean);
+      if (trimmedOptions.length < 2) {
+        toast.error("Minimal dua opsi jawaban diperlukan.");
+        return;
+      }
+      if (!form.correctAnswer || !trimmedOptions.includes(form.correctAnswer.trim())) {
+        toast.error("Pilih salah satu opsi sebagai jawaban benar.");
+        return;
+      }
+    }
+
+    if (form.questionType === "true_false") {
+      if (form.correctAnswer !== "True" && form.correctAnswer !== "False") {
+        toast.error("Pilih True atau False sebagai jawaban benar.");
+        return;
+      }
+    }
+
+    if (form.questionType === "short_answer" && !form.correctAnswer.trim()) {
+      toast.error("Jawaban benar wajib diisi.");
       return;
     }
 
@@ -262,7 +299,7 @@ export default function DuelQuestionsAdminPage() {
             </div>
             <h1 className="text-4xl font-bold text-blue-700 dark:text-white">Kelola Soal Duel</h1>
             <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-              Tambahkan soal dan jawaban langsung ke database Neon untuk dipakai di page duel.
+              Tambahkan soal dan jawaban untuk duel.
             </p>
           </div>
 
@@ -320,33 +357,96 @@ export default function DuelQuestionsAdminPage() {
                 />
               </div>
 
-              {(form.questionType === "multiple_choice" || form.questionType === "true_false") && (
+              {form.questionType === "multiple_choice" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>Opsi Jawaban</Label>
-                    <span className="text-xs text-zinc-500">Jawaban benar harus ada di daftar opsi</span>
+                    <span className="text-xs text-zinc-500">Pilih salah satu sebagai jawaban benar</span>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
-                    {form.options.map((option, index) => (
-                      <Input
-                        key={`${form.questionType}-${index}`}
-                        value={option}
-                        onChange={(event) => handleOptionChange(index, event.target.value)}
-                        placeholder={`Opsi ${index + 1}`}
-                      />
-                    ))}
+                    {form.options.map((option, index) => {
+                      const isCorrect = form.correctAnswer !== "" && form.correctAnswer === option;
+                      return (
+                        <div key={`mc-${index}`} className="flex items-center gap-2">
+                          <Input
+                            value={option}
+                            onChange={(event) => handleOptionChange(index, event.target.value)}
+                            placeholder={`Opsi ${index + 1}`}
+                          />
+                          <Button
+                            type="button"
+                            variant={isCorrect ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => {
+                              if (option.trim()) {
+                                setForm((current) => ({ ...current, correctAnswer: option }));
+                              } else {
+                                toast.error("Opsi harus diisi sebelum menjadikannya jawaban benar.");
+                              }
+                            }}
+                            className={cn(
+                              "h-11 w-11 shrink-0 transition-all duration-200",
+                              isCorrect
+                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            )}
+                            title="Tandai sebagai jawaban benar"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {form.questionType !== "slider" && (
+              {form.questionType === "true_false" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Opsi Jawaban</Label>
+                    <span className="text-xs text-zinc-500">Pilih salah satu sebagai jawaban benar</span>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {["True", "False"].map((option) => {
+                      const isCorrect = form.correctAnswer === option;
+                      return (
+                        <div key={`tf-${option}`} className="flex items-center gap-2">
+                          <div className="flex h-11 w-full items-center rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm font-semibold dark:border-zinc-800 dark:bg-zinc-900/50">
+                            {option === "True" ? "True / Benar" : "False / Salah"}
+                          </div>
+                          <Button
+                            type="button"
+                            variant={isCorrect ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => {
+                              setForm((current) => ({ ...current, correctAnswer: option }));
+                            }}
+                            className={cn(
+                              "h-11 w-11 shrink-0 transition-all duration-200",
+                              isCorrect
+                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            )}
+                            title="Tandai sebagai jawaban benar"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {form.questionType === "short_answer" && (
                 <div className="space-y-2">
                   <Label htmlFor="correctAnswer">Jawaban Benar</Label>
                   <Input
                     id="correctAnswer"
                     value={form.correctAnswer}
                     onChange={(event) => setForm((current) => ({ ...current, correctAnswer: event.target.value }))}
-                    placeholder={form.questionType === "true_false" ? "True atau False" : "Jawaban benar"}
+                    placeholder="Jawaban benar"
                   />
                 </div>
               )}
@@ -466,45 +566,96 @@ export default function DuelQuestionsAdminPage() {
                     Belum ada soal yang cocok dengan filter ini.
                   </div>
                 ) : (
-                  filteredQuestions.map((question) => (
-                    <div key={question.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-                      <div className="mb-2 flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                            {question.topicName ?? `Topik ${question.topicId}`} • Order {question.order}
-                          </p>
-                          <p className="mt-1 text-base font-medium text-zinc-900 dark:text-white">
-                            {question.questionText}
-                          </p>
+                  <>
+                    <div className="space-y-3">
+                      {paginatedQuestions.map((question) => (
+                        <div key={question.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                          <div className="mb-2 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                                {question.topicName ?? `Topik ${question.topicId}`} • Order {question.order}
+                              </p>
+                              <p className="mt-1 text-base font-medium text-zinc-900 dark:text-white">
+                                {question.questionText}
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                              {question.questionType}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
+                            <span>Bloom {question.bloomLevel}</span>
+                            <span>•</span>
+                            <span>{question.bloomCategory}</span>
+                            <span>•</span>
+                            <span>{question.timeLimit}s</span>
+                            <span>•</span>
+                            <span>{question.bloomWeight} pts</span>
+                          </div>
                         </div>
-                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                          {question.questionType}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
-                        <span>Bloom {question.bloomLevel}</span>
-                        <span>•</span>
-                        <span>{question.bloomCategory}</span>
-                        <span>•</span>
-                        <span>{question.timeLimit}s</span>
-                        <span>•</span>
-                        <span>{question.bloomWeight} pts</span>
-                      </div>
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
-            </Card>
 
-            <Card className="rounded-3xl border-2 bg-white/90 p-6 shadow-lg dark:bg-zinc-900/90">
-              <div className="mb-4 flex items-center gap-2">
-                <Plus className="h-5 w-5 text-cyan-600" />
-                <h2 className="text-xl font-bold">Ringkasan</h2>
-              </div>
-              <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
-                <p>Total topik: {topics.length}</p>
-                <p>Total soal: {questions.length}</p>
-                <p>Soal di topik terpilih: {questionCountForSelectedTopic}</p>
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4 text-sm">
+                        <div className="text-zinc-500 dark:text-zinc-400">
+                          Menampilkan <span className="font-semibold text-zinc-700 dark:text-zinc-200">{Math.min(filteredQuestions.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}</span>-
+                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{Math.min(filteredQuestions.length, currentPage * ITEMS_PER_PAGE)}</span> dari{" "}
+                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{filteredQuestions.length}</span> soal
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                            const isNear = Math.abs(page - currentPage) <= 1;
+                            const isFirstOrLast = page === 1 || page === totalPages;
+                            if (!isNear && !isFirstOrLast) {
+                              if (page === 2 || page === totalPages - 1) {
+                                return <span key={`ellipsis-${page}`} className="px-2 text-zinc-400">...</span>;
+                              }
+                              return null;
+                            }
+                            return (
+                              <Button
+                                key={page}
+                                type="button"
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className={cn(
+                                  "h-8 w-8 p-0",
+                                  currentPage === page
+                                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                    : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                )}
+                              >
+                                {page}
+                              </Button>
+                            );
+                          })}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </Card>
           </div>

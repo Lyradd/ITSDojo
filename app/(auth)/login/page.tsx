@@ -97,7 +97,12 @@ export default function LoginPage() {
 
     // Delay routing to let the full screen wipe finish and show the animation
     setTimeout(() => {
-      if (selectedRole === 'dosen') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectTo = searchParams.get("redirectTo");
+
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else if (selectedRole === 'dosen') {
         router.push('/dosen');
       } else if (selectedRole === 'asdos') {
         router.push('/asdos');

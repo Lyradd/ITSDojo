@@ -51,6 +51,7 @@ export async function POST(
     chooserId: null,
     pendingScores: {},
     questionSubmissions: {},
+    scores: {},
     roundResults: [],
     winnerId: null,
     updatedAt: new Date().toISOString(),

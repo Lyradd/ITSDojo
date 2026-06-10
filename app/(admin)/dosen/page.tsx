@@ -49,7 +49,7 @@ export default function DosenDashboardPage() {
   useEffect(() => {
     setIsMounted(true);
     // Redirect if not dosen
-    if (role !== 'dosen' && role !== '') {
+    if (role !== 'dosen' && (role as string) !== '') {
       if (role === 'admin') router.push('/admin');
       else if (role === 'asdos') router.push('/asdos');
       else router.push('/learn');

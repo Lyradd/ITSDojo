@@ -18,6 +18,7 @@ export type DuelSessionState = {
   chooserId: string | null;
   pendingScores: Record<string, number>;
   questionSubmissions: Record<string, number>;
+  scores: Record<string, number>;
   roundResults: DuelRoundResult[];
   winnerId: string | null;
   updatedAt: string;

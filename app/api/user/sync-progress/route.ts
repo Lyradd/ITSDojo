@@ -24,17 +24,30 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, avatar, level, xp, profileXp, gems, streak, accuracy, completedLessonIds, gamificationData } = body;
 
+    // Fetch user role from DB untuk validasi role-based guard
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { role: true }
+    });
+
+    const isMahasiswa = existingUser?.role === 'mahasiswa';
+
     // Prepare update payload
     const updateData: any = {};
+    // Semua role boleh update nama dan avatar
     if (name !== undefined) updateData.name = name;
     if (avatar !== undefined) updateData.avatar = avatar;
-    if (level !== undefined) updateData.level = level;
-    if (xp !== undefined) updateData.xp = xp;
-    if (profileXp !== undefined) updateData.profileXp = profileXp;
-    if (gems !== undefined) updateData.gems = gems;
-    if (streak !== undefined) updateData.streak = streak;
-    if (accuracy !== undefined) updateData.accuracy = accuracy;
-    if (gamificationData !== undefined) updateData.gamificationData = gamificationData;
+
+    // Hanya mahasiswa yang boleh update data gamifikasi
+    if (isMahasiswa) {
+      if (level !== undefined) updateData.level = level;
+      if (xp !== undefined) updateData.xp = xp;
+      if (profileXp !== undefined) updateData.profileXp = profileXp;
+      if (gems !== undefined) updateData.gems = gems;
+      if (streak !== undefined) updateData.streak = streak;
+      if (accuracy !== undefined) updateData.accuracy = accuracy;
+      if (gamificationData !== undefined) updateData.gamificationData = gamificationData;
+    }
 
     // Execute update if there's anything to update
     if (Object.keys(updateData).length > 0) {
@@ -42,6 +55,7 @@ export async function POST(req: Request) {
         .set(updateData)
         .where(eq(users.id, userId));
     }
+
 
     // Sync completed lessons if provided
     if (completedLessonIds && Array.isArray(completedLessonIds)) {

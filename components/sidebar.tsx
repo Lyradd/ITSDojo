@@ -191,25 +191,31 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               <p className="font-semibold text-sm truncate text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {name}
               </p>
-              <div className="flex flex-col gap-1 mt-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
-                  <span>Level {level}</span>
-                  <span className="flex items-center gap-0.5 text-blue-500">
-                    <Gem className="w-2.5 h-2.5 fill-current" /> {gems}
-                  </span>
+              {role === 'mahasiswa' ? (
+                <div className="flex flex-col gap-1 mt-1">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
+                    <span>Level {level}</span>
+                    <span className="flex items-center gap-0.5 text-blue-500">
+                      <Gem className="w-2.5 h-2.5 fill-current" /> {gems}
+                    </span>
+                  </div>
+                  {/* XP Progress Bar */}
+                  <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${xpPercentage}%` }}
+                      className="h-full bg-linear-to-r from-blue-500 to-cyan-400"
+                    />
+                  </div>
+                  <p className="text-[9px] text-zinc-400 font-medium">
+                    {xp} / {xpToNextLevel} XP
+                  </p>
                 </div>
-                {/* XP Progress Bar */}
-                <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${xpPercentage}%` }}
-                    className="h-full bg-linear-to-r from-blue-500 to-cyan-400"
-                  />
-                </div>
-                <p className="text-[9px] text-zinc-400 font-medium">
-                  {xp} / {xpToNextLevel} XP
+              ) : (
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">
+                  {role === 'dosen' ? 'Dosen' : role === 'asdos' ? 'Asisten Dosen' : 'Admin'}
                 </p>
-              </div>
+              )}
             </div>
           </Link>
           <div className="flex items-center gap-1">

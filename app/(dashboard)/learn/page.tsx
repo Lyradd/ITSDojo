@@ -58,7 +58,8 @@ export default function LearnPage() {
     completeLesson,
     completedLessonIds,
     resetProgress,
-    activityHistory
+    activityHistory,
+    role
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -195,12 +196,16 @@ export default function LearnPage() {
           {/* STAT WIDGETS (MOBILE ONLY) */}
           <div className="flex lg:hidden items-center justify-between gap-2">
             <CourseSelectorDropdown courses={allCoursesList} />
-            <StatWidget 
-              icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
-              hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
-            />
-            <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+            {role === 'mahasiswa' && (
+              <>
+                <StatWidget 
+                  icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                  hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+                />
+                <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
+                <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+              </>
+            )}
           </div>
 
           {/* 0. CONTINUE BANNER or COMPLETION STATE */}
@@ -450,34 +455,40 @@ export default function LearnPage() {
         <div className="flex flex-col gap-6">
           <div className="hidden lg:flex items-center justify-between gap-2">
             <CourseSelectorDropdown courses={allCoursesList} />
-            <div className="flex items-center gap-2 flex-1 justify-end">
-              <StatWidget 
-                icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
-                hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
-              />
-              <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-              <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
-            </div>
+            {role === 'mahasiswa' && (
+              <div className="flex items-center gap-2 flex-1 justify-end">
+                <StatWidget 
+                  icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                  hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+                />
+                <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
+                <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+              </div>
+            )}
           </div>
 
-          <DailyGoalWidget dailyGoals={dailyGoals} />
+          {role === 'mahasiswa' && <DailyGoalWidget dailyGoals={dailyGoals} />}
 
-          <Card className="hidden lg:block p-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-            <h3 className="font-bold text-sm text-zinc-500 mb-3">🔧 Debug / Testing</h3>
-            <div className="flex flex-col gap-2">
-              <Button size="sm" variant="secondary" onClick={handleSimulateLesson} className="w-full border border-zinc-200 h-8 text-xs hover:bg-white">
-                Simulasi Selesai Lesson (Klik Node Biru)
-              </Button>
-            </div>
-          </Card>
+          {role === 'mahasiswa' && (
+            <Card className="hidden lg:block p-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+              <h3 className="font-bold text-sm text-zinc-500 mb-3">🔧 Debug / Testing</h3>
+              <div className="flex flex-col gap-2">
+                <Button size="sm" variant="secondary" onClick={handleSimulateLesson} className="w-full border border-zinc-200 h-8 text-xs hover:bg-white">
+                  Simulasi Selesai Lesson (Klik Node Biru)
+                </Button>
+              </div>
+            </Card>
+          )}
 
-          <LeaderboardWidget
-            topUsers={computedLeaderboard}
-            currentUserId="current"
-            currentUserName={name}
-            currentUserXp={weeklyXp}
-            currentUserRank={userRank}
-          />
+          {role === 'mahasiswa' && (
+            <LeaderboardWidget
+              topUsers={computedLeaderboard}
+              currentUserId="current"
+              currentUserName={name}
+              currentUserXp={weeklyXp}
+              currentUserRank={userRank}
+            />
+          )}
         </div>
       </div>
 

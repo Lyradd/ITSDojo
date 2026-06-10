@@ -97,7 +97,7 @@ export default function ProfilePage() {
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
     activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
     createdAt, followingCount, followersCount, earnedBadges, perfectWeeksCount = 0,
-    isLoggedIn, id, enrolledCourseIds = [], gems, level, accuracy = 0
+    isLoggedIn, id, enrolledCourseIds = [], gems, level, accuracy = 0, role
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -294,7 +294,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 2. Statistik ala Duolingo */}
+          {/* 2. Statistik ala Duolingo — Hanya untuk Mahasiswa */}
+          {role === 'mahasiswa' && (
           <div>
             <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Statistik</h2>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -327,8 +328,10 @@ export default function ProfilePage() {
               />
             </div>
           </div>
+          )}
 
-          {/* 3. Jejak Aktivitas (Heatmap) */}
+          {/* 3. Jejak Aktivitas (Heatmap) — Hanya untuk Mahasiswa */}
+          {role === 'mahasiswa' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200">Aktivitas Belajar</h2>
@@ -338,8 +341,10 @@ export default function ProfilePage() {
               <ActivityHeatmap />
             </Card>
           </div>
+          )}
 
-          {/* 4. Pencapaian (Achievements) */}
+          {/* 4. Pencapaian (Achievements) — Hanya untuk Mahasiswa */}
+          {role === 'mahasiswa' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200">Pencapaian</h2>
@@ -375,8 +380,10 @@ export default function ProfilePage() {
               ))}
             </div>
           </div>
+          )}
 
-          {/* Koleksi Badge Bulanan */}
+          {/* Koleksi Badge Bulanan — Hanya untuk Mahasiswa */}
+          {role === 'mahasiswa' && (
           <div className="mt-2">
             <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Koleksi Badge Bulanan</h2>
             {earnedBadges && earnedBadges.length > 0 ? (
@@ -416,6 +423,7 @@ export default function ProfilePage() {
               </Card>
             )}
           </div>
+          )}
         </div>
 
         {/* === KOLOM KANAN: SIDEBAR WIDGETS === */}

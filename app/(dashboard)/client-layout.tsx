@@ -23,7 +23,7 @@ export default function ClientLayout({
   const hideSidebar = pathname.startsWith("/duel/1v1/") || pathname.startsWith("/duel/arena/");
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { checkDailyReset, isLoggedIn, id, syncFromServer } = useUserStore();
+  const { checkDailyReset, isLoggedIn, id, syncFromServer, role } = useUserStore();
   const earlyBirdChecked = useRef(false);
 
   useEffect(() => {
@@ -44,15 +44,18 @@ export default function ClientLayout({
       const fetchProfile = async () => {
         const res = await getUserProfile(id);
         if (res.success && res.user) {
+          // Untuk role non-mahasiswa: hanya sync data profil dasar,
+          // abaikan seluruh data gamifikasi agar tidak muncul di UI
+          const isMahasiswa = res.user.role === 'mahasiswa';
           syncFromServer({
-            level: res.user.level,
-            profileXp: res.user.profileXp,
-            xp: res.user.xp,
-            gems: res.user.gems,
-            streak: res.user.streak,
-            accuracy: res.user.accuracy,
-            completedLessonIds: res.user.completedLessonIds,
-            gamificationData: res.user.gamificationData,
+            level: isMahasiswa ? res.user.level : 1,
+            profileXp: isMahasiswa ? res.user.profileXp : 0,
+            xp: isMahasiswa ? res.user.xp : 0,
+            gems: isMahasiswa ? res.user.gems : 0,
+            streak: isMahasiswa ? res.user.streak : 0,
+            accuracy: isMahasiswa ? res.user.accuracy : 0,
+            completedLessonIds: isMahasiswa ? res.user.completedLessonIds : [],
+            gamificationData: isMahasiswa ? res.user.gamificationData : null,
             enrolledCourseIds: res.user.enrolledCourseIds,
           });
         }

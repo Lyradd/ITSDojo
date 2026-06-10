@@ -35,6 +35,60 @@ import { toast } from "react-hot-toast";
 import { StatWidget } from "@/components/shared/stat-widget";
 import { ActivityHeatmap } from "@/components/profile/activity-heatmap";
 import { getAchievementsData } from "@/lib/profile-data";
+import { Diamond, Target } from "lucide-react"; // Ikon tambahan
+
+const ProfileStatCard = ({
+  icon: Icon,
+  value,
+  label,
+  iconColor,
+  isActiveStreak = false,
+  badge = "",
+  fillIcon = true
+}: {
+  icon: any;
+  value: string | number;
+  label: string;
+  iconColor: string;
+  isActiveStreak?: boolean;
+  badge?: string;
+  fillIcon?: boolean;
+}) => {
+  if (isActiveStreak) {
+    return (
+      <div className="relative flex items-center p-3 sm:p-4 bg-[#FFC800] border-2 border-[#FFC800] rounded-2xl gap-3 sm:gap-4 overflow-hidden">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 text-[#FF9600]">
+          <Icon className="w-full h-full" fill={fillIcon ? "currentColor" : "none"} strokeWidth={fillIcon ? 1 : 2.5} />
+        </div>
+        <div className="flex flex-col z-10">
+          <span className="text-lg sm:text-xl font-bold text-white leading-none mb-1">{value}</span>
+          <span className="text-xs sm:text-sm font-bold text-white/90">{label}</span>
+        </div>
+        {/* Sparkles decorative */}
+        <div className="absolute top-2 right-2 text-white/70">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex items-center p-3 sm:p-4 bg-transparent border-2 border-zinc-200 dark:border-zinc-800 rounded-2xl gap-3 sm:gap-4">
+      <div className={`w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 ${iconColor}`}>
+        <Icon className="w-full h-full" fill={fillIcon ? "currentColor" : "none"} strokeWidth={fillIcon ? 1 : 2.5} />
+      </div>
+      <div className="flex flex-col z-10">
+        <span className="text-lg sm:text-xl font-bold text-zinc-800 dark:text-white leading-none mb-1">{value}</span>
+        <span className="text-xs sm:text-sm font-bold text-zinc-500">{label}</span>
+      </div>
+      {badge && (
+        <div className="absolute -top-3 right-4 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider z-20">
+          {badge}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -43,7 +97,7 @@ export default function ProfilePage() {
     nocturnalCount = 0, earlyBirdCount = 0, longestStreak = 0, mostXpInDay = 0, totalPerfectLessons = 0,
     activeCourseId, bio, avatarUrl, updateProfile, league, top3Finishes,
     createdAt, followingCount, followersCount, earnedBadges, perfectWeeksCount = 0,
-    isLoggedIn, id, enrolledCourseIds = []
+    isLoggedIn, id, enrolledCourseIds = [], gems, level, accuracy = 0
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -144,7 +198,9 @@ export default function ProfilePage() {
     earlyBirdCount,
     unlockedAchievements,
     earnedBadgesCount: earnedBadges?.length || 0,
-    perfectWeeksCount
+    perfectWeeksCount,
+    totalPerfectLessons,
+    top3Finishes
   });
 
   return (
@@ -238,14 +294,37 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 2. Statistik */}
+          {/* 2. Statistik ala Duolingo */}
           <div>
             <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Statistik</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatWidget icon={Flame} value={streak} label="Streak Saat Ini" color="text-orange-500" />
-              <StatWidget icon={Zap} value={xp.toLocaleString('id-ID')} label="Total XP" color="text-blue-500" />
-              <StatWidget icon={Medal} value={league} label="Liga" color="text-yellow-500" />
-              <StatWidget icon={Trophy} value={top3Finishes} label="Masuk 3 Besar" color="text-purple-500" />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <ProfileStatCard 
+                icon={Flame} 
+                value={streak} 
+                label="Hari beruntun"
+                iconColor="text-zinc-300 dark:text-zinc-600"
+                isActiveStreak={streak > 0}
+              />
+              <ProfileStatCard 
+                icon={Zap} 
+                value={xp.toLocaleString('id-ID')} 
+                label="Total XP" 
+                iconColor="text-blue-500"
+              />
+              <ProfileStatCard 
+                icon={Target} 
+                value={`${accuracy}%`} 
+                label="Akurasi Jawaban" 
+                iconColor="text-emerald-500"
+                fillIcon={false}
+              />
+              <ProfileStatCard 
+                icon={Medal} 
+                value={top3Finishes} 
+                label="Selesai 3 besar" 
+                iconColor="text-yellow-500"
+                fillIcon={false}
+              />
             </div>
           </div>
 
@@ -499,19 +578,24 @@ export default function ProfilePage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
                           <h3 className="font-bold text-base truncate pr-2 leading-tight">{ach.title}</h3>
-                          {ach.target > 1 && <span className="text-[10px] font-bold text-zinc-400 shrink-0 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">Lvl {ach.level}</span>}
+                          {ach.maxLevel > 1 && <span className="text-[10px] font-bold text-zinc-400 shrink-0 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">Lvl {ach.level}</span>}
                         </div>
                         <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3">{ach.desc}</p>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    {ach.target > 1 && (
-                      <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mt-2">
-                        <div
-                          className={`h-full rounded-full transition-all duration-1000 ${ach.unlocked ? 'bg-yellow-400' : 'bg-zinc-300 dark:bg-zinc-600'}`}
-                          style={{ width: `${Math.min(100, Math.max(0, (ach.progress / ach.target) * 100))}%` }}
-                        />
+                    {ach.maxLevel > 1 && (
+                      <div className="mt-3 flex items-center gap-3">
+                        <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-1000 ${ach.unlocked ? 'bg-yellow-400' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                            style={{ width: `${Math.min(100, Math.max(0, (ach.progress / ach.target) * 100))}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 shrink-0 whitespace-nowrap">
+                          {ach.progress.toLocaleString('id-ID')} / {ach.target.toLocaleString('id-ID')}
+                        </span>
                       </div>
                     )}
                   </motion.div>

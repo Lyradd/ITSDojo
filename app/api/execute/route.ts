@@ -9,17 +9,24 @@ import { getSession } from '@/lib/session';
 const MAX_CODE_SIZE = 64 * 1024;
 const MAX_STDIN_SIZE = 16 * 1024;
 
-/** Judge0 RapidAPI Credentials */
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "YOUR_RAPIDAPI_KEY_HERE";
-const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || "judge0-ce.p.rapidapi.com";
-const JUDGE0_BASE_URL = `https://${RAPIDAPI_HOST}`;
+/** OnlineCompiler.io Credentials */
+// KEAMANAN: API Key HARUS diset di file .env.local, TIDAK boleh hardcoded di source code.
+const ONLINE_COMPILER_KEY = process.env.ONLINE_COMPILER_KEY;
+const ONLINE_COMPILER_SYNC_URL = "https://api.onlinecompiler.io/api/run-code-sync/";
+
+/** Timeout untuk request ke API eksternal (dalam milidetik) */
+const API_TIMEOUT_MS = 15_000; // 15 detik
+
+/** Batas maksimal entri di execution cache untuk mencegah memory leak */
+const MAX_CACHE_SIZE = 500;
 
 // ============================================
 // RATE LIMITER & DEDUPLICATION CACHE
 // ============================================
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 5; // 5 eksekusi per menit untuk menghemat kuota berbayar
+// Limit kita naikkan menjadi 10 karena kuota kita sekarang raksasa (1.000.000/bulan)
+const RATE_LIMIT_MAX = 10; 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
 function checkRateLimit(userId: string): boolean {
@@ -34,19 +41,18 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-// Simple LRU Cache (In-Memory) untuk menghindari pemanggilan berulang kode identik
+// Simple LRU Cache (In-Memory) untuk deduplikasi request jika kode tidak diubah
 const executionCache = new Map<string, any>();
 
-// Bersihkan cache dan rate limit setiap 10 menit
 if (typeof globalThis !== 'undefined') {
-  const cleanupKey = '__judge0CleanupInterval';
+  const cleanupKey = '__compilerCleanupInterval';
   if (!(globalThis as any)[cleanupKey]) {
     (globalThis as any)[cleanupKey] = setInterval(() => {
       const now = Date.now();
       for (const [key, val] of rateLimitMap) {
         if (now > val.resetTime) rateLimitMap.delete(key);
       }
-      executionCache.clear(); // Hapus cache secara berkala
+      executionCache.clear();
     }, 10 * 60_000);
   }
 }
@@ -64,13 +70,15 @@ interface ExecuteResponse {
     output: string;
     code: number;
     signal: string | null;
+    time?: number;     // 🏆 Metrik baru: Untuk gamifikasi "The Big-O Master"
+    memory?: number;   // 🏆 Metrik baru: Untuk gamifikasi "The Big-O Master"
   };
 }
 
 function errorResponse(language: string, message: string): NextResponse {
   return NextResponse.json({
     language,
-    version: "Judge0",
+    version: "OnlineCompiler.io",
     run: {
       stdout: "",
       stderr: message,
@@ -80,10 +88,6 @@ function errorResponse(language: string, message: string): NextResponse {
     }
   } satisfies ExecuteResponse);
 }
-
-// Helper untuk Base64
-const encodeBase64 = (str: string) => Buffer.from(str, 'utf-8').toString('base64');
-const decodeBase64 = (str: string | null) => str ? Buffer.from(str, 'base64').toString('utf-8') : "";
 
 // ============================================
 // MAIN HANDLER
@@ -100,15 +104,10 @@ export async function POST(req: Request) {
     }
 
     if (!checkRateLimit(session.userId)) {
-      return errorResponse(language, "Rate limit terlampaui. Tunggu 1 menit sebelum mencoba lagi.");
+      return errorResponse(language, "Terlalu banyak permintaan (Spam Filter). Tunggu 1 menit.");
     }
 
-    // ━━━ 2. VALIDASI CREDENTIALS ━━━
-    if (RAPIDAPI_KEY === "YOUR_RAPIDAPI_KEY_HERE" || !process.env.RAPIDAPI_KEY) {
-      return errorResponse(language, "Server Error: Kredensial Judge0 RapidAPI belum dikonfigurasi di file .env.");
-    }
-
-    // ━━━ 3. PARSING INPUT ━━━
+    // ━━━ 2. PARSING INPUT ━━━
     const body = await req.json();
     language = body.language || "unknown";
     const code = body.files?.[0]?.content || "";
@@ -118,126 +117,120 @@ export async function POST(req: Request) {
       return errorResponse(language, "Ukuran kode atau input melebihi batas maksimum.");
     }
 
-    // ━━━ 4. LANGUAGE MAPPING (JUDGE0) ━━━
-    let languageId = 0;
-    if (language === 'python') languageId = 71; // Python 3.8.1
-    else if (language === 'javascript') languageId = 63; // Node.js 12.14.0
-    else if (language === 'c') languageId = 50; // GCC 9.2.0
-    else if (language === 'cpp') languageId = 54; // GCC 9.2.0
-    else if (language === 'sql') languageId = 82; // SQLite 3.27.2
+    // ━━━ 2.5 BLACKLIST POLA KODE BERBAHAYA (Defense-in-Depth) ━━━
+    // Catatan: OnlineCompiler.io sudah menjalankan kode di Docker sandbox tanpa
+    // akses jaringan dengan batas 30 detik & 512MB RAM. Filter ini adalah lapisan
+    // pertahanan tambahan untuk memblokir pola yang jelas-jelas berbahaya sebelum
+    // request dikirim ke API (menghemat kuota & waktu).
+    const DANGEROUS_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
+      { pattern: /\bsystem\s*\(/i,      message: "Pemanggilan system() tidak diizinkan." },
+      { pattern: /\bexec\s*[vlp]*\s*\(/i, message: "Pemanggilan exec() tidak diizinkan." },
+      { pattern: /\bfork\s*\(/i,         message: "Pemanggilan fork() tidak diizinkan." },
+      { pattern: /\bpopen\s*\(/i,        message: "Pemanggilan popen() tidak diizinkan." },
+      { pattern: /\b__import__\s*\(\s*['"]os['"]\s*\)/i, message: "Import modul os tidak diizinkan." },
+      { pattern: /\bsubprocess\b/i,      message: "Modul subprocess tidak diizinkan." },
+      { pattern: /\beval\s*\(\s*input/i, message: "Pola eval(input()) tidak diizinkan." },
+    ];
 
-    if (languageId === 0) {
-      return errorResponse(language, `Bahasa "${language}" tidak didukung oleh arsitektur Judge0 kami.`);
+    for (const { pattern, message } of DANGEROUS_PATTERNS) {
+      if (pattern.test(code)) {
+        return errorResponse(language, `⛔ Kode Ditolak: ${message}`);
+      }
     }
 
-    // ━━━ 5. DEDUPLICATION CACHE ━━━
-    // Jika mahasiswa menekan "Run" berkali-kali tanpa mengubah kode
-    const cacheKey = `${languageId}:${encodeBase64(code)}:${encodeBase64(stdin)}`;
+    // ━━━ 3. LANGUAGE IDENTIFIER MAPPING ━━━
+    let compilerId = language;
+    if (language === 'cpp') compilerId = 'g++-15';
+    else if (language === 'javascript') compilerId = 'typescript-deno';
+    else if (language === 'python') compilerId = 'python-3.14';
+    else if (language === 'c') compilerId = 'gcc-15';
+    else if (language === 'java') compilerId = 'openjdk-25';
+
+    // ━━━ 4. DEDUPLICATION CACHE ━━━
+    const codeHash = Buffer.from(code).toString('base64');
+    const stdinHash = Buffer.from(stdin).toString('base64');
+    const cacheKey = `${compilerId}:${codeHash}:${stdinHash}`;
+    
     if (executionCache.has(cacheKey)) {
       return NextResponse.json(executionCache.get(cacheKey));
     }
 
-    // ━━━ 6. TAHAP 1: KIRIM KODE KE JUDGE0 (POST) ━━━
-    const submissionResponse = await fetch(`${JUDGE0_BASE_URL}/submissions?base64_encoded=true&wait=false`, {
+    // ━━━ 5. VALIDASI KREDENSIAL ━━━
+    if (!ONLINE_COMPILER_KEY) {
+      return errorResponse(language, "Server Error: ONLINE_COMPILER_KEY belum dikonfigurasi di .env.local");
+    }
+
+    // ━━━ 6. EKSEKUSI SINKRON INSTAN (DENGAN TIMEOUT PROTECTION) ━━━
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    const submissionResponse = await fetch(ONLINE_COMPILER_SYNC_URL, {
       method: "POST",
+      signal: controller.signal,
       headers: {
-        "content-type": "application/json",
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": RAPIDAPI_HOST
+        "Content-Type": "application/json",
+        "Authorization": ONLINE_COMPILER_KEY
       },
       body: JSON.stringify({
-        language_id: languageId,
-        source_code: encodeBase64(code),
-        stdin: encodeBase64(stdin)
+        compiler: compilerId,
+        code: code,
+        input: stdin
       })
     });
 
+    clearTimeout(timeoutId);
+
     if (!submissionResponse.ok) {
-      const errTxt = await submissionResponse.text();
-      console.error("Judge0 Submission Error:", errTxt);
-      return errorResponse(language, `Gagal menghubungi compiler API (HTTP ${submissionResponse.status})`);
-    }
-
-    const { token } = await submissionResponse.json();
-    if (!token) {
-      return errorResponse(language, "Gagal mendapatkan token eksekusi dari Judge0.");
-    }
-
-    // ━━━ 7. TAHAP 2: ASYNCHRONOUS POLLING (GET) ━━━
-    let attempt = 0;
-    const MAX_ATTEMPTS = 15; // Maksimal 15 detik menunggu
-    let finalResult = null;
-
-    while (attempt < MAX_ATTEMPTS) {
-      // Jeda 1 detik setiap iterasi polling
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      attempt++;
-
-      const checkResponse = await fetch(`${JUDGE0_BASE_URL}/submissions/${token}?base64_encoded=true`, {
-        method: "GET",
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host": RAPIDAPI_HOST
-        }
-      });
-
-      if (!checkResponse.ok) continue; // Coba lagi jika ada gangguan koneksi sesaat
-
-      const data = await checkResponse.json();
+      let errTxt = await submissionResponse.text();
+      try {
+        const errJson = JSON.parse(errTxt);
+        errTxt = errJson.error || errJson.message || errTxt;
+      } catch (e) {}
       
-      // Status ID Judge0:
-      // 1 = In Queue, 2 = Processing
-      // 3 = Accepted, 4 = Wrong Answer, 5 = Time Limit Exceeded, 6 = Compilation Error, dll
-      if (data.status?.id === 1 || data.status?.id === 2) {
-        continue; // Masih diproses, loop lagi
-      }
-
-      // Selesai diproses (bisa sukses atau error)
-      finalResult = data;
-      break;
+      console.error("OnlineCompiler.io API Error:", errTxt);
+      return errorResponse(language, `Compiler API Error: ${errTxt}`);
     }
 
-    if (!finalResult) {
-      return errorResponse(language, "Waktu tunggu habis. Server eksekusi terlalu sibuk.");
-    }
+    // ━━━ 6. PEMROSESAN RESPONSE METRICS ━━━
+    const resultData = await submissionResponse.json();
 
-    // ━━━ 8. PEMROSESAN RESPONSE & BASE64 DECODING ━━━
-    const stdoutRaw = decodeBase64(finalResult.stdout);
-    const stderrRaw = decodeBase64(finalResult.stderr);
-    const compileOutputRaw = decodeBase64(finalResult.compile_output);
+    const stdoutText = resultData.output || resultData.stdout || "";
+    const stderrText = resultData.stderr || resultData.error || "";
+    const exitCode = resultData.exit_code !== undefined ? resultData.exit_code : (resultData.code || 0);
+    const isError = exitCode !== 0;
 
-    // Deteksi jika terjadi Error Logika atau Kompilasi
-    const statusId = finalResult.status?.id;
-    let isError = statusId !== 3; // 3 adalah Accepted (Sukses)
-    
-    // Rangkai pesan error dari berbagai sumber
-    let finalStderr = stderrRaw;
-    if (statusId === 5) finalStderr = "Waktu Eksekusi Melebihi Batas (Time Limit Exceeded). Pastikan tidak ada infinite loop.";
-    else if (statusId === 6) finalStderr = compileOutputRaw || "Kompilasi Gagal.";
-    else if (statusId >= 7 && statusId <= 12) finalStderr = `Runtime Error (Status: ${finalResult.status?.description || statusId})\n${stderrRaw}`;
-
-    // Gabungkan stdout dan stderr untuk kemudahan display di IDE mahasiswa
-    const combinedOutput = [stdoutRaw, finalStderr].filter(Boolean).join("\n\n");
+    const combinedOutput = [stdoutText, stderrText].filter(Boolean).join("\n\n");
 
     const responsePayload: ExecuteResponse = {
       language,
-      version: "Judge0",
+      version: "OnlineCompiler.io",
       run: {
-        stdout: stdoutRaw,
-        stderr: finalStderr,
+        stdout: stdoutText,
+        stderr: stderrText,
         output: combinedOutput || "Program selesai dijalankan (Tidak ada output).",
         code: isError ? 1 : 0,
-        signal: null
+        signal: null,
+        // Metrik krusial yang bisa Anda pakai di Frontend untuk Gamifikasi
+        time: resultData.execution_time || resultData.time || 0,
+        memory: resultData.memory || 0
       }
     };
 
-    // Simpan ke Cache jika sukses atau error sintaks (bukan error internal server)
+    // KEAMANAN: Batasi ukuran cache untuk mencegah memory leak
+    if (executionCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = executionCache.keys().next().value;
+      if (firstKey) executionCache.delete(firstKey);
+    }
     executionCache.set(cacheKey, responsePayload);
 
     return NextResponse.json(responsePayload);
 
   } catch (error: any) {
     console.error("Execute API Error:", error.message);
-    return errorResponse(language, "Terjadi kesalahan internal pada server eksekusi.");
+    // Tangkap error khusus timeout (AbortController)
+    if (error?.name === 'AbortError') {
+      return errorResponse(language, "Waktu tunggu habis (15 detik). Server compiler sedang sibuk, coba lagi.");
+    }
+    return errorResponse(language, "Terjadi kesalahan internal pada backend eksekusi.");
   }
 }

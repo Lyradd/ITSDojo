@@ -35,7 +35,9 @@ export async function GET(
 
     return NextResponse.json({
       ...lesson,
-      testCases: cases,
+      // KEAMANAN: Hanya kirim test cases yang TIDAK tersembunyi ke frontend.
+      // Hidden test cases akan diproses secara eksklusif di backend saat submit.
+      testCases: cases.filter(tc => !tc.hidden),
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

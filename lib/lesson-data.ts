@@ -95,6 +95,8 @@ int main()
       { id: 1, stdin: "C\nLanguage\nWelcome To C!!", expected: "C\nLanguage\nWelcome To C!!" },
       { id: 2, stdin: "A\nHello\nThis is a test", expected: "A\nHello\nThis is a test" },
       { id: 3, stdin: "Z\nProgramming\nI love coding!", expected: "Z\nProgramming\nI love coding!", hidden: true },
+      { id: 4, stdin: "X\nTest123\nHello @#$% World!", expected: "X\nTest123\nHello @#$% World!", hidden: true },
+      { id: 5, stdin: "a\nsingleletter\nshort", expected: "a\nsingleletter\nshort", hidden: true },
     ],
     videoUrl: "https://www.youtube.com/embed/KJgsSFOSQv0",
     summaryContent: `
@@ -130,6 +132,8 @@ int main()
       { id: 2, stdin: "100 37", expected: "137\n63" },
       { id: 3, stdin: "0 0", expected: "0\n0", hidden: true },
       { id: 4, stdin: "-3 7", expected: "4\n-10", hidden: true },
+      { id: 5, stdin: "1 1", expected: "2\n0", hidden: true },
+      { id: 6, stdin: "-10 -5", expected: "-15\n-5", hidden: true },
     ],
   },
 
@@ -158,6 +162,9 @@ int main() {
       { id: 2, stdin: "12 8 2 10", expected: "12" },
       { id: 3, stdin: "-1 -5 -3 -2", expected: "-1", hidden: true },
       { id: 4, stdin: "7 7 7 7", expected: "7", hidden: true },
+      { id: 5, stdin: "0 0 0 0", expected: "0", hidden: true },
+      { id: 6, stdin: "1 2 3 4", expected: "4", hidden: true },
+      { id: 7, stdin: "100 -100 50 -50", expected: "100", hidden: true },
     ],
   },
 
@@ -187,6 +194,8 @@ int main() {
       { id: 2, stdin: "10 3", expected: "13\n7" },
       { id: 3, stdin: "0 0", expected: "0\n0", hidden: true },
       { id: 4, stdin: "5 10", expected: "15\n5", hidden: true },
+      { id: 5, stdin: "1 1", expected: "2\n0", hidden: true },
+      { id: 6, stdin: "-3 -7", expected: "-10\n4", hidden: true },
     ],
   },
 
@@ -248,6 +257,8 @@ int main() {
       { id: 2, stdin: "404", expected: "Not Found" },
       { id: 3, stdin: "500", expected: "Internal Server Error" },
       { id: 4, stdin: "302", expected: "Unknown", hidden: true },
+      { id: 5, stdin: "0", expected: "Unknown", hidden: true },
+      { id: 6, stdin: "999", expected: "Unknown", hidden: true },
     ],
   },
 
@@ -271,6 +282,8 @@ int main() {
       { id: 1, stdin: "name=Daryl", expected: "name\nDaryl" },
       { id: 2, stdin: "lang=C", expected: "lang\nC" },
       { id: 3, stdin: "status=active", expected: "status\nactive", hidden: true },
+      { id: 4, stdin: "x=1", expected: "x\n1", hidden: true },
+      { id: 5, stdin: "key=value123", expected: "key\nvalue123", hidden: true },
     ],
   },
 
@@ -295,6 +308,8 @@ int main() {
       { id: 2, stdin: "10 - 4", expected: "6" },
       { id: 3, stdin: "6 * 7", expected: "42" },
       { id: 4, stdin: "0 + 0", expected: "0", hidden: true },
+      { id: 5, stdin: "0 * 999", expected: "0", hidden: true },
+      { id: 6, stdin: "100 - 200", expected: "-100", hidden: true },
     ],
   },
 };

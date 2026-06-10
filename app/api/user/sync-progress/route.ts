@@ -24,8 +24,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, avatar, level, xp, profileXp, gems, streak, accuracy, completedLessonIds, gamificationData } = body;
 
-    console.log("SYNC-PROGRESS RECEIVED BIO:", gamificationData?.bio);
-
     // Prepare update payload
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;

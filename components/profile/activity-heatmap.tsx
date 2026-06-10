@@ -53,7 +53,7 @@ export function ActivityHeatmap() {
       <div className="flex min-w-max">
         
         {/* Label Hari di Kiri */}
-        <div className="flex flex-col gap-1.5 mt-6 mr-2 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold text-right sticky left-0 bg-white dark:bg-black z-10 py-1">
+        <div className="flex flex-col gap-1.5 mt-6 mr-2 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold text-right sticky left-0 bg-card z-10 py-1">
           <div className="h-3.5 md:h-4 flex items-center justify-end leading-none">Sen</div>
           <div className="h-3.5 md:h-4"></div> {/* Sel */}
           <div className="h-3.5 md:h-4 flex items-center justify-end leading-none">Rab</div>

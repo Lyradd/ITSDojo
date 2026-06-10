@@ -628,4 +628,35 @@ export async function getArenaStatsForEvaluation(evaluationId: string, studentId
   }
 }
 
+export async function getRecentActivities(limitCount = 5) {
+  try {
+    const { users, evaluations, evaluationResults } = await import("@/db/schema");
+    const { desc, eq } = await import("drizzle-orm");
+    
+    const activities = await db.select({
+      id: evaluationResults.id,
+      studentName: users.name,
+      evaluationTitle: evaluations.title,
+      score: evaluationResults.score,
+      completedAt: evaluationResults.completedAt,
+    })
+    .from(evaluationResults)
+    .innerJoin(users, eq(evaluationResults.studentId, users.id))
+    .innerJoin(evaluations, eq(evaluationResults.evaluationId, evaluations.id))
+    .orderBy(desc(evaluationResults.completedAt))
+    .limit(limitCount);
+
+    return activities.map((a: any) => ({
+      id: a.id,
+      studentName: a.studentName,
+      action: 'completed_evaluation',
+      details: `Menyelesaikan evaluasi ${a.evaluationTitle} dengan skor ${a.score}`,
+      timestamp: a.completedAt,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch recent activities:", error);
+    return [];
+  }
+}
+
 

@@ -595,6 +595,11 @@ export default function EvaluationFullscreenPage() {
       const streakBonus = isCorrect && beforeStreak > 0 ? beforeStreak * 2 : 0;
       const earnedPoints = userAnswer?.pointsEarned ?? (isCorrect ? currentQuestion.points : 0);
 
+      // Trigger Misi Konsistensi Akurasi (Jawab 3 Benar Beruntun)
+      if (isCorrect && newStreak === 3) {
+        useUserStore.getState().incrementProgress('accuracy_streak', 3);
+      }
+
       setToast({
         show: true,
         isCorrect,

@@ -27,7 +27,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
     <div className="relative w-full flex justify-center z-20">
       {/* Edge ke next node */}
       {index < totalNodes - 1 && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-16 z-0">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-28 sm:h-16 z-0">
           {isCompleted ? (
             <div className="w-full h-full bg-blue-900/30 shadow-[0_0_15px_rgba(59,130,246,0.3)] overflow-hidden relative flex justify-center rounded-full">
               <motion.div
@@ -47,7 +47,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
       {node.type === 'completed' && (
         <div className="relative cursor-pointer group" onClick={() => router.push(`/learn/lesson/${node.id}`)}>
           {/* Tooltip Label */}
-          <div className={`absolute z-30 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all group-hover:shadow-md group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-sm font-bold shadow-sm transition-all group-hover:shadow-md group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[220px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-zinc-400 text-[10px] uppercase block mb-0.5">Stage {index + 1}</span>
             <span className="text-green-600 dark:text-green-400">{node.title}</span>
 
@@ -74,10 +74,6 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
             <Check className="w-9 h-9 text-white stroke-[4]" />
           </div>
 
-          {/* Bintang Reward */}
-          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded-full border border-zinc-100 dark:border-zinc-800 shadow-sm z-30">
-            {[1, 2, 3].map(i => <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />)}
-          </div>
         </div>
       )}
 
@@ -98,7 +94,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
           </motion.div>
 
           {/* Tooltip Label */}
-          <div className={`absolute z-30 bg-white dark:bg-zinc-900 border-2 border-blue-200 dark:border-blue-800 px-4 py-3 rounded-xl text-sm font-bold shadow-md transition-all group-hover:shadow-xl group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+48px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+48px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 bg-white dark:bg-zinc-900 border-2 border-blue-200 dark:border-blue-800 px-3 py-2 sm:px-4 sm:py-3 rounded-xl text-sm font-bold shadow-md transition-all group-hover:shadow-xl group-hover:scale-105 top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[220px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+48px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+48px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-blue-500 dark:text-blue-400 text-[10px] uppercase block mb-0.5 animate-pulse">👉 Saat Ini (Stage {index + 1})</span>
             <span className="text-zinc-800 dark:text-white text-base">{node.title}</span>
 
@@ -140,7 +136,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
           className="relative cursor-default z-20 group"
         >
           {/* Tooltip Label */}
-          <div className={`absolute z-30 px-4 py-2 rounded-xl text-sm font-bold opacity-60 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 backdrop-blur-sm transition-all group-hover:opacity-100 group-hover:shadow-md top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-sm font-bold opacity-60 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 backdrop-blur-sm transition-all group-hover:opacity-100 group-hover:shadow-md top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[220px] sm:max-w-[320px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-zinc-400 text-[10px] uppercase block mb-0.5">Stage {index + 1}</span>
             <span className="text-zinc-600 dark:text-zinc-400">{node.title}</span>
 
@@ -164,7 +160,7 @@ export const RoadmapNode = ({ node, index, totalNodes, isEven }: RoadmapNodeProp
       {node.type === 'far_locked' && (
         <motion.div layoutId={`node-root-${node.id}`} className="relative opacity-40 blur-[3px] grayscale cursor-default z-20 transition-all duration-500 hover:blur-[1px] hover:opacity-60 group">
           {/* Tooltip Label */}
-          <div className={`absolute z-30 px-4 py-2 rounded-xl text-sm font-bold opacity-60 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 backdrop-blur-sm top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[250px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
+          <div className={`absolute z-30 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-sm font-bold opacity-60 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/50 backdrop-blur-sm top-full mt-4 left-1/2 -translate-x-1/2 text-center w-max max-w-[220px] sm:w-auto sm:text-left sm:top-1/2 sm:-translate-y-1/2 sm:mt-0 ${isEven ? 'sm:left-[calc(50%+40px)] sm:translate-x-0 sm:origin-left' : 'sm:right-[calc(50%+40px)] sm:left-auto sm:translate-x-0 sm:origin-right sm:text-right'}`}>
             <span className="text-zinc-500 text-[10px] uppercase block tracking-wider">Misteri...</span>
           </div>
 

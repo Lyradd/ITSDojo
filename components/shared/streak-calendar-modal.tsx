@@ -57,15 +57,15 @@ export function StreakCalendarModal({ isOpen, onClose, activityHistory, streak }
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={onClose}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={onClose}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-md w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800 cursor-default"
+            className="bg-white dark:bg-zinc-900 rounded-3xl p-4 sm:p-6 max-w-md w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800 cursor-default flex flex-col max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5 sm:mb-6">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                   <Flame className="w-5 h-5 text-orange-500 fill-current" />
@@ -75,12 +75,12 @@ export function StreakCalendarModal({ isOpen, onClose, activityHistory, streak }
                   <p className="text-xs text-zinc-500">{streak} Hari Streak Saat Ini</p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+              <button onClick={onClose} className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shrink-0">
                 <X className="w-5 h-5 text-zinc-500" />
               </button>
             </div>
 
-            <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+            <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-3 sm:p-4 border border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-bold text-zinc-700 dark:text-zinc-300">{monthNames[month]} {year}</h4>
                 <div className="flex gap-1">
@@ -91,37 +91,42 @@ export function StreakCalendarModal({ isOpen, onClose, activityHistory, streak }
 
               <div className="grid grid-cols-7 gap-1 mb-2 text-center">
                 {["S", "S", "R", "K", "J", "S", "M"].map((d, i) => (
-                  <span key={i} className="text-[10px] font-bold text-zinc-400 uppercase">{d}</span>
+                  <span key={i} className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase">{d}</span>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
                 {emptyDays.map(i => <div key={`empty-${i}`} className="aspect-square" />)}
                 {days.map(day => {
                   const active = hasActivity(day);
                   const freeze = isFreezeUsed(day);
                   const today = isToday(day);
                   const xp = getDayXp(day);
+                  const colIndex = (firstDay + day - 1) % 7;
+                  
+                  let tooltipPosition = "left-1/2 -translate-x-1/2";
+                  if (colIndex <= 1) tooltipPosition = "left-0 translate-x-0";
+                  else if (colIndex >= 5) tooltipPosition = "right-0 translate-x-0";
                   
                   return (
                     <div 
                       key={day} 
-                      className={`aspect-square rounded-lg flex flex-col items-center justify-center relative group transition-all ${
+                      className={`aspect-square rounded-md sm:rounded-lg flex flex-col items-center justify-center relative group transition-all ${
                         active 
                           ? 'bg-orange-500 text-white shadow-sm' 
                           : freeze
-                            ? 'bg-blue-50 border-2 border-blue-200 text-blue-500 dark:bg-blue-900/20 dark:border-blue-800'
+                            ? 'bg-blue-50 border sm:border-2 border-blue-200 text-blue-500 dark:bg-blue-900/20 dark:border-blue-800'
                             : today 
-                              ? 'border-2 border-orange-500 text-orange-500' 
+                              ? 'border sm:border-2 border-orange-500 text-orange-500' 
                               : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                       }`}
                     >
-                      <span className="text-xs font-bold">{day}</span>
+                      <span className="text-[10px] sm:text-xs font-bold">{day}</span>
                       {active && <Check className="w-2 h-2 absolute bottom-1" />}
                       {freeze && <Snowflake className="w-2.5 h-2.5 absolute bottom-1 text-blue-500" />}
                       
                       {/* Tooltip on hover */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl">
+                      <div className={`absolute bottom-full ${tooltipPosition} mb-2 px-2 py-1 bg-zinc-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl`}>
                         {active ? `Berhasil! +${xp} XP` : freeze ? 'Streak Freeze Terpakai' : 'Belum ada aktivitas'}
                       </div>
                     </div>

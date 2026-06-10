@@ -570,8 +570,15 @@ export default function QuizPage() {
   }, [questions]);
 
   useEffect(() => {
-    if (finished && duelSession?.winnerId === currentPlayerId) {
-      triggerConfetti();
+    if (finished) {
+      // Trigger Misi Main 1x Brain Duel (Apapun hasilnya)
+      useUserStore.getState().incrementProgress('comp-1', 1);
+
+      if (duelSession?.winnerId === currentPlayerId) {
+        triggerConfetti();
+        // Trigger Misi Menang 1v1 Brain Duel
+        useUserStore.getState().incrementProgress('comp-2', 1);
+      }
     }
   }, [finished, duelSession?.winnerId, currentPlayerId]);
 

@@ -27,6 +27,8 @@ import { playSuccessSound } from "@/lib/sounds";
 import { StatWidget } from "@/components/shared/stat-widget";
 import { DailyGoalWidget } from "@/components/shared/daily-goal-widget";
 import { LeaderboardWidget } from "@/components/shared/leaderboard-widget";
+import { CourseSelectorDropdown } from "@/components/shared/course-selector-dropdown";
+import { StreakCalendarWidget } from "@/components/shared/streak-calendar-widget";
 import { ComputedLessonNode, RoadmapNode } from "@/components/learn/roadmap-node";
 import { AlertModal } from "@/components/shared/alert-modal";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -55,7 +57,8 @@ export default function LearnPage() {
     dailyGoals,
     completeLesson,
     completedLessonIds,
-    resetProgress
+    resetProgress,
+    activityHistory
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -64,6 +67,7 @@ export default function LearnPage() {
 
   // Data dari API
   const [activeCourse, setActiveCourse] = useState<any>(null);
+  const [allCoursesList, setAllCoursesList] = useState<any[]>([]);
   const [allUnits, setAllUnits] = useState<any[]>([]);
   const [lessonNodes, setLessonNodes] = useState<any[]>([]);
 
@@ -73,6 +77,7 @@ export default function LearnPage() {
       // Fetch course info
       const coursesRes = await fetch('/api/courses');
       const allCourses = await coursesRes.json();
+      setAllCoursesList(allCourses);
       const course = allCourses.find((c: any) => c.id === activeCourseId) || allCourses[0];
       setActiveCourse(course);
 
@@ -179,8 +184,8 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_max-content] gap-8">
 
         {/* =========================================
             KOLOM KIRI: MAIN CONTENT
@@ -189,9 +194,13 @@ export default function LearnPage() {
 
           {/* STAT WIDGETS (MOBILE ONLY) */}
           <div className="flex lg:hidden items-center justify-between gap-2">
-            <StatWidget icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" />
+            <CourseSelectorDropdown courses={allCoursesList} />
+            <StatWidget 
+              icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+              hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+            />
             <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={`#${userRank}`} />
+            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
           </div>
 
           {/* 0. CONTINUE BANNER or COMPLETION STATE */}
@@ -243,11 +252,11 @@ export default function LearnPage() {
           <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${theme.bg} ${theme.shadow}`}>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
-                <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
-                  <GraduationCap className="w-6 h-6" />
-                  {activeCourse.title}
+                <h2 className="text-lg sm:text-xl font-bold mb-1 flex items-start sm:items-center justify-center sm:justify-start gap-2">
+                  <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 mt-0.5 sm:mt-0" />
+                  <span className="line-clamp-2 break-words">{activeCourse.title}</span>
                 </h2>
-                <p className="text-white/80 text-sm max-w-md">{activeCourse.description}</p>
+                <p className="text-white/90 text-xs sm:text-sm max-w-md line-clamp-3 break-words mt-1.5">{activeCourse.description}</p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -337,7 +346,7 @@ export default function LearnPage() {
                           {isUnitDone ? <CheckCircle className="w-6 h-6" /> : unitIdx + 1}
                         </div>
                         <div>
-                          <h3 className={`font-bold text-base ${
+                          <h3 className={`font-bold text-sm sm:text-base line-clamp-2 break-words leading-tight ${
                             isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
                               ? 'text-white'
                               : 'text-zinc-500 dark:text-zinc-400'
@@ -345,7 +354,7 @@ export default function LearnPage() {
                             {unit.title}
                           </h3>
                           {unit.description && (
-                            <p className={`text-xs mt-0.5 ${
+                            <p className={`text-[10px] sm:text-xs mt-1.5 line-clamp-2 break-words leading-snug ${
                               isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
                                 ? 'text-white/70'
                                 : 'text-zinc-400 dark:text-zinc-500'
@@ -381,7 +390,7 @@ export default function LearnPage() {
 
                   {/* ===== LESSON NODES DI DALAM UNIT ===== */}
                   <div className="w-full relative flex flex-col items-center">
-                    <div className="flex flex-col items-center gap-16 relative z-20 w-full max-w-md mx-auto">
+                    <div className="flex flex-col items-center gap-28 sm:gap-16 relative z-20 w-full max-w-md mx-auto">
                       {unitLessons.length === 0 ? (
                         <div className="text-center py-8 text-zinc-400 text-sm">
                           <p>Belum ada lesson di unit ini.</p>
@@ -427,10 +436,8 @@ export default function LearnPage() {
                     </div>
                   </div>
 
-                  {/* Jarak (Spacing) bersih antar unit */}
-                  {unitIdx < allUnits.length - 1 && (
-                    <div className="h-16 w-full" />
-                  )}
+                  {/* Jarak (Spacing) bersih antar unit / akhir unit agar tidak tumpang tindih dengan widget */}
+                  <div className={`w-full ${unitIdx < allUnits.length - 1 ? 'h-16' : 'h-32'}`} />
                 </div>
               );
             })
@@ -442,9 +449,15 @@ export default function LearnPage() {
            ========================================= */}
         <div className="flex flex-col gap-6">
           <div className="hidden lg:flex items-center justify-between gap-2">
-            <StatWidget icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" />
-            <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
-            <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={`#${userRank}`} />
+            <CourseSelectorDropdown courses={allCoursesList} />
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <StatWidget 
+                icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+              />
+              <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
+              <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+            </div>
           </div>
 
           <DailyGoalWidget dailyGoals={dailyGoals} />

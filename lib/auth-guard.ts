@@ -2,28 +2,37 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 
 /**
- * Middleware helper untuk mengecek apakah request berasal dari admin/dosen.
- * 
- * Menggunakan signed HTTP-only session cookie untuk validasi identitas.
- * Cookie di-set saat login (validateLogin) dan dihapus saat logout (logoutSession).
- * 
- * Contoh penggunaan di route.ts:
- *   const authError = await requireAdmin(req);
- *   if (authError) return authError;
+ * Middleware/Server Helper untuk memvalidasi Role (Otorisasi).
+ * Mengembalikan objek error jika tidak memiliki izin, 
+ * atau null jika lolos (diizinkan).
+ */
+export async function requireRole(allowedRoles: string[]): Promise<{ error: string, status: number } | null> {
+  const session = await getSession();
+  
+  if (!session || !session.userId) {
+    return { error: "Unauthorized", status: 401 };
+  }
+  
+  if (!allowedRoles.includes(session.role)) {
+    return { error: "Forbidden - Tidak ada hak akses ke area ini.", status: 403 };
+  }
+  
+  return null; // Lolos
+}
+
+/**
+ * Helper spesifik untuk mengecek admin di route handler.
  */
 export async function requireAdmin(req: Request): Promise<NextResponse | null> {
-  // BYPASS SEMENTARA TAHAP DEV: 
-  // Pengecekan session dihilangkan. Semua akses ke API Admin diloloskan tanpa token/cookie.
-  return null; 
+  const result = await requireRole(['admin']);
+  if (result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+  return null;
 }
 
 /**
  * Helper untuk mendapatkan userId dari session cookie.
- * Mengembalikan null jika tidak ada sesi aktif.
- * 
- * Contoh penggunaan di route.ts:
- *   const userId = await getAuthUserId();
- *   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
  */
 export async function getAuthUserId(): Promise<string | null> {
   const session = await getSession();

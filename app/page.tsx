@@ -332,7 +332,7 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="max-w-6xl mx-auto px-6 relative z-10"
+        className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10"
       >
         <div className="text-center mb-16">
           <motion.div
@@ -342,10 +342,10 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
           >
             <Swords className="w-10 h-10" />
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 sm:mb-6 tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
             <MaskedText>Brain Duel:</MaskedText>{" "}<MaskedText delay={0.15}>Arena Pertarungan</MaskedText>
           </h2>
-          <p className="text-zinc-400 max-w-2xl mx-auto text-xl leading-relaxed">
+          <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-xl leading-relaxed px-2 sm:px-0">
             Tabrak lawanmu secara langsung! Jawab akurat di bawah tekanan waktu, hancurkan pertahanan mereka, dan rebut XP di depan mata.
           </p>
         </div>
@@ -470,7 +470,7 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
           </motion.div>
 
           <div className="mt-16 text-center">
-            <Button className="h-14 md:h-16 px-8 md:px-12 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-lg md:text-xl shadow-[0_0_40px_rgba(239,68,68,0.5)] transition-all flex items-center gap-3 mx-auto group">
+            <Button className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-12 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-base sm:text-lg md:text-xl shadow-[0_0_40px_rgba(239,68,68,0.5)] transition-all flex items-center gap-3 mx-auto group w-full sm:w-auto justify-center">
               <Rocket className="w-6 h-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> Mulai Pertarungan Baru
             </Button>
           </div>
@@ -615,7 +615,7 @@ export default function LandingPage() {
 
       {/* 2. NAVBAR */}
       <nav className="fixed top-0 w-full z-[100] backdrop-blur-xl bg-[#050505]/80 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform shadow-lg shadow-blue-500/20">
               <GraduationCap className="w-6 h-6 text-white" />
@@ -639,19 +639,21 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/login" className="hidden sm:block">
-              <motion.span
-                whileHover={{ scale: 1.05, color: '#ffffff' }}
-                whileTap={{ scale: 0.95 }}
-                className="text-sm font-bold text-zinc-400 hover:text-white transition-colors inline-block"
-              >
-                Masuk
-              </motion.span>
-            </Link>
+            {(!mounted || !isLoggedIn) && (
+              <Link href="/login" className="hidden sm:block">
+                <motion.span
+                  whileHover={{ scale: 1.05, color: '#ffffff' }}
+                  whileTap={{ scale: 0.95 }}
+                  className="text-sm font-bold text-zinc-400 hover:text-white transition-colors inline-block"
+                >
+                  Masuk
+                </motion.span>
+              </Link>
+            )}
             <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button className="bg-white text-black hover:bg-zinc-200 font-bold px-6 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all">
-                  Mulai Sekarang
+                <Button className="bg-white text-black hover:bg-zinc-200 font-bold px-5 sm:px-6 h-10 sm:h-auto rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all text-sm sm:text-base">
+                  {mounted && isLoggedIn ? "Lanjut Belajar" : "Mulai Sekarang"}
                 </Button>
               </motion.div>
             </Link>
@@ -660,7 +662,7 @@ export default function LandingPage() {
       </nav>
 
       {/* 3. HERO SECTION */}
-      <section className="relative min-h-[85vh] md:min-h-[95vh] flex items-center justify-center pt-20 overflow-hidden">
+      <section className="relative min-h-[80vh] md:min-h-[95vh] flex items-center justify-center pt-16 sm:pt-20 overflow-hidden">
         {/* WebGL 3D Background - Loaded conditionally for Mobile Optimization and Hydration Safety */}
         {mounted && isDesktop && <HeroScene />}
 
@@ -687,7 +689,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Kinetic Masked Text Reveal — per-word stagger */}
-            <h1 className="text-5xl md:text-7xl lg:text-[6.5rem] font-black tracking-tighter mb-8 leading-[1.1] text-white">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-[6.5rem] font-black tracking-tighter mb-6 sm:mb-8 leading-[1.1] text-white">
               <MaskedText delay={0.1}>Evolusi</MaskedText>{" "}
               <MaskedText delay={0.2}>Gamifikasi</MaskedText>
               <br />
@@ -697,18 +699,18 @@ export default function LandingPage() {
               </span>
             </h1>
 
-            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="text-zinc-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed font-medium px-2 sm:px-0">
               ITSDojo mengubah cara mahasiswa IT belajar. Kuasai spesialisasi koding melalui quest interaktif, duel real-time, dan ekosistem gamifikasi yang memacu adrenalin.
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
-                <MagneticButton size="lg" className="h-16 px-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg shadow-[0_0_40px_rgba(37,99,235,0.4)] transition-all flex gap-2 group">
+                <MagneticButton size="lg" className="h-14 sm:h-16 px-8 sm:px-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-base sm:text-lg shadow-[0_0_40px_rgba(37,99,235,0.4)] transition-all flex gap-2 group w-full sm:w-auto justify-center">
                   Tingkatkan Levelmu
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </MagneticButton>
               </Link>
-              <MagneticButton onClick={() => scrollTo('roadmap')} variant="outline" size="lg" className="h-16 px-10 rounded-full border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-bold text-lg backdrop-blur-sm transition-all shadow-sm">
+              <MagneticButton onClick={() => scrollTo('roadmap')} variant="outline" size="lg" className="h-14 sm:h-16 px-8 sm:px-10 rounded-full border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-bold text-base sm:text-lg backdrop-blur-sm transition-all shadow-sm w-full sm:w-auto justify-center">
                 Lihat Pohon Skill
               </MagneticButton>
             </motion.div>
@@ -738,50 +740,55 @@ export default function LandingPage() {
       </section>
 
       {/* 3.5 INFINITE SOCIAL PROOF MARQUEE */}
-      <section className="py-10 border-y border-white/5 bg-[#050505]/80 backdrop-blur-md relative z-10 overflow-hidden flex flex-col items-center">
-        <p className="text-zinc-500 text-sm font-bold tracking-widest uppercase mb-6">Teknologi yang Diajarkan & Digunakan</p>
+      <section className="py-6 sm:py-10 border-y border-white/5 bg-[#050505]/80 backdrop-blur-md relative z-10 overflow-hidden flex flex-col items-center">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes marquee-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}} />
+        <p className="text-zinc-500 text-xs sm:text-sm font-bold tracking-widest uppercase mb-4 sm:mb-6">Teknologi yang Diajarkan & Digunakan</p>
         <div className="flex overflow-hidden w-full relative">
           {/* Gradient Masks */}
-          <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-[#050505] to-transparent z-10" />
-          <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#050505] to-transparent z-10" />
+          <div className="absolute top-0 left-0 w-20 sm:w-32 h-full bg-gradient-to-r from-[#050505] to-transparent z-10" />
+          <div className="absolute top-0 right-0 w-20 sm:w-32 h-full bg-gradient-to-l from-[#050505] to-transparent z-10" />
 
-          <motion.div
-            animate={{ x: [0, -1035] }}
-            transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-            className="flex gap-16 whitespace-nowrap items-center w-max"
+          <div 
+            className="flex whitespace-nowrap items-center w-max will-change-transform"
+            style={{ animation: 'marquee-scroll 25s linear infinite' }}
           >
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="flex gap-16 items-center px-8">
-                <span className="text-xl font-bold text-zinc-600">TypeScript</span>
-                <span className="text-xl font-bold text-zinc-600">React.js</span>
-                <span className="text-xl font-bold text-zinc-600">Node.js</span>
-                <span className="text-xl font-bold text-zinc-600">Python</span>
-                <span className="text-xl font-bold text-zinc-600">PostgreSQL</span>
-                <span className="text-xl font-bold text-zinc-600">AWS</span>
-                <span className="text-xl font-bold text-zinc-600">Docker</span>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex gap-10 sm:gap-16 items-center px-5 sm:px-8">
+                <span className="text-base sm:text-xl font-bold text-zinc-600">TypeScript</span>
+                <span className="text-base sm:text-xl font-bold text-zinc-600">React.js</span>
+                <span className="text-base sm:text-xl font-bold text-zinc-600">Node.js</span>
+                <span className="text-base sm:text-xl font-bold text-zinc-600">Python</span>
+                <span className="text-base sm:text-xl font-bold text-zinc-600">PostgreSQL</span>
+                <span className="text-base sm:text-xl font-bold text-zinc-600">AWS</span>
+                <span className="text-base sm:text-xl font-bold text-zinc-600">Docker</span>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* 4. KILLER FEATURE 1: INTERACTIVE ROADMAP */}
-      <section id="roadmap" className="py-24 relative z-10 bg-[#030712]/50 border-y border-white/5 backdrop-blur-xl">
+      <section id="roadmap" className="py-16 sm:py-24 relative z-10 bg-[#030712]/50 border-y border-white/5 backdrop-blur-xl">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-7xl mx-auto px-6"
+          className="max-w-7xl mx-auto px-4 sm:px-6"
         >
           <div className="text-center mb-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 mb-6 border border-blue-500/20 shadow-sm">
               <Map className="w-8 h-8" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 tracking-tight text-white">
               <MaskedText>Pohon Skill</MaskedText>{" "}<MaskedText delay={0.15}>Interaktif</MaskedText>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto text-xl leading-relaxed">
+            <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-xl leading-relaxed px-2 sm:px-0">
               Klik setiap node untuk merancang takdirmu. Pilih spesialisasi, selesaikan modul untuk mengumpulkan XP, dan buka rahasia ilmu koding layaknya game RPG.
             </p>
           </div>
@@ -863,24 +870,24 @@ export default function LandingPage() {
       </section>
 
       {/* 5. KILLER FEATURE 2: GAMIFICATION */}
-      <section id="gamifikasi" className="py-24 relative z-10">
+      <section id="gamifikasi" className="py-16 sm:py-24 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-6xl mx-auto px-6"
+          className="max-w-6xl mx-auto px-4 sm:px-6"
         >
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 tracking-tight text-white">
               <MaskedText>Didesain untuk</MaskedText>{" "}<MaskedText delay={0.15}>Cara Kerja Otak</MaskedText>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto text-xl">
+            <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-xl px-2 sm:px-0">
               ITSDojo menggabungkan kurikulum terstruktur dan penghargaan instan untuk mendukung pembelajaran yang fokus dan adiktif.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
             <ValueCard
               icon={<Flame className="w-8 h-8" />}
               title="Pertahankan Streak"
@@ -907,15 +914,15 @@ export default function LandingPage() {
       </section>
 
       {/* 6. KILLER FEATURE 3: INTERACTIVE LEADERBOARD */}
-      <section id="peringkat" className="py-24 relative z-10 bg-[#030712]/50 border-y border-white/5">
+      <section id="peringkat" className="py-16 sm:py-24 relative z-10 bg-[#030712]/50 border-y border-white/5">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-6xl mx-auto px-6"
+          className="max-w-6xl mx-auto px-4 sm:px-6"
         >
-          <div className="flex flex-col lg:flex-row items-center gap-16">
+          <div className="flex flex-col lg:flex-row items-center gap-10 sm:gap-16">
             <div className="flex-1 w-full order-2 lg:order-1">
               <SpotlightCard className="w-full" highlighted={true}>
                 <div className="p-6 md:p-8 w-full h-full relative z-10">
@@ -986,14 +993,14 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
                 <Trophy className="w-4 h-4" /> Papan Peringkat Live
               </div>
-              <h3 className="text-4xl md:text-5xl font-black mb-6 text-white leading-[1.1]">
+              <h3 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-white leading-[1.1]">
                 <MaskedText>Naik ke Puncak</MaskedText>{" "}
                 <MaskedText delay={0.15}>Klasemen</MaskedText>
               </h3>
-              <p className="text-zinc-400 text-lg leading-relaxed mb-8">
+              <p className="text-zinc-400 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8">
                 Kompetisi yang sehat memicu kehebatan. Pantau progres Anda melawan teman sekelas secara real-time. Klik profil manapun untuk mengintip statistik mereka, lalu curi taktiknya!
               </p>
-              <Button className="h-14 px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg">
+              <Button className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg w-full sm:w-auto">
                 Lihat Semua Peringkat
               </Button>
             </div>
@@ -1005,19 +1012,19 @@ export default function LandingPage() {
       <BrainDuel isDesktop={isDesktop} />
 
       {/* 8. REAL-TIME ANALYTICS (Non-AI, Gamification Focused) */}
-      <section id="analitik" className="py-24 relative z-10 bg-[#030712]">
+      <section id="analitik" className="py-16 sm:py-24 relative z-10 bg-[#030712]">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-7xl mx-auto px-6"
+          className="max-w-7xl mx-auto px-4 sm:px-6"
         >
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-white tracking-tight">
               <MaskedText>Analitik Pembelajaran</MaskedText>{" "}<MaskedText delay={0.15}>Cerdas</MaskedText>
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed">
+            <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed px-2 sm:px-0">
               Setiap klik membangun profil karaktermu. Sistem memantau gaya belajar Anda untuk merekomendasikan tantangan terbaik agar Anda tidak pernah bosan.
             </p>
           </div>
@@ -1074,7 +1081,7 @@ export default function LandingPage() {
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.3)_0,transparent_70%)] pointer-events-none"
               />
 
-              <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 relative z-10 tracking-tight leading-tight drop-shadow-md">
+              <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white mb-4 sm:mb-6 relative z-10 tracking-tight leading-tight drop-shadow-md">
                 <MaskedText>Siap untuk memasuki</MaskedText><br />
                 <motion.span
                   animate={{ opacity: [1, 1, 0.2, 1, 0.4, 1, 1, 0.1, 1, 1] }}
@@ -1085,7 +1092,7 @@ export default function LandingPage() {
                 </motion.span>
               </h2>
 
-              <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-xl mx-auto relative z-10 font-medium">
+              <p className="text-zinc-400 text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-xl mx-auto relative z-10 font-medium px-2 sm:px-0">
                 Waktu terbaik untuk memulai adalah kemarin. Waktu terbaik kedua adalah <span className="text-blue-100 font-bold">sekarang.</span>
               </p>
 
@@ -1112,7 +1119,7 @@ export default function LandingPage() {
           </svg>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8 text-center md:text-left relative z-10">
           <div className="flex flex-col gap-4 items-center md:items-start">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">

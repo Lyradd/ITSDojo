@@ -69,7 +69,7 @@ export function MobileNav() {
     studentMobileNavItems;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white dark:bg-zinc-950 border-t flex items-center justify-around px-2 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 h-[60px] pb-safe bg-white dark:bg-zinc-950 border-t flex items-center justify-around px-1 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
       {mobileNavItems.map((item) => {
         // Strict exact match for specific dashboard paths to avoid false positives
         const isDashboard = item.href === '/learn' || item.href === '/dosen' || item.href === '/admin' || item.href === '/asdos';
@@ -82,15 +82,26 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors",
+              "relative flex flex-col items-center justify-center w-full min-h-[48px] h-full gap-1 transition-colors [-webkit-tap-highlight-color:transparent]",
               isActive 
                 ? "text-blue-600 dark:text-blue-400" 
                 : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             )}
           >
-            <item.icon className={cn("w-6 h-6", isActive && "fill-current")} />
+            {/* Indikator aktif atas (Garis kecil) selalu di-render tapi opacity diatur */}
+            <div 
+              className={cn(
+                "absolute top-0 w-6 h-1 bg-blue-600 dark:bg-blue-400 rounded-b-full transition-opacity duration-200",
+                isActive ? "opacity-100" : "opacity-0"
+              )} 
+            />
 
-            <span className="text-[10px] font-bold uppercase tracking-wide">
+            <item.icon 
+              className="w-5 h-5 transition-colors duration-200 mt-1" 
+              strokeWidth={isActive ? 2.5 : 2}
+            />
+
+            <span className="text-[9px] uppercase tracking-wide font-bold transition-colors duration-200">
               {item.label}
             </span>
           </Link>

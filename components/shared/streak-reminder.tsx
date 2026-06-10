@@ -92,8 +92,8 @@ export function StreakReminder() {
                   </div>
                 )}
               </div>
-              <button onClick={() => setShowWarning(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
-                <X className="w-4 h-4" />
+              <button onClick={() => setShowWarning(false)} className="hover:bg-white/10 p-2 rounded-lg transition-colors shrink-0">
+                <X className="w-5 h-5" />
               </button>
             </div>
           </motion.div>
@@ -105,10 +105,10 @@ export function StreakReminder() {
         <div className="fixed bottom-24 right-6 md:bottom-6 md:right-6 z-40">
           <button 
             onClick={requestNotificationPermission}
-            className="group flex items-center gap-2 p-3 bg-blue-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 hover:bg-blue-700"
+            className="group flex items-center gap-2 p-4 sm:p-3 bg-blue-600 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 hover:bg-blue-700"
             title="Aktifkan Pengingat Streak"
           >
-            <BellOff className="w-5 h-5" />
+            <BellOff className="w-6 h-6 sm:w-5 sm:h-5" />
             <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-500 text-xs font-bold pr-2">
               Ingatkan Streak
             </span>

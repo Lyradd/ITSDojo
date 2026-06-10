@@ -47,13 +47,13 @@ export function ActivityHeatmap() {
   });
 
   return (
-    <div className="flex flex-col gap-2 w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
+    <div className="flex flex-col gap-2 w-full overflow-x-auto overscroll-x-contain snap-x snap-mandatory pb-4 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
       
       {/* Container Kalender */}
       <div className="flex min-w-max">
         
         {/* Label Hari di Kiri */}
-        <div className="flex flex-col gap-1.5 mt-6 mr-2 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold text-right">
+        <div className="flex flex-col gap-1.5 mt-6 mr-2 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold text-right sticky left-0 bg-white dark:bg-black z-10 py-1">
           <div className="h-3.5 md:h-4 flex items-center justify-end leading-none">Sen</div>
           <div className="h-3.5 md:h-4"></div> {/* Sel */}
           <div className="h-3.5 md:h-4 flex items-center justify-end leading-none">Rab</div>
@@ -80,7 +80,7 @@ export function ActivityHeatmap() {
           {/* Grid Kotak */}
           <div className="flex gap-1.5">
             {weeks.map((week: Date[], weekIdx: number) => (
-              <div key={weekIdx} className="flex flex-col gap-1.5">
+              <div key={weekIdx} className="flex flex-col gap-1.5 snap-start">
                 {week.map((dayObj: Date, dayIdx: number) => {
                   const dateStr = formatLocalDate(dayObj);
                   const record = activityHistory.find((h: { date: string, count: number }) => h.date === dateStr);

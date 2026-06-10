@@ -206,11 +206,11 @@ export default function CoursesPage() {
 
               {/* View Toggle */}
               <div className="flex items-center p-1 bg-background rounded-md border border-input shrink-0">
-                <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
-                  <LayoutGrid className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className={`h-12 w-12 md:h-8 md:w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
+                  <LayoutGrid className="h-5 w-5 md:h-4 md:w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
-                  <List className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className={`h-12 w-12 md:h-8 md:w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
+                  <List className="h-5 w-5 md:h-4 md:w-4" />
                 </Button>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function CoursesPage() {
                     e.stopPropagation();
                     handleToggleBookmark(course.id);
                   }}
-                  className={`absolute top-2 right-2 p-2 rounded-full backdrop-blur-md shadow-md transition-all active:scale-90 ${
+                  className={`absolute top-2 right-2 p-3 md:p-2 rounded-full backdrop-blur-md shadow-md transition-all active:scale-90 ${
                     bookmarkedCourseIds.includes(course.id) 
                       ? "bg-blue-600 text-white" 
                       : "bg-white/50 text-zinc-800 hover:bg-white"
@@ -366,7 +366,7 @@ export default function CoursesPage() {
                         e.stopPropagation();
                         handleToggleBookmark(course.id);
                       }}
-                      className={`ml-2 p-1.5 rounded-lg transition-all active:scale-90 ${
+                      className={`ml-2 p-3 md:p-1.5 rounded-lg transition-all active:scale-90 ${
                         bookmarkedCourseIds.includes(course.id) 
                           ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40" 
                           : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"

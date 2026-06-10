@@ -53,6 +53,9 @@ export default function LeaderboardPage() {
   useEffect(() => {
     if (!isMounted || !isLoggedIn) return;
 
+    // Trigger misi harian 'Cek Leaderboard'
+    useUserStore.getState().incrementProgress('comp-3', 1);
+
     const loadRealtimeData = async () => {
       try {
         // Pakai filter courseId hanya saat scopeFilter == 'course' dan subScope berisi course id valid

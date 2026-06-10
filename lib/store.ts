@@ -592,7 +592,8 @@ export const useUserStore = create<UserState>()(
             courseAccessHistory: newCourseAccess, unlockedAchievements: newAchievements,
             nocturnalCount: newNocturnalCount, earlyBirdCount: newEarlyBirdCount,
             longestStreak: Math.max(state.longestStreak, newStreak),
-            streak: newStreak, lastActiveDate: newLastActiveDate
+            streak: newStreak, lastActiveDate: newLastActiveDate,
+            totalPerfectLessons: isPerfect ? (state.totalPerfectLessons + 1) : state.totalPerfectLessons
           };
         });
         if (streakIncreased) get().incrementProgress('cons-2', 1);

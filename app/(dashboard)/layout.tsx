@@ -12,7 +12,7 @@ export default async function DashboardServerLayout({
   const authError = await requireRole(['mahasiswa']);
 
   if (authError) {
-    // Jika bukan mahasiswa (misalnya admin atau dosen), redirect ke dashboard mereka masing-masing
+    // Jika bukan mahasiswa, redirect ke dashboard mereka masing-masing
     // atau redirect ke login jika belum login
     if (authError.status === 401) {
       redirect('/login');

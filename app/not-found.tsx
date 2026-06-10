@@ -3,9 +3,17 @@
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, GraduationCap } from 'lucide-react';
+import { useUserStore } from "@/lib/store";
+import { useEffect } from 'react';
 
 export default function NotFound() {
   const router = useRouter();
+  const unlockAchievement = useUserStore((state) => state.unlockAchievement);
+
+  useEffect(() => {
+    unlockAchievement("bug-squasher");
+  }, [unlockAchievement]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <div className="flex items-center mb-6 space-x-2">

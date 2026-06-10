@@ -54,10 +54,11 @@ export default function LessonIDEPage() {
   const params = useParams();
   const lessonId = params?.id as string;
 
-  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email } = useUserStore();
+  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email, unlockAchievement } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<any>(null);
+  const [failCount, setFailCount] = useState(0); // State untuk melacak kegagalan submit beruntun
   const [code, setCode] = useState<string>('');
   const [codes, setCodes] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState('problem');
@@ -345,7 +346,7 @@ export default function LessonIDEPage() {
     );
   }
 
-  // Helper: eksekusi kode via Backend API (diteruskan ke Judge0 RapidAPI)
+  // Helper: eksekusi kode via Backend API (diteruskan ke OnlineCompiler.io)
   const executeCode = async (stdin?: string) => {
     const response = await fetch("/api/execute", {
       method: "POST",
@@ -386,59 +387,40 @@ export default function LessonIDEPage() {
     }
   };
 
-  // Submit & Selesai: jalankan terhadap semua test case, validasi output
+  // Submit & Selesai: kirim kode ke backend untuk divalidasi terhadap SEMUA test case (termasuk hidden)
   const handleSubmit = async () => {
-    if (!lesson?.testCases || lesson.testCases.length === 0) return;
-
     setIsSubmitting(true);
     setExecutionResult(null);
     setIsError(false);
 
-    let resultLog = `⏳ Menjalankan ${lesson.testCases.length} test cases...\n\n`;
-    setExecutionResult(resultLog);
-
-    let allPassed = true;
-
     try {
-      for (const tc of lesson.testCases) {
-        const data = await executeCode(tc.stdin);
+      setExecutionResult("⏳ Mengirim kode ke server untuk validasi...\n");
 
-        const actualOutput = (data.run?.output ?? "").replace(/\r\n/g, "\n").trimEnd();
-        const expectedOutput = tc.expected.replace(/\r\n/g, "\n").trimEnd();
+      const response = await fetch(`/api/lessons/${lessonId}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: code,
+          language: language,
+        })
+      });
 
-        // Cek error kompilasi / runtime
-        if (!data.run || data.run.code !== 0 || data.run.stderr) {
-          allPassed = false;
-          const errorMsg = data.run?.stderr || data.run?.output || data.message || "Unknown error";
-          resultLog += `❌ Test Case ${tc.order}: ERROR\n`;
-          resultLog += `   Error: ${errorMsg.trim()}\n\n`;
-          setExecutionResult(resultLog);
-          setIsError(true);
-          continue;
-        }
+      const data = await response.json();
 
-        // Bandingkan output
-        if (actualOutput === expectedOutput) {
-          resultLog += `✅ Test Case ${tc.order}: PASSED\n`;
-        } else {
-          allPassed = false;
-          resultLog += `❌ Test Case ${tc.order}: FAILED\n`;
-          resultLog += `   Expected:\n${expectedOutput.split("\n").map((l: string) => `   │ ${l}`).join("\n")}\n`;
-          resultLog += `   Got:\n${actualOutput.split("\n").map((l: string) => `   │ ${l}`).join("\n")}\n`;
-        }
-        resultLog += "\n";
-        setExecutionResult(resultLog);
-      }
+      // Tampilkan log hasil validasi dari server
+      setExecutionResult(data.log || "Tidak ada hasil dari server.");
 
-      if (allPassed) {
-        resultLog += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        resultLog += "🎉 Semua test case PASSED! Lesson selesai!\n";
-        setExecutionResult(resultLog);
+      if (data.allPassed) {
         setIsError(false);
+        
+        // Cek Achievement "O(1) Perfection" (Zero Exceptions)
+        if (failCount === 0) {
+          unlockAchievement("flawless");
+        }
 
         // Tandai lesson selesai setelah delay singkat agar user bisa lihat hasil
         setTimeout(() => {
-          completeLesson(lessonId, true, lesson.xpReward, lesson.gemReward);
+          completeLesson(lessonId, failCount === 0, data.xpReward || lesson?.xpReward, data.gemReward || lesson?.gemReward);
           triggerConfetti();
           playSuccessSound();
           setTimeout(() => {
@@ -446,14 +428,18 @@ export default function LessonIDEPage() {
           }, 1500);
         }, 800);
       } else {
-        resultLog += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        resultLog += "⚠️ Beberapa test case gagal. Perbaiki kode dan coba lagi.\n";
-        setExecutionResult(resultLog);
         setIsError(true);
+        // Track fail count untuk achievement "Brute Force"
+        setFailCount((prev) => {
+          const newCount = prev + 1;
+          if (newCount === 5) {
+            unlockAchievement("brute-force");
+          }
+          return newCount;
+        });
       }
     } catch (error: any) {
-      resultLog += `\n❌ Gagal menghubungi Execution API: ${error.message}\n`;
-      setExecutionResult(resultLog);
+      setExecutionResult(`\n❌ Gagal menghubungi server: ${error.message}\n`);
       setIsError(true);
     } finally {
       setIsSubmitting(false);

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -172,17 +172,15 @@ export default function DuelQuestionsAdminPage() {
     const nextState: QuestionFormState = {
       ...form,
       questionType,
-      correctAnswer: questionType === "true_false" ? "True" : form.correctAnswer,
-      options: questionType === "multiple_choice" || questionType === "true_false"
-        ? form.options.length > 0
-          ? form.options
-          : ["", "", "", ""]
-        : ["", "", "", ""],
+      correctAnswer: questionType === "true_false" ? "True" : (questionType === "slider" ? "5" : ""),
+      options: questionType === "true_false"
+        ? ["True", "False"]
+        : questionType === "multiple_choice"
+          ? form.options.length === 4
+            ? form.options
+            : ["", "", "", ""]
+          : ["", "", "", ""],
     };
-
-    if (questionType === "slider") {
-      nextState.correctAnswer = nextState.correctAnswer || "5";
-    }
 
     setForm(nextState);
   };
@@ -190,8 +188,14 @@ export default function DuelQuestionsAdminPage() {
   const handleOptionChange = (index: number, value: string) => {
     setForm((current) => {
       const nextOptions = [...current.options];
+      const oldValue = nextOptions[index];
       nextOptions[index] = value;
-      return { ...current, options: nextOptions };
+      const isCorrect = current.correctAnswer !== "" && current.correctAnswer === oldValue;
+      return {
+        ...current,
+        options: nextOptions,
+        correctAnswer: isCorrect ? value : current.correctAnswer,
+      };
     });
   };
 
@@ -217,8 +221,27 @@ export default function DuelQuestionsAdminPage() {
       return;
     }
 
-    if (form.questionType === "multiple_choice" && form.options.filter((option) => option.trim()).length < 2) {
-      toast.error("Minimal dua opsi jawaban diperlukan.");
+    if (form.questionType === "multiple_choice") {
+      const trimmedOptions = form.options.map((option) => option.trim()).filter(Boolean);
+      if (trimmedOptions.length < 2) {
+        toast.error("Minimal dua opsi jawaban diperlukan.");
+        return;
+      }
+      if (!form.correctAnswer || !trimmedOptions.includes(form.correctAnswer.trim())) {
+        toast.error("Pilih salah satu opsi sebagai jawaban benar.");
+        return;
+      }
+    }
+
+    if (form.questionType === "true_false") {
+      if (form.correctAnswer !== "True" && form.correctAnswer !== "False") {
+        toast.error("Pilih True atau False sebagai jawaban benar.");
+        return;
+      }
+    }
+
+    if (form.questionType === "short_answer" && !form.correctAnswer.trim()) {
+      toast.error("Jawaban benar wajib diisi.");
       return;
     }
 
@@ -334,33 +357,96 @@ export default function DuelQuestionsAdminPage() {
                 />
               </div>
 
-              {(form.questionType === "multiple_choice" || form.questionType === "true_false") && (
+              {form.questionType === "multiple_choice" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>Opsi Jawaban</Label>
-                    <span className="text-xs text-zinc-500">Jawaban benar harus ada di daftar opsi</span>
+                    <span className="text-xs text-zinc-500">Pilih salah satu sebagai jawaban benar</span>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
-                    {form.options.map((option, index) => (
-                      <Input
-                        key={`${form.questionType}-${index}`}
-                        value={option}
-                        onChange={(event) => handleOptionChange(index, event.target.value)}
-                        placeholder={`Opsi ${index + 1}`}
-                      />
-                    ))}
+                    {form.options.map((option, index) => {
+                      const isCorrect = form.correctAnswer !== "" && form.correctAnswer === option;
+                      return (
+                        <div key={`mc-${index}`} className="flex items-center gap-2">
+                          <Input
+                            value={option}
+                            onChange={(event) => handleOptionChange(index, event.target.value)}
+                            placeholder={`Opsi ${index + 1}`}
+                          />
+                          <Button
+                            type="button"
+                            variant={isCorrect ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => {
+                              if (option.trim()) {
+                                setForm((current) => ({ ...current, correctAnswer: option }));
+                              } else {
+                                toast.error("Opsi harus diisi sebelum menjadikannya jawaban benar.");
+                              }
+                            }}
+                            className={cn(
+                              "h-11 w-11 shrink-0 transition-all duration-200",
+                              isCorrect
+                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            )}
+                            title="Tandai sebagai jawaban benar"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {form.questionType !== "slider" && (
+              {form.questionType === "true_false" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Opsi Jawaban</Label>
+                    <span className="text-xs text-zinc-500">Pilih salah satu sebagai jawaban benar</span>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {["True", "False"].map((option) => {
+                      const isCorrect = form.correctAnswer === option;
+                      return (
+                        <div key={`tf-${option}`} className="flex items-center gap-2">
+                          <div className="flex h-11 w-full items-center rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm font-semibold dark:border-zinc-800 dark:bg-zinc-900/50">
+                            {option === "True" ? "True / Benar" : "False / Salah"}
+                          </div>
+                          <Button
+                            type="button"
+                            variant={isCorrect ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => {
+                              setForm((current) => ({ ...current, correctAnswer: option }));
+                            }}
+                            className={cn(
+                              "h-11 w-11 shrink-0 transition-all duration-200",
+                              isCorrect
+                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                            )}
+                            title="Tandai sebagai jawaban benar"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {form.questionType === "short_answer" && (
                 <div className="space-y-2">
                   <Label htmlFor="correctAnswer">Jawaban Benar</Label>
                   <Input
                     id="correctAnswer"
                     value={form.correctAnswer}
                     onChange={(event) => setForm((current) => ({ ...current, correctAnswer: event.target.value }))}
-                    placeholder={form.questionType === "true_false" ? "True atau False" : "Jawaban benar"}
+                    placeholder="Jawaban benar"
                   />
                 </div>
               )}

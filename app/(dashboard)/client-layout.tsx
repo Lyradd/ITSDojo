@@ -20,7 +20,7 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const hideSidebar = pathname.startsWith("/duel/1v1/");
+  const hideSidebar = pathname.startsWith("/duel/1v1/") || pathname.startsWith("/duel/arena/");
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { checkDailyReset, isLoggedIn, id, syncFromServer } = useUserStore();
@@ -95,7 +95,8 @@ export default function ClientLayout({
 
       <main
         className={cn(
-          'flex-1 pb-20 md:pb-0 transition-all duration-300',
+          'flex-1 transition-all duration-300',
+          hideSidebar ? 'pb-0 md:pb-0' : 'pb-20 md:pb-0',
           hideSidebar
             ? 'md:ml-0'
             : isSidebarOpen
@@ -106,7 +107,7 @@ export default function ClientLayout({
         <PageTransition>{children}</PageTransition>
       </main>
 
-      <MobileNav />
+      {!hideSidebar && <MobileNav />}
     </div>
   );
 }

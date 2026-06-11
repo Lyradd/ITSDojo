@@ -21,6 +21,11 @@ export async function POST(
       return NextResponse.json({ error: "Arena lobby not found" }, { status: 404 });
     }
 
+    const players = (lobby.players || []) as Array<{ id: string; name: string; email: string; avatar: string }>;
+    if (players.length < 2) {
+      return NextResponse.json({ error: "Minimal harus ada 2 pemain untuk memulai Arena." }, { status: 400 });
+    }
+
     await db
       .update(arenaRooms)
       .set({
@@ -29,9 +34,6 @@ export async function POST(
         updatedAt: new Date(),
       })
       .where(eq(arenaRooms.id, lobby.id));
-
-    // Initialize session state
-    const players = (lobby.players || []) as Array<{ id: string; name: string; email: string; avatar: string }>;
     const initialScores: Record<string, number> = {};
     players.forEach((p) => {
       initialScores[p.id] = 0;

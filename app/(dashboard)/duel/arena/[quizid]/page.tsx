@@ -633,7 +633,7 @@ function ArenaQuizContent() {
 
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex flex-col items-center justify-center">
-        <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
+        <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-card/70 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
           <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
           <h2 className="text-3xl font-extrabold text-zinc-800 dark:text-zinc-100 mb-2">Arena Selesai!</h2>
           <p className="text-zinc-600 dark:text-zinc-400 mb-8 text-sm">
@@ -721,7 +721,7 @@ function ArenaQuizContent() {
 
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex flex-col items-center justify-center">
-        <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
+        <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-card/70 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
           <Award className="w-16 h-16 text-emerald-500 mx-auto mb-4 animate-pulse" />
           <h2 className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 mb-2">Ronde {currentRound} Selesai!</h2>
           <p className="text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
@@ -802,7 +802,7 @@ function ArenaQuizContent() {
   if (delayedSessionStatus === "in_progress" && hasCurrentPlayerSubmitted && isFinalQuestion) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl min-h-screen flex flex-col items-center justify-center">
-        <Card className="p-8 border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
+        <Card className="p-8 border border-zinc-200 dark:border-zinc-800 bg-card/80 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
           <Timer className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-4 animate-spin-slow" />
           <h2 className="text-2xl font-bold mb-3 text-zinc-800 dark:text-zinc-100">
             Menunggu Lawan Lainnya
@@ -866,7 +866,7 @@ function ArenaQuizContent() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl min-h-screen">
       {/* Header HUD */}
-      <div className="mb-6 grid grid-cols-3 items-center p-4 rounded-2xl bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-lg">
+      <div className="mb-6 grid grid-cols-3 items-center p-4 rounded-2xl bg-card/60 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-lg">
         <div className="text-left">
           <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Ronde</span>
           <p className="text-lg font-black text-zinc-700 dark:text-zinc-200">{currentRound} / 3</p>
@@ -933,7 +933,7 @@ function ArenaQuizContent() {
 
         {/* Right side: Live rankings list */}
         <aside>
-          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md rounded-2xl shadow-xl">
+          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
             <h3 className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-blue-600" />
               Peringkat Live ({players.length})

@@ -23,23 +23,6 @@ const nextConfig: NextConfig = {
         destination: '/admin/analytics/:path*',
       },
 
-      // Asdos shared admin pages
-      {
-        source: '/asdos/courses/:path*',
-        destination: '/admin/courses/:path*',
-      },
-      {
-        source: '/asdos/enrollments/:path*',
-        destination: '/admin/enrollments/:path*',
-      },
-      {
-        source: '/asdos/students/:path*',
-        destination: '/admin/students/:path*',
-      },
-      {
-        source: '/asdos/analytics/:path*',
-        destination: '/admin/analytics/:path*',
-      },
     ];
   },
 };

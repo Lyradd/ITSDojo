@@ -4,10 +4,11 @@ import { desc, relations } from 'drizzle-orm';
 // ==========================================
 // ENUMS (Tipe Data Khusus)
 // ==========================================
-export const roleEnum = pgEnum('role', ['mahasiswa', 'dosen', 'asdos', 'admin']);
+export const roleEnum = pgEnum('role', ['mahasiswa', 'dosen', 'admin']);
 export const enrollStatusEnum = pgEnum('enroll_status', ['pending', 'accepted', 'rejected']);
 export const difficultyEnum = pgEnum('difficulty', ['Beginner', 'Intermediate', 'Advanced']);
 export const usageTypeEnum = pgEnum('usage_type', ['lesson', 'evaluation', 'duel']);
+
 
 // ==========================================
 // 1. TABEL USERS & ROLES
@@ -145,15 +146,6 @@ export const courseInstructors = pgTable('course_instructors', {
   unq: unique().on(t.courseId, t.dosenId),
 }));
 
-// Junction table: Menghubungkan Asdos ke kelas yang didampinginya
-export const courseAssistants = pgTable('course_assistants', {
-  id: serial('id').primaryKey(),
-  courseId: text('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
-  asdosId: text('asdos_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
-}, (t) => ({
-  unq: unique().on(t.courseId, t.asdosId),
-}));
 
 // ==========================================
 // 4. TABEL EVALUATIONS (Kuis Real-time)
@@ -237,6 +229,7 @@ export const duelQuestions = pgTable('duel_questions', {
   answerMargin: integer('answer_margin'),
   timeLimit: integer('time_limit').default(30).notNull(),
   order: integer('order').notNull(),
+
 });
 
 export const duelRoomStatusEnum = pgEnum('duel_room_status', [

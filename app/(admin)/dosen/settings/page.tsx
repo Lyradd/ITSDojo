@@ -31,7 +31,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     await logoutSession();
-    logout();
+    useUserStore.getState().clearStore();
     router.push("/login");
   };
 

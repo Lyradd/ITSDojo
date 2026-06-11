@@ -1,4 +1,4 @@
-// Extended types for Evaluation and Question with Bloom taxonomy
+// Extended types for Evaluation and Question
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'essay' | 'short_answer' | 'puzzle';
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';

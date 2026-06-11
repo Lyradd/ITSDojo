@@ -7,7 +7,7 @@ import { MOCK_STUDENTS } from "@/lib/admin-data";
 import { createSession, destroySession } from "@/lib/session";
 import bcrypt from "bcryptjs";
 
-const VALID_ROLES = new Set(["mahasiswa", "asdos", "dosen", "admin"]);
+const VALID_ROLES = new Set(["mahasiswa", "dosen", "admin"]);
 
 // Seed semua MOCK_STUDENTS ke tabel users (idempotent — skip user yang sudah ada).
 // Dipakai sekali saat first-time setup atau saat butuh refresh test data.

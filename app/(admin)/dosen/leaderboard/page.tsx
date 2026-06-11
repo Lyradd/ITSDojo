@@ -36,14 +36,14 @@ export default function AdminLeaderboardPage() {
   useEffect(() => { setIsMounted(true); }, []);
 
   useEffect(() => {
-    if (isMounted && (!isLoggedIn || (role !== 'dosen' && role !== 'asdos'))) {
+    if (isMounted && (!isLoggedIn || role !== 'dosen')) {
       router.push('/login');
     }
   }, [isLoggedIn, role, router, isMounted]);
 
   // Fetch real data from database
   useEffect(() => {
-    if (!isMounted || (!isLoggedIn || (role !== 'dosen' && role !== 'asdos'))) return;
+    if (!isMounted || !isLoggedIn || role !== 'dosen') return;
 
     const loadRealtimeData = async () => {
       try {
@@ -92,7 +92,7 @@ export default function AdminLeaderboardPage() {
     }));
   }, [leaderboard, scopeFilter, subScope]);
 
-  if (!isMounted || (role !== 'dosen' && role !== 'asdos')) return null;
+  if (!isMounted || role !== 'dosen') return null;
 
   const topThree = filteredLeaderboard.slice(0, 3);
   const totalParticipants = filteredLeaderboard.length;

@@ -257,6 +257,7 @@ interface PreviewSectionProps {
 }
 
 function PreviewSection({ metadata, questions, totalPoints }: PreviewSectionProps) {
+
   return (
     <div className="space-y-6">
       {/* Metadata Summary */}
@@ -284,18 +285,7 @@ function PreviewSection({ metadata, questions, totalPoints }: PreviewSectionProp
         </div>
       </div>
 
-      {/* Bloom Distribution */}
-      <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-6">
-        <h3 className="text-lg font-bold mb-4">Bloom Taxonomy Distribution</h3>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {Object.entries(bloomDistribution).map(([level, count]) => (
-            <div key={level} className="text-center p-3 bg-zinc-100 dark:bg-zinc-900 rounded-lg">
-              <div className="text-xl font-bold">{count}</div>
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">{level}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* Questions Preview */}
       <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-6">

@@ -51,7 +51,7 @@ export default function MorePage() {
 
   const handleLogout = async () => {
     await logoutSession();
-    logout();
+    useUserStore.getState().clearStore(); // Clear state secara total mencegah kebocoran state antar sesi
     router.push("/login");
   };
 

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { courseInstructors, courseAssistants, enrollments, courses, users } from "@/db/schema";
+import { courseInstructors, enrollments, courses, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-guard";
 
-// GET /api/admin/assignments — Ambil semua assignment (dosen->kelas, asdos->kelas, mhs->kelas)
+// GET /api/admin/assignments — Ambil semua assignment (dosen->kelas, mhs->kelas)
 export async function GET(req: Request) {
   const authError = await requireAdmin(req);
   if (authError) return authError;
@@ -27,22 +27,6 @@ export async function GET(req: Request) {
       .innerJoin(courses, eq(courseInstructors.courseId, courses.id))
       .innerJoin(users, eq(courseInstructors.dosenId, users.id));
 
-    // Ambil semua assistant assignments
-    const assistants = await db
-      .select({
-        id: courseAssistants.id,
-        userId: courseAssistants.asdosId,
-        courseId: courseAssistants.courseId,
-        courseTitle: courses.title,
-        userName: users.name,
-        userEmail: users.email,
-        userRole: users.role,
-        userSemester: users.semester,
-        assignedAt: courseAssistants.assignedAt,
-      })
-      .from(courseAssistants)
-      .innerJoin(courses, eq(courseAssistants.courseId, courses.id))
-      .innerJoin(users, eq(courseAssistants.asdosId, users.id));
 
     // Ambil semua student enrollments
     const studentEnrollments = await db
@@ -64,7 +48,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       instructors: instructors.map(i => ({ ...i, type: 'instructor' })),
-      assistants: assistants.map(a => ({ ...a, type: 'assistant' })),
+
       students: studentEnrollments.map(s => ({ ...s, type: 'student' })),
     });
   } catch (error: any) {
@@ -101,16 +85,7 @@ export async function POST(req: Request) {
         dosenId: userId,
         courseId: courseId,
       }).returning();
-    } else if (type === 'assistant') {
-      const existing = await db.select().from(courseAssistants)
-        .where(and(eq(courseAssistants.asdosId, userId), eq(courseAssistants.courseId, courseId)));
-      if (existing.length > 0) {
-        return NextResponse.json({ error: "Asdos sudah ditugaskan ke kelas ini." }, { status: 409 });
-      }
-      [result] = await db.insert(courseAssistants).values({
-        asdosId: userId,
-        courseId: courseId,
-      }).returning();
+
     } else if (type === 'student') {
       const existing = await db.select().from(enrollments)
         .where(and(eq(enrollments.studentId, userId), eq(enrollments.courseId, courseId)));
@@ -123,7 +98,7 @@ export async function POST(req: Request) {
         status: 'accepted', // Pre-assigned = langsung accepted
       }).returning();
     } else {
-      return NextResponse.json({ error: "Type tidak valid. Gunakan: instructor, assistant, student" }, { status: 400 });
+      return NextResponse.json({ error: "Type tidak valid. Gunakan: instructor, student" }, { status: 400 });
     }
 
     return NextResponse.json(result, { status: 201 });
@@ -150,8 +125,7 @@ export async function DELETE(req: Request) {
 
     if (type === 'instructor') {
       await db.delete(courseInstructors).where(eq(courseInstructors.id, numId));
-    } else if (type === 'assistant') {
-      await db.delete(courseAssistants).where(eq(courseAssistants.id, numId));
+
     } else if (type === 'student') {
       await db.delete(enrollments).where(eq(enrollments.id, numId));
     }

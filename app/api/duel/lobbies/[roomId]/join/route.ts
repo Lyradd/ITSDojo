@@ -47,7 +47,7 @@ export async function POST(
         id: guestId,
         name: guestName,
         email: guestEmail,
-        role: guestRole as "mahasiswa" | "asdos" | "dosen" | "admin",
+        role: guestRole as "mahasiswa" | "dosen" | "admin",
       })
       .onConflictDoNothing();
   }

@@ -51,7 +51,7 @@ export default function DosenEvaluationsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (role !== 'dosen' && role !== 'asdos') {
+    if (role !== 'dosen') {
       router.push('/login');
       return;
     }
@@ -59,7 +59,7 @@ export default function DosenEvaluationsPage() {
     loadEvals();
   }, [role, router]);
 
-  if (!isMounted || (role !== 'dosen' && role !== 'asdos')) return null;
+  if (!isMounted || role !== 'dosen') return null;
 
   const filteredEvaluations = selectedCourse === 'all'
     ? evaluationsList

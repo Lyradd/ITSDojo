@@ -71,14 +71,13 @@ export async function createQuestionBankItem(data: {
   options?: any;
   correctAnswer?: string;
   puzzlePairs?: any;
-  bloomLevel?: string;
   difficulty?: string;
   points?: number;
   timeLimit?: number;
   order?: number;
 }) {
   try {
-    const [newItem] = await db.insert(questionBankItems).values(data).returning();
+    const [newItem] = await db.insert(questionBankItems).values(data as any).returning();
     return { success: true, data: newItem };
   } catch (error) {
     console.error("Failed to create item:", error);
@@ -200,7 +199,6 @@ export async function addItemsToPackage(packageId: number, itemIds: number[]) {
       options: item.options,
       correctAnswer: item.correctAnswer,
       puzzlePairs: item.puzzlePairs,
-      bloomLevel: item.bloomLevel,
       difficulty: item.difficulty,
       points: item.points,
       timeLimit: item.timeLimit,

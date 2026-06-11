@@ -159,9 +159,6 @@ async function seed() {
     sliderMin: question.sliderMin ?? null,
     sliderMax: question.sliderMax ?? null,
     answerMargin: question.answerMargin ?? null,
-    bloomLevel: question.bloomLevel,
-    bloomCategory: question.bloomCategory,
-    bloomWeight: question.bloomWeight,
     timeLimit: question.timeLimit,
     order: question.order,
   }));
@@ -183,7 +180,6 @@ async function seed() {
   const dummyUsers = [
     { name: 'Admin', email: 'admin@itsdojo.com', role: 'admin' as const },
     { name: 'Dr. Dosen', email: 'dosen@itsdojo.com', role: 'dosen' as const },
-    { name: 'Kak Asdos', email: 'asdos@itsdojo.com', role: 'asdos' as const },
     { name: 'Mahasiswa', email: 'student@itsdojo.com', role: 'mahasiswa' as const }
   ];
   for (const u of dummyUsers) {

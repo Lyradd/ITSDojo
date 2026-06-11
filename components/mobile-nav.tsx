@@ -35,13 +35,6 @@ const dosenMobileNavItems = [
   { icon: MoreHorizontal, label: "Lainnya", href: "/dosen/more" },
 ];
 
-const asdosMobileNavItems = [
-  { icon: LayoutDashboard, label: "Dasbor", href: "/asdos" },
-  { icon: BookOpen, label: "Kelas", href: "/asdos/courses" },
-  { icon: UserCheck, label: "Pendaftar", href: "/asdos/enrollments" },
-  { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
-  { icon: MoreHorizontal, label: "Lainnya", href: "/asdos/more" },
-];
 
 const adminMobileNavItems = [
   { icon: LayoutDashboard, label: "Dasbor", href: "/admin" },
@@ -65,14 +58,12 @@ export function MobileNav() {
   const mobileNavItems = 
     role === 'admin' ? adminMobileNavItems :
     role === 'dosen' ? dosenMobileNavItems :
-    role === 'asdos' ? asdosMobileNavItems :
     studentMobileNavItems;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 h-[60px] pb-safe bg-white dark:bg-zinc-950 border-t flex items-center justify-around px-1 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
       {mobileNavItems.map((item) => {
-        // Strict exact match for specific dashboard paths to avoid false positives
-        const isDashboard = item.href === '/learn' || item.href === '/dosen' || item.href === '/admin' || item.href === '/asdos';
+        const isDashboard = item.href === '/learn' || item.href === '/dosen' || item.href === '/admin';
         const isActive = isDashboard 
           ? pathname === item.href 
           : (pathname === item.href || pathname.startsWith(`${item.href}/`));

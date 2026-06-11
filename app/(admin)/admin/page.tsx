@@ -32,14 +32,12 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { role, name } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
-  const isAsdos = role === 'asdos';
 
   useEffect(() => {
     setIsMounted(true);
     // Redirect if not admin
     if (isMounted && role !== 'admin') {
       if (role === 'dosen') router.push('/dosen');
-      else if (role === 'asdos') router.push('/asdos');
       else router.push('/learn');
     }
   }, [isMounted, role, router]);
@@ -127,8 +125,8 @@ export default function AdminDashboardPage() {
                     <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-zinc-800 dark:text-zinc-100">{isAsdos ? 'Lihat Kursus' : 'Kelola Kursus'}</div>
-                    <div className="text-sm text-zinc-600 dark:text-zinc-400">{isAsdos ? 'Lihat materi kursus' : 'Tambah & edit materi'}</div>
+                    <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Kursus</div>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">Tambah & edit materi</div>
                   </div>
                   <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                 </div>
@@ -142,8 +140,8 @@ export default function AdminDashboardPage() {
                   <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">{isAsdos ? 'Monitor Evaluasi' : 'Buat Evaluasi'}</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">{isAsdos ? 'Pantau quiz & assessment' : 'Quiz & assessment'}</div>
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Buat Evaluasi</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Quiz & assessment</div>
                 </div>
                 <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
               </div>
@@ -280,14 +278,12 @@ export default function AdminDashboardPage() {
                   </Link>
                 ))}
 
-                {!isAsdos && (
                   <Link href="/admin/evaluations">
                     <Button className="w-full bg-linear-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold shadow-lg">
                       <Plus className="w-4 h-4 mr-2" />
                       Buat Evaluasi Baru
                     </Button>
                   </Link>
-                )}
               </div>
             </Card>
 

@@ -42,7 +42,7 @@ export async function POST(req: Request) {
           name: typeof body.hostName === "string" && body.hostName.trim().length > 0 ? body.hostName.trim() : hostId,
           email: hostEmail,
           role: typeof body.hostRole === "string" && body.hostRole.trim().length > 0
-            ? body.hostRole.trim() as "mahasiswa" | "asdos" | "dosen" | "admin"
+            ? body.hostRole.trim() as "mahasiswa" | "dosen" | "admin"
             : "mahasiswa",
         })
         .onConflictDoNothing();

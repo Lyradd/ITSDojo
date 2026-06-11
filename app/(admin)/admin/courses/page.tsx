@@ -36,7 +36,6 @@ export default function CoursesManagementPage() {
     }
   }, [role, router]);
 
-  const isAsdos = role === 'asdos';
   const [searchQuery, setSearchQuery] = useState('');
   
   // Create / Edit Form State
@@ -155,14 +154,13 @@ export default function CoursesManagementPage() {
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-8 h-8 text-blue-600" />
                 <h1 className="text-4xl font-bold text-blue-700 dark:text-white">
-                  {isAsdos ? 'Lihat Kelas' : 'Kelola Kelas'}
+                  Kelola Kelas
                 </h1>
               </div>
               <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-                {isAsdos ? 'Lihat materi kelas yang tersedia' : 'Tambah, edit, dan kelola materi kelas'}
+                Tambah, edit, dan kelola materi kelas
               </p>
             </div>
-            {!isAsdos && (
               <Button 
                 onClick={() => showCreateForm ? setShowCreateForm(false) : openCreateForm()}
                 className="bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-bold shadow-lg"
@@ -179,12 +177,11 @@ export default function CoursesManagementPage() {
                   </>
                 )}
               </Button>
-            )}
           </div>
         </div>
 
         {/* Create / Edit Form - Dosen only */}
-        {!isAsdos && showCreateForm && (
+        {showCreateForm && (
           <Card className="p-6 rounded-2xl border-2 mb-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
             <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6">
               {editingCourseId ? 'Edit Kelas' : 'Buat Kelas Baru'}
@@ -297,16 +294,14 @@ export default function CoursesManagementPage() {
                   {course.image || '💻'}
                 </div>
                 <div className="flex gap-1">
-                  {!isAsdos && (
-                    <>
-                      <Button size="sm" variant="ghost" onClick={() => openEditForm(course)} className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-950/30">
-                        <Edit className="w-4 h-4 text-blue-600" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setCourseToDelete(course.id)} className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-950/30">
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </>
-                  )}
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => openEditForm(course)} className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-950/30">
+                      <Edit className="w-4 h-4 text-blue-600" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setCourseToDelete(course.id)} className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-950/30">
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </Button>
+                  </>
                 </div>
               </div>
 
@@ -351,7 +346,7 @@ export default function CoursesManagementPage() {
                 <Link href={`/admin/courses/${course.id}`} className="flex-1">
                   <Button variant="outline" className="w-full font-bold hover:bg-blue-50 dark:hover:bg-blue-950/30">
                     <Eye className="w-4 h-4 mr-2" />
-                    {isAsdos ? 'Lihat Materi' : 'Kelola Materi'}
+                    Kelola Materi
                   </Button>
                 </Link>
               </div>

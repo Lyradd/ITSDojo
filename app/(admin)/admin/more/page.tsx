@@ -48,7 +48,7 @@ export default function AdminMorePage() {
 
   const handleLogout = async () => {
     await logoutSession();
-    logout();
+    useUserStore.getState().clearStore();
     router.push("/login");
   };
 

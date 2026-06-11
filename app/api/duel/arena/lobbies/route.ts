@@ -44,7 +44,7 @@ export async function POST(req: Request) {
           email: hostEmail,
           avatar: hostAvatar,
           role: typeof body.hostRole === "string" && body.hostRole.trim().length > 0
-            ? body.hostRole.trim() as "mahasiswa" | "asdos" | "dosen" | "admin"
+            ? body.hostRole.trim() as "mahasiswa" | "dosen" | "admin"
             : "mahasiswa",
         })
         .onConflictDoNothing();

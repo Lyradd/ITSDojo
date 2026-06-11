@@ -50,7 +50,7 @@ export default function DosenMorePage() {
 
   const handleLogout = async () => {
     await logoutSession();
-    logout();
+    useUserStore.getState().clearStore();
     router.push("/login");
   };
 

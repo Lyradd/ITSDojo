@@ -15,9 +15,7 @@ type CreateDuelQuestionBody = {
   sliderMin?: number | string | null;
   sliderMax?: number | string | null;
   answerMargin?: number | string | null;
-  bloomLevel?: string;
-  bloomCategory?: string;
-  bloomWeight?: number | string;
+
   timeLimit?: number | string;
   order?: number | string;
 };
@@ -44,9 +42,7 @@ export async function GET(req: Request) {
         sliderMin: duelQuestions.sliderMin,
         sliderMax: duelQuestions.sliderMax,
         answerMargin: duelQuestions.answerMargin,
-        bloomLevel: duelQuestions.bloomLevel,
-        bloomCategory: duelQuestions.bloomCategory,
-        bloomWeight: duelQuestions.bloomWeight,
+
         timeLimit: duelQuestions.timeLimit,
         order: duelQuestions.order,
         topicName: duelSubject.subjectName,
@@ -71,15 +67,14 @@ export async function POST(req: Request) {
     const topicId = toNumber(body.topicId);
     const questionText = typeof body.questionText === "string" ? body.questionText.trim() : "";
     const questionType = body.questionType;
-    const bloomLevel = typeof body.bloomLevel === "string" ? body.bloomLevel.trim() : "";
-    const bloomCategory = typeof body.bloomCategory === "string" ? body.bloomCategory.trim() : "";
+
     const correctAnswer = body.correctAnswer;
 
     if (!topicId) {
       return NextResponse.json({ error: "Topic is required" }, { status: 400 });
     }
 
-    if (!questionText || !questionType || !bloomLevel || !bloomCategory || correctAnswer === undefined || correctAnswer === null || `${correctAnswer}`.trim() === "") {
+    if (!questionText || !questionType || correctAnswer === undefined || correctAnswer === null || `${correctAnswer}`.trim() === "") {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -117,9 +112,7 @@ export async function POST(req: Request) {
         sliderMin: toNumber(body.sliderMin),
         sliderMax: toNumber(body.sliderMax),
         answerMargin: toNumber(body.answerMargin),
-        bloomLevel,
-        bloomCategory,
-        bloomWeight: toNumber(body.bloomWeight) ?? 10,
+
         timeLimit: toNumber(body.timeLimit) ?? 30,
         order: nextOrder,
       })

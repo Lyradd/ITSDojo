@@ -13,6 +13,7 @@ import {
 import { useRef, useState, useEffect, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import MagneticButton from "@/components/MagneticButton";
+import { logoutSession } from "@/actions/auth";
 
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false });
 
@@ -482,7 +483,7 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
-  const isLoggedIn = useUserStore((state) => state.isLoggedIn);
+  const clearStore = useUserStore((state) => state.clearStore);
   const containerRef = useRef(null);
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -544,6 +545,8 @@ export default function LandingPage() {
     ]
   };
   useEffect(() => {
+    logoutSession().catch(console.error);
+    clearStore();
     setMounted(true);
     const checkDesktop = () => {
       const isLargeScreen = window.innerWidth >= 768;
@@ -639,21 +642,19 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {(!mounted || !isLoggedIn) && (
-              <Link href="/login" className="hidden sm:block">
-                <motion.span
-                  whileHover={{ scale: 1.05, color: '#ffffff' }}
-                  whileTap={{ scale: 0.95 }}
-                  className="text-sm font-bold text-zinc-400 hover:text-white transition-colors inline-block"
-                >
-                  Masuk
-                </motion.span>
-              </Link>
-            )}
-            <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
+            <Link href="/login" className="hidden sm:block">
+              <motion.span
+                whileHover={{ scale: 1.05, color: '#ffffff' }}
+                whileTap={{ scale: 0.95 }}
+                className="text-sm font-bold text-zinc-400 hover:text-white transition-colors inline-block"
+              >
+                Masuk
+              </motion.span>
+            </Link>
+            <Link href="/login">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button className="bg-white text-black hover:bg-zinc-200 font-bold px-5 sm:px-6 h-10 sm:h-auto rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all text-sm sm:text-base">
-                  {mounted && isLoggedIn ? "Lanjut Belajar" : "Mulai Sekarang"}
+                  Mulai Sekarang
                 </Button>
               </motion.div>
             </Link>
@@ -704,7 +705,7 @@ export default function LandingPage() {
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href={mounted && isLoggedIn ? "/learn" : "/login"}>
+              <Link href="/login">
                 <MagneticButton size="lg" className="h-14 sm:h-16 px-8 sm:px-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-base sm:text-lg shadow-[0_0_40px_rgba(37,99,235,0.4)] transition-all flex gap-2 group w-full sm:w-auto justify-center">
                   Tingkatkan Levelmu
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -1096,7 +1097,7 @@ export default function LandingPage() {
                 Waktu terbaik untuk memulai adalah kemarin. Waktu terbaik kedua adalah <span className="text-blue-100 font-bold">sekarang.</span>
               </p>
 
-              <Link href={mounted && isLoggedIn ? "/learn" : "/login"} className="relative z-10 inline-block">
+              <Link href="/login" className="relative z-10 inline-block">
                 <MagneticButton size="lg" className="h-16 px-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-black text-lg shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all flex items-center group relative overflow-hidden">
                   <span className="relative z-10 flex items-center">
                     Mulai Evolusi Anda <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-2 transition-transform" />

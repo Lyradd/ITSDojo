@@ -73,7 +73,7 @@ function WaitingRoomOverlay({
   // Poll DB session status — when dosen presses "Mulai Sesi" from another device,
   // sessionStatus becomes 'active' and we trigger the local countdown sequence.
   useEffect(() => {
-    if (role === 'dosen' || role === 'admin' || role === 'asdos') return; // dosen drives the start, doesn't poll
+    if (role === 'dosen' || role === 'admin') return; // dosen drives the start, doesn't poll
     if (countdownEndTime) return; // already counting down
 
     let cancelled = false;
@@ -118,7 +118,7 @@ function WaitingRoomOverlay({
   }, [isStarting]);
   
   useEffect(() => {
-    if (role === 'dosen' || role === 'admin' || role === 'asdos') return;
+    if (role === 'dosen' || role === 'admin') return;
     
     // Register as waiting
     upsertEvaluationProgress({
@@ -255,7 +255,7 @@ function WaitingRoomOverlay({
           )}
         </AnimatePresence>
 
-        {(role === 'dosen' || role === 'admin' || role === 'asdos') ? (
+        {(role === 'dosen' || role === 'admin') ? (
           <Button 
             onClick={onStart}
             disabled={isStarting}

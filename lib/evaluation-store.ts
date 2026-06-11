@@ -100,7 +100,7 @@ export function normalizeEvaluation<T extends Record<string, any>>(raw: T): T & 
   return { ...(raw as any), questions };
 }
 
-export type UserRole = 'mahasiswa' | 'asisten' | 'dosen';
+export type UserRole = 'mahasiswa' | 'admin' | 'dosen';
 
 export interface Question {
   id: string;

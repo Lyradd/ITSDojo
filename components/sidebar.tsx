@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
+import { logoutSession } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -56,15 +57,6 @@ const dosenMenuItems = [
   { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
 ];
 
-// Menu untuk Asisten Dosen
-const asdosMenuItems = [
-  { icon: LayoutDashboard, label: "Dasbor", href: "/asdos" },
-  { icon: BookOpen, label: "Daftar Kelas", href: "/asdos/courses" },
-  { icon: Users, label: "Mahasiswa", href: "/asdos/students" },
-  { icon: ClipboardCheck, label: "Evaluasi", href: "/asdos/evaluations" },
-  { icon: Trophy, label: "Papan Peringkat", href: "/asdos/leaderboard" },
-  { icon: BarChart3, label: "Analitik", href: "/asdos/analytics" },
-];
 
 // Menu untuk Admin
 const superAdminMenuItems = [
@@ -89,12 +81,11 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
     ? superAdminMenuItems
     : role === 'dosen'
       ? dosenMenuItems
-      : role === 'asdos'
-        ? asdosMenuItems
-        : studentMenuItems;
+      : studentMenuItems;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logoutSession();
+    useUserStore.getState().clearStore(); // Membersihkan memory state dengan komprehensif
     router.push('/login');
   };
 
@@ -183,7 +174,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               </div>
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
                 <span className="text-xs">
-                  {role === "admin" ? "👑" : role === "dosen" ? "👨‍🏫" : role === "asdos" ? "🧑‍💻" : "👨‍🎓"}
+                  {role === "admin" ? "👑" : role === "dosen" ? "👨‍🏫" : "👨‍🎓"}
                 </span>
               </div>
             </div>
@@ -213,7 +204,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
                 </div>
               ) : (
                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">
-                  {role === 'dosen' ? 'Dosen' : role === 'asdos' ? 'Asisten Dosen' : 'Admin'}
+                  {role === 'dosen' ? 'Dosen' : role === 'admin' ? 'Admin' : 'Mahasiswa'}
                 </p>
               )}
             </div>

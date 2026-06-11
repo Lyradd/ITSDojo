@@ -120,7 +120,7 @@ export interface UserState {
   avatarUrl: string | null;
   gems: number;
   level: number;
-  role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin'; 
+  role: 'mahasiswa' | 'dosen' | 'admin'; 
   semester: number;
   createdAt: string;
   login: () => void;
@@ -128,7 +128,7 @@ export interface UserState {
     id: string;
     name: string;
     email: string;
-    role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin';
+    role: 'mahasiswa' | 'dosen' | 'admin';
     semester: number;
     level: number;
     xp: number;
@@ -156,7 +156,7 @@ export interface UserState {
   logout: () => void;
   updateProfile: (data: { name?: string, email?: string, bio?: string, avatarUrl?: string | null }) => void;
   addGems: (amount: number) => void;
-  setRole: (role: 'mahasiswa' | 'asdos' | 'dosen' | 'admin') => void;
+  setRole: (role: 'mahasiswa' | 'dosen' | 'admin') => void;
   setSemester: (semester: number) => void;
 
   // 2. Progress & Learning
@@ -233,7 +233,68 @@ export interface UserState {
   triggerReward: (type: 'xp' | 'gem', count: number) => void;
   clearRewardAnimationQueue: () => void;
   forceSyncProgress: () => void;
+  clearStore: () => void; // DITAMBAHKAN: Fungsi wajib untuk membersihkan state secara total
 }
+
+// --- INITIAL STATE UNTUK RESET ---
+const INITIAL_STATE = {
+  lastProgressUpdate: 0,
+  isLoggedIn: false,
+  id: '',
+  name: "",
+  email: "",
+  bio: "",
+  avatarUrl: null,
+  gems: 0,
+  level: 1,
+  role: 'mahasiswa' as "mahasiswa" | "dosen" | "admin",
+  semester: 1,
+  createdAt: new Date().toISOString(),
+  followingCount: 0,
+  followersCount: 0,
+  
+  xp: 0,
+  weeklyXp: 0,
+  xpToNextLevel: 100,
+  streak: 0,
+  activeCourseId: "",
+  enrolledCourseIds: [],
+  pendingCourseIds: [],
+  rejectedCourseIds: [],
+  acceptedCourseIds: [],
+  courseAccessHistory: {},
+  completedLessonIds: [],
+  activityHistory: [],
+  earnedBadges: [],
+  unlockedAchievements: [],
+  nocturnalCount: 0,
+  earlyBirdCount: 0,
+  longestStreak: 0,
+  mostXpInDay: 0,
+  totalPerfectLessons: 0,
+  weeklyActiveDays: 0,
+  perfectWeeksCount: 0,
+  claimedWeeklyMilestones: [],
+  league: "Bronze",
+  top3Finishes: 0,
+  bookmarkedCourseIds: [],
+  xpMultiplier: 1,
+  multiplierEndTime: null,
+
+  streakFreezeCount: 0,
+  purchaseHistory: [],
+  unlockedInventorySlotIds: [],
+  hasGemMiner: false,
+  hasShieldPack: false,
+
+  monthlyCompletedGoals: 0,
+  claimedMonthlyMilestones: [],
+  accuracy: 0,
+
+  isLevelUpModalOpen: false,
+  levelUpData: null,
+  rewardAnimationQueue: [],
+};
 
 // --- CONSOLIDATED STORE ---
 
@@ -241,65 +302,10 @@ export const useUserStore = create<UserState>()(
   persist<UserState>(
     (set, get) => ({
       // --- INITIAL STATE ---
-      lastProgressUpdate: 0,
-      isLoggedIn: false,
-      id: '',
-      name: "Daryl",
-      email: "daryl@student.its.ac.id",
-      bio: "Belajar coding itu seru! 🚀",
-      avatarUrl: null,
-      gems: 300,
-      level: 1,
-      role: 'admin', 
-      semester: 5,
-      createdAt: new Date().toISOString(),
-      followingCount: 120,
-      followersCount: 85,
-      
-      xp: 0,
-      weeklyXp: 0,
-      xpToNextLevel: 100,
-      streak: 3,
-      activeCourseId: "fe-basic",
-      enrolledCourseIds: ['fe-basic'],
-      pendingCourseIds: [],
-      rejectedCourseIds: [],
-      acceptedCourseIds: [],
-      courseAccessHistory: { 'fe-basic': new Date().toISOString() },
-      completedLessonIds: ['fe-basic-1'],
-      activityHistory: [],
-      earnedBadges: [],
-      unlockedAchievements: [],
-      nocturnalCount: 0,
-      earlyBirdCount: 0,
-      longestStreak: 3,
-      mostXpInDay: 0,
-      totalPerfectLessons: 0,
-      weeklyActiveDays: 0,
-      perfectWeeksCount: 0,
-      claimedWeeklyMilestones: [],
-      league: "Silver",
-      top3Finishes: 0,
-      bookmarkedCourseIds: [],
-      xpMultiplier: 1,
-      multiplierEndTime: null,
-
-      streakFreezeCount: 0,
-      purchaseHistory: [],
-      unlockedInventorySlotIds: [],
-      hasGemMiner: false,
-      hasShieldPack: false,
-
+      ...INITIAL_STATE,
       dailyGoals: generateDailyGoals(formatLocalDate(new Date())),
-      lastActiveDate: formatLocalDate(new Date()),
+      lastActiveDate: '',
       lastDailyReset: formatLocalDate(new Date()),
-      monthlyCompletedGoals: 0,
-      claimedMonthlyMilestones: [],
-      accuracy: 0,
-
-      isLevelUpModalOpen: false,
-      levelUpData: null,
-      rewardAnimationQueue: [],
 
       // --- ACTIONS: AUTH & INIT ---
       login: () => set({ isLoggedIn: true }),
@@ -411,29 +417,18 @@ export const useUserStore = create<UserState>()(
       },
       logout: () => {
         set({
-          isLoggedIn: false,
-          name: '',
-          email: '',
-          bio: '',
-          avatarUrl: null,
-          gems: 0,
-          level: 1,
-          role: 'mahasiswa',
-          semester: 1,
-          xp: 0,
-          xpToNextLevel: 100,
-          accuracy: 0,
-          weeklyXp: 0,
-          streak: 0,
-          enrolledCourseIds: [],
-          pendingCourseIds: [],
-          rejectedCourseIds: [],
-          acceptedCourseIds: [],
-          completedLessonIds: [],
-          activityHistory: [],
-          earnedBadges: [],
-          unlockedAchievements: [],
-          bookmarkedCourseIds: [],
+          ...INITIAL_STATE,
+          dailyGoals: generateDailyGoals(formatLocalDate(new Date())),
+          lastActiveDate: '',
+          lastDailyReset: formatLocalDate(new Date()),
+        } as any);
+      },
+      clearStore: () => {
+        set({
+          ...INITIAL_STATE,
+          dailyGoals: generateDailyGoals(formatLocalDate(new Date())),
+          lastActiveDate: '',
+          lastDailyReset: formatLocalDate(new Date()),
         } as any);
       },
       updateProfile: (data) => {
@@ -544,28 +539,54 @@ export const useUserStore = create<UserState>()(
             newHistory.push({ date: today, count: 1, xpEarned: 0 });
           }
 
-          if (newLastActiveDate !== today) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = formatLocalDate(yesterday);
-            if (newLastActiveDate === yesterdayStr || newStreak === 0) {
-              newStreak += 1;
-              streakIncreased = true;
+          // --- STREAK CALCULATION (Timezone-safe, midnight-normalized) ---
+          // Normalize both dates to midnight (00:00:00) to prevent hour/minute 
+          // differences from causing incorrect day-diff calculations.
+          const normalizeToMidnight = (dateStr: string): Date => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day, 0, 0, 0, 0);
+          };
+
+          // Self-heal: If lastActiveDate is today but streak is 0, it means it was corrupted by the previous logout bug.
+          const isCorruptedState = newLastActiveDate === today && newStreak === 0;
+
+          if (!newLastActiveDate || newLastActiveDate !== today || isCorruptedState) {
+            if (newLastActiveDate && newLastActiveDate !== '') {
+              const todayMidnight = normalizeToMidnight(today);
+              const lastActiveMidnight = normalizeToMidnight(newLastActiveDate);
+              const diffMs = todayMidnight.getTime() - lastActiveMidnight.getTime();
+              const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+              if (diffDays === 1) {
+                // Hari berurutan: lanjutkan streak
+                newStreak += 1;
+                streakIncreased = true;
+              } else if (diffDays > 1 || isCorruptedState) {
+                // Streak terputus atau state corrupt: hari ini adalah awal streak BARU (=1, bukan 0)
+                newStreak = 1;
+                streakIncreased = true;
+              }
             } else {
+              // Pertama kali beraktivitas (lastActiveDate kosong/null): mulai streak dari 1
               newStreak = 1;
+              streakIncreased = true;
             }
+
             newLastActiveDate = today;
             
             // Increment weekly active days and check for perfect week
             set((s) => {
+              // Self-heal: don't double count if it was somehow already counted, 
+              // but since streak is 0, weeklyActiveDays likely missed today's count.
               const nextActiveDays = s.weeklyActiveDays + 1;
               const nextPerfectWeeks = nextActiveDays === 7 ? s.perfectWeeksCount + 1 : s.perfectWeeksCount;
               return {
-                weeklyActiveDays: nextActiveDays,
+                weeklyActiveDays: Math.min(nextActiveDays, 7),
                 perfectWeeksCount: nextPerfectWeeks
               };
             });
           }
+          // Jika lastActiveDate === today: jangan ubah streak (sudah dihitung hari ini)
 
           let newAchievements = [...(state.unlockedAchievements || [])];
           let newNocturnalCount = state.nocturnalCount || 0;

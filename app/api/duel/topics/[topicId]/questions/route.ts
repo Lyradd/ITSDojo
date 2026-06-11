@@ -13,9 +13,7 @@ type DuelQuestionResponse = {
   sliderMin?: number;
   sliderMax?: number;
   answerMargin?: number;
-  bloomLevel: string;
-  bloomCategory: string;
-  bloomWeight: number;
+
   timeLimit: number;
   order: number;
 };
@@ -30,9 +28,7 @@ function mapDbQuestion(question: typeof duelQuestions.$inferSelect, index: numbe
     sliderMin: question.sliderMin ?? undefined,
     sliderMax: question.sliderMax ?? undefined,
     answerMargin: question.answerMargin ?? undefined,
-    bloomLevel: question.bloomLevel,
-    bloomCategory: question.bloomCategory,
-    bloomWeight: question.bloomWeight,
+
     timeLimit: question.timeLimit,
     order: question.order ?? index + 1,
   };
@@ -48,9 +44,7 @@ function mapMockQuestion(question: typeof MOCK_QUESTIONS[number] | typeof MOCK_W
     sliderMin: question.sliderMin,
     sliderMax: question.sliderMax,
     answerMargin: question.answerMargin,
-    bloomLevel: question.bloomLevel,
-    bloomCategory: question.bloomCategory,
-    bloomWeight: question.bloomWeight,
+
     timeLimit: question.timeLimit,
     order: question.order,
   };

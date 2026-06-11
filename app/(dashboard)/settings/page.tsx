@@ -31,7 +31,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     await logoutSession(); // Hapus session cookie di server
-    logout();              // Reset Zustand state di client
+    useUserStore.getState().clearStore(); // Hapus state lokal
     router.push("/login");
   };
 

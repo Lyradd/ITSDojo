@@ -30,14 +30,14 @@ export default function AdminLayout({
       router.push('/login');
       return;
     }
-    // Redirect if not dosen, asdos, or admin
-    if (role !== 'dosen' && role !== 'asdos' && role !== 'admin') {
+    // Redirect if not dosen or admin
+    if (role !== 'dosen' && role !== 'admin') {
       router.push('/learn');
     }
   }, [role, isLoggedIn, router]);
 
   // Don't render if not allowed or not mounted
-  if (!hasMounted || !isLoggedIn || (role !== 'dosen' && role !== 'asdos' && role !== 'admin')) {
+  if (!hasMounted || !isLoggedIn || (role !== 'dosen' && role !== 'admin')) {
     return null;
   }
 

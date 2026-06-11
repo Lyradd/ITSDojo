@@ -51,7 +51,7 @@ export async function POST(
           email: playerEmail,
           avatar: avatar,
           role: typeof body.playerRole === "string" && body.playerRole.trim().length > 0
-            ? body.playerRole.trim() as "mahasiswa" | "asdos" | "dosen" | "admin"
+            ? body.playerRole.trim() as "mahasiswa" | "dosen" | "admin"
             : "mahasiswa",
         })
         .onConflictDoNothing();

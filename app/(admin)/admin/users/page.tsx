@@ -90,7 +90,6 @@ export default function SuperAdminUsersPage() {
     if (isMounted) {
       if (role !== 'admin') {
         if (role === 'dosen') router.push('/dosen');
-        else if (role === 'asdos') router.push('/asdos');
         else router.push('/learn');
       } else {
         loadData();
@@ -296,7 +295,7 @@ export default function SuperAdminUsersPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="p-6 rounded-2xl border bg-white dark:bg-zinc-900/50 shadow-xs">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
@@ -325,26 +324,13 @@ export default function SuperAdminUsersPage() {
           </Card>
           <Card className="p-6 rounded-2xl border bg-white dark:bg-zinc-900/50 shadow-xs">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl text-orange-600 dark:text-orange-400">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-zinc-500">Asisten Dosen</div>
-                <div className="text-2xl font-black text-zinc-900 dark:text-white">
-                  {users.filter(u => u.role === 'asdos').length}
-                </div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-6 rounded-2xl border bg-white dark:bg-zinc-900/50 shadow-xs">
-            <div className="flex items-center gap-4">
               <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl text-green-600 dark:text-green-400">
                 <BookOpen className="w-6 h-6" />
               </div>
               <div>
                 <div className="text-xs font-semibold text-zinc-500">Aktif Penugasan</div>
                 <div className="text-2xl font-black text-zinc-900 dark:text-white">
-                  {assignments.instructors.length + assignments.assistants.length + assignments.students.length}
+                  {assignments.instructors.length + assignments.students.length}
                 </div>
               </div>
             </div>
@@ -492,14 +478,14 @@ export default function SuperAdminUsersPage() {
                                 "text-xs font-bold px-2.5 py-1 rounded-full uppercase",
                                 user.role === 'admin' && "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400",
                                 user.role === 'dosen' && "bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400",
-                                user.role === 'asdos' && "bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400",
+
                                 user.role === 'mahasiswa' && "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
                               )}>
                                 {user.role}
                               </span>
                             </td>
                             <td className="p-4 text-zinc-600 dark:text-zinc-300 text-sm font-semibold">
-                              {user.role === 'mahasiswa' || user.role === 'asdos' ? `Semester ${user.semester}` : '-'}
+                              {user.role === 'mahasiswa' ? `Semester ${user.semester}` : '-'}
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex items-center justify-end gap-2">
@@ -562,7 +548,7 @@ export default function SuperAdminUsersPage() {
                       >
                         <option value="student">Mahasiswa → Kelas</option>
                         <option value="instructor">Dosen Pengampu → Kelas</option>
-                        <option value="assistant">Asisten Dosen → Kelas</option>
+
                       </select>
                     </div>
 
@@ -594,7 +580,7 @@ export default function SuperAdminUsersPage() {
                           .filter(u => {
                             if (assignType === 'student') return u.role === 'mahasiswa';
                             if (assignType === 'instructor') return u.role === 'dosen';
-                            if (assignType === 'assistant') return u.role === 'asdos';
+
                             return false;
                           })
                           .map(u => (
@@ -680,71 +666,6 @@ export default function SuperAdminUsersPage() {
                     </div>
                   </Card>
 
-                  {/* Asdos Assignments */}
-                  <Card className="rounded-2xl border overflow-hidden bg-white dark:bg-zinc-900/50">
-                    <div className="p-4 border-b font-bold text-sm bg-zinc-50 dark:bg-zinc-900/80 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <UserCog className="w-4 h-4 text-orange-600" />
-                        Asisten Dosen Pendamping
-                      </div>
-                      {assignments.assistants.length > 0 && (
-                        <span className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 rounded-full font-bold">
-                          {(() => {
-                            const grouped = assignments.assistants.reduce((acc: Record<string, any[]>, item) => {
-                              const key = item.userId || item.userName;
-                              if (!acc[key]) acc[key] = [];
-                              acc[key].push(item);
-                              return acc;
-                            }, {});
-                            return `${Object.keys(grouped).length} Asdos · ${assignments.assistants.length} Kelas`;
-                          })()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
-                      {assignments.assistants.length === 0 ? (
-                        <div className="p-6 text-xs text-zinc-500 text-center">Belum ada asdos yang ditugaskan ke kelas manapun.</div>
-                      ) : (
-                        (() => {
-                          const grouped = assignments.assistants.reduce((acc: Record<string, any[]>, item) => {
-                            const key = item.userId || item.userName;
-                            if (!acc[key]) acc[key] = [];
-                            acc[key].push(item);
-                            return acc;
-                          }, {});
-                          return Object.entries(grouped).map(([key, items]) => (
-                            <div key={key} className="p-4 border-b last:border-b-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-sm font-bold shrink-0">
-                                      {items[0].userName?.charAt(0)?.toUpperCase() || '?'}
-                                    </div>
-                                    <span className="font-bold text-sm text-zinc-900 dark:text-white truncate">{items[0].userName}</span>
-                                  </div>
-                                  <div className="flex flex-wrap gap-1.5 ml-10">
-                                    {items.map(item => (
-                                      <span key={item.id} className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 px-2.5 py-1 rounded-lg border border-orange-200/50 dark:border-orange-800/30 group">
-                                        <BookOpen className="w-3 h-3 shrink-0" />
-                                        <span className="truncate max-w-[160px]">{item.courseTitle}</span>
-                                        <button
-                                          onClick={() => handleUnassign('assistant', item.id)}
-                                          className="ml-0.5 text-orange-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                          title="Hapus penugasan"
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ));
-                        })()
-                      )}
-                    </div>
-                  </Card>
 
                   {/* Student Enrollments */}
                   <Card className="rounded-2xl border overflow-hidden bg-white dark:bg-zinc-900/50">
@@ -878,7 +799,7 @@ export default function SuperAdminUsersPage() {
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       >
                         <option value="mahasiswa">Mahasiswa</option>
-                        <option value="asdos">Asisten Dosen</option>
+
                         <option value="dosen">Dosen</option>
                         <option value="admin">Super Admin</option>
                       </select>
@@ -965,7 +886,7 @@ export default function SuperAdminUsersPage() {
                         className="w-full bg-zinc-100 dark:bg-zinc-800/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       >
                         <option value="mahasiswa">Mahasiswa</option>
-                        <option value="asdos">Asisten Dosen</option>
+
                         <option value="dosen">Dosen</option>
                         <option value="admin">Super Admin</option>
                       </select>

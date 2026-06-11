@@ -43,8 +43,7 @@ type QuestionFormState = {
   sliderMin: string;
   sliderMax: string;
   answerMargin: string;
-  bloomLevel: string;
-  bloomCategory: string;
+
   points: string;
   timeLimit: string;
   order: string;
@@ -59,6 +58,7 @@ const DEFAULT_FORM: QuestionFormState = {
   sliderMin: "1",
   sliderMax: "10",
   answerMargin: "1",
+
   points: "10",
   timeLimit: "30",
   order: "1",
@@ -87,7 +87,6 @@ export default function DuelQuestionsAdminPage() {
     setIsMounted(true);
     if (role !== "admin") {
       if (role === "dosen") router.push("/dosen");
-      else if (role === "asdos") router.push("/asdos");
       else router.push("/learn");
     }
   }, [role, router]);
@@ -466,30 +465,9 @@ export default function DuelQuestionsAdminPage() {
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="bloomLevel">Bloom Level</Label>
-                  <select
-                    id="bloomLevel"
-                    value={form.bloomLevel}
-                    onChange={(event) => setForm((current) => ({ ...current, bloomLevel: event.target.value }))}
-                    className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
-                  >
-                    <option value="C1">C1</option>
-                    <option value="C2">C2</option>
-                    <option value="C3">C3</option>
-                    <option value="C4">C4</option>
-                    <option value="C5">C5</option>
-                    <option value="C6">C6</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bloomWeight">Poin</Label>
+                  <Label htmlFor="points">Poin</Label>
                   <Input id="points" type="number" value={form.points} onChange={(event) => setForm((current) => ({ ...current, points: event.target.value }))} />
                 </div>
 

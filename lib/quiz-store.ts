@@ -68,7 +68,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const isCorrect = checkAnswer(answer, question);
 
     // Calculate points
-    const basePoints = isCorrect ? (question as any).points || (question as any).bloomWeight || 10 : 0;
+    const basePoints = isCorrect ? question.points || 10 : 0;
     const timeRatio = timeSpent / question.timeLimit;
     const timeBonus = isCorrect
       ? timeRatio < 0.3

@@ -18,14 +18,6 @@ interface QuizState {
   currentQuestionIndex: number;
   answers: Map<string, Answer>;
   totalScore: number;
-  bloomScores: {
-    C1: number;
-    C2: number;
-    C3: number;
-    C4: number;
-    C5: number;
-    C6: number;
-  };
   timeRemaining: number; // seconds for current question
   isTimerActive: boolean;
   quizStartTime: number;
@@ -48,14 +40,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   currentQuestionIndex: 0,
   answers: new Map(),
   totalScore: 0,
-  bloomScores: {
-    C1: 0,
-    C2: 0,
-    C3: 0,
-    C4: 0,
-    C5: 0,
-    C6: 0,
-  },
   timeRemaining: 0,
   isTimerActive: false,
   quizStartTime: 0,
@@ -67,7 +51,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       currentQuestionIndex: 0,
       answers: new Map(),
       totalScore: 0,
-      bloomScores: { C1: 0, C2: 0, C3: 0, C4: 0, C5: 0, C6: 0 },
       quizStartTime: Date.now(),
     });
   },
@@ -77,7 +60,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   },
 
   submitAnswer: (questionId, answer, timeSpent) => {
-    const { questions, bloomScores } = get();
+    const { questions } = get();
     const question = questions.find((q) => q.id === questionId);
     if (!question) return;
 
@@ -85,7 +68,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const isCorrect = checkAnswer(answer, question);
 
     // Calculate points
-    const basePoints = isCorrect ? question.bloomWeight : 0;
+    const basePoints = isCorrect ? (question as any).points || (question as any).bloomWeight || 10 : 0;
     const timeRatio = timeSpent / question.timeLimit;
     const timeBonus = isCorrect
       ? timeRatio < 0.3
@@ -112,16 +95,9 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const newAnswers = new Map(get().answers);
     newAnswers.set(questionId, answerObj);
 
-    // Update Bloom scores
-    const newBloomScores = { ...bloomScores };
-    if (isCorrect) {
-      newBloomScores[question.bloomLevel as keyof typeof bloomScores] += totalPoints;
-    }
-
     set({
       answers: newAnswers,
       totalScore: get().totalScore + totalPoints,
-      bloomScores: newBloomScores,
     });
   },
 
@@ -163,7 +139,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       currentQuestionIndex: 0,
       answers: new Map(),
       totalScore: 0,
-      bloomScores: { C1: 0, C2: 0, C3: 0, C4: 0, C5: 0, C6: 0 },
       timeRemaining: 0,
       isTimerActive: false,
       quizStartTime: 0,

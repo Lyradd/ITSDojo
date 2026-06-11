@@ -319,7 +319,7 @@ export function QuestionBankModal({ isOpen, onClose, onImport }: QuestionBankMod
                             {questionTypeLabels[q.type] || q.type}
                           </span>
                           <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 uppercase">
-                            {q.bloomLevel}
+                            
                           </span>
                           <span
                             className={cn(

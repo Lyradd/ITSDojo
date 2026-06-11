@@ -44,7 +44,6 @@ async function main() {
         order: i + 1,
         points: 10 + (i * 5),
         timeLimit: 0,
-        bloomLevel: "C4",
         difficulty: i < 3 ? "easy" : i < 6 ? "medium" : "hard"
       }));
       await db.insert(schema.questionBankItems).values(lessonQuestions);
@@ -75,7 +74,6 @@ async function main() {
           order: evalQuestions.length + 1,
           points: 10,
           timeLimit: 0,
-          bloomLevel: "C2",
           difficulty: "easy"
         });
       }
@@ -89,7 +87,6 @@ async function main() {
           order: evalQuestions.length + 1,
           points: 5,
           timeLimit: 0,
-          bloomLevel: "C1",
           difficulty: "easy"
         });
       }
@@ -103,7 +100,6 @@ async function main() {
           order: evalQuestions.length + 1,
           points: 15,
           timeLimit: 0,
-          bloomLevel: "C3",
           difficulty: "medium"
         });
       }
@@ -122,7 +118,6 @@ async function main() {
           order: evalQuestions.length + 1,
           points: 20,
           timeLimit: 0,
-          bloomLevel: "C5",
           difficulty: "hard"
         });
       }
@@ -149,7 +144,6 @@ async function main() {
           order: duelQuestions.length + 1,
           points: 20,
           timeLimit: 10, // 10 detik!
-          bloomLevel: "C2",
           difficulty: "medium"
         });
       }
@@ -167,7 +161,6 @@ async function main() {
           order: duelQuestions.length + 1,
           points: 30,
           timeLimit: 15, // 15 detik!
-          bloomLevel: "C3",
           difficulty: "hard"
         });
       }

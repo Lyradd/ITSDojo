@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Reorder, useDragControls } from "framer-motion";
-import { Question, QuestionType, BloomLevel, DifficultyLevel, generateQuestionId } from "@/lib/evaluation-types";
-import { BloomSelector } from "./bloom-selector";
+import { Question, QuestionType, DifficultyLevel, generateQuestionId } from "@/lib/evaluation-types";
 import { QuestionBankImporter } from "./question-bank-importer";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -42,7 +41,6 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
       question: "",
       points: 10,
       timeLimit: 30,
-      bloomLevel: 'C1',
       difficulty: 'medium',
       ...(type === 'multiple_choice' && {
         options: [
@@ -111,7 +109,6 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
         type: qType,
         question: item.questionText,
         points: item.points || 10,
-        bloomLevel: (item.bloomLevel || 'C1') as BloomLevel,
         difficulty: (item.difficulty || 'medium') as DifficultyLevel,
         timeLimit: item.timeLimit || 30,
         
@@ -346,7 +343,7 @@ function QuestionCard({
             <span>•</span>
             <span>{question.points} pts</span>
             <span>•</span>
-            <span className="uppercase">{question.bloomLevel}</span>
+            
           </div>
         </div>
 
@@ -471,12 +468,6 @@ function QuestionCard({
               />
             </div>
           </div>
-
-          {/* Bloom Taxonomy */}
-          <BloomSelector
-            value={question.bloomLevel}
-            onChange={(bloomLevel) => onUpdate({ bloomLevel })}
-          />
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-700">

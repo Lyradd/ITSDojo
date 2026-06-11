@@ -302,11 +302,7 @@ function PreviewSection({
                   <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
                     {q.points} poin
                   </span>
-                  {q.bloomLevel && (
-                    <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
-                      {q.bloomLevel}
-                    </span>
-                  )}
+                  
                 </div>
               </div>
             </div>

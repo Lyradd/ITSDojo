@@ -31,12 +31,12 @@ export default function LoginPage() {
   const { loginAsUser, login, setRole } = useUserStore();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'asdos' | 'dosen' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'dosen' | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [transitioningRole, setTransitioningRole] = useState<'mahasiswa' | 'asdos' | 'dosen' | null>(null);
+  const [transitioningRole, setTransitioningRole] = useState<'mahasiswa' | 'dosen' | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleRoleSelect = (role: 'mahasiswa' | 'asdos' | 'dosen') => {
+  const handleRoleSelect = (role: 'mahasiswa' | 'dosen') => {
     setSelectedRole(role);
     setErrorMsg(null);
   };
@@ -104,8 +104,6 @@ export default function LoginPage() {
         router.push(redirectTo);
       } else if (selectedRole === 'dosen') {
         router.push('/dosen');
-      } else if (selectedRole === 'asdos') {
-        router.push('/asdos');
       } else {
         router.push('/learn');
       }
@@ -229,28 +227,6 @@ export default function LoginPage() {
                 </button>
 
                 <button
-                  onClick={() => handleRoleSelect('asdos')}
-                  className="w-full p-6 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-300 group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-xl group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
-                      <Users className="w-8 h-8 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-lg text-zinc-800 dark:text-zinc-100">
-                        Asisten Dosen
-                      </div>
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                        Monitoring & read-only access
-                      </div>
-                    </div>
-                    <div className="text-green-600 dark:text-green-400 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all">
-                      →
-                    </div>
-                  </div>
-                </button>
-
-                <button
                   onClick={() => handleRoleSelect('dosen')}
                   className="w-full p-6 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all duration-300 group"
                 >
@@ -302,7 +278,6 @@ export default function LoginPage() {
               >
               <div className={`mb-4 p-3 rounded-lg border flex items-center gap-2 text-sm ${
                 selectedRole === 'mahasiswa' ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 text-blue-800 dark:text-blue-300' :
-                selectedRole === 'asdos' ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 text-green-800 dark:text-green-300' :
                 'bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-800 text-purple-800 dark:text-purple-300'
               }`}>
                 <span className="font-medium text-zinc-600 dark:text-zinc-400">
@@ -310,10 +285,9 @@ export default function LoginPage() {
                 </span>
                 <span className={`font-bold ${
                   selectedRole === 'mahasiswa' ? 'text-blue-600' :
-                  selectedRole === 'asdos' ? 'text-green-600' :
                   'text-purple-600'
                 }`}>
-                  {selectedRole === 'mahasiswa' ? '👨‍🎓 Mahasiswa' : selectedRole === 'asdos' ? '👨‍🏫 Asisten Dosen' : '👨‍🏫 Dosen'}
+                  {selectedRole === 'mahasiswa' ? '👨‍🎓 Mahasiswa' : '👨‍🏫 Dosen'}
                 </span>
                 <button
                   type="button"
@@ -372,7 +346,6 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className={`w-4 h-4 rounded border-zinc-300 focus:ring-2 focus:ring-offset-0 cursor-pointer ${
                     selectedRole === 'mahasiswa' ? 'text-blue-600 focus:ring-blue-500' :
-                    selectedRole === 'asdos' ? 'text-green-600 focus:ring-green-500' :
                     'text-purple-600 focus:ring-purple-500'
                   }`}
                 />
@@ -387,7 +360,6 @@ export default function LoginPage() {
               <Button 
                 className={`w-full h-11 font-bold ${
                   selectedRole === 'mahasiswa' ? 'bg-blue-600 hover:bg-blue-700' :
-                  selectedRole === 'asdos' ? 'bg-green-600 hover:bg-green-700' :
                   'bg-purple-600 hover:bg-purple-700'
                 }`}
                 type="submit" 
@@ -428,7 +400,6 @@ export default function LoginPage() {
           <motion.div
             className={`fixed inset-0 z-100 flex items-center justify-center ${
               transitioningRole === 'mahasiswa' ? 'bg-blue-600' :
-              transitioningRole === 'asdos' ? 'bg-green-600' :
               'bg-purple-600'
             }`}
             initial={{ y: "100%" }}

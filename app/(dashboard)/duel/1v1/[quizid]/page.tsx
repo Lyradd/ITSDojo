@@ -679,7 +679,7 @@ export default function QuizPage() {
       isCorrect = String(answer).toLowerCase().trim() === String(currentQuestion.correctAnswer).toLowerCase().trim();
     }
 
-    const points = isCorrect ? currentQuestion.bloomWeight : 0;
+    const points = isCorrect ? (currentQuestion as any).points || 10 : 0;
     const newAnswers = {
       ...answers,
       [currentQuestion.id]: {

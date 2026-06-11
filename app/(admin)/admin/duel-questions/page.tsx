@@ -29,9 +29,7 @@ type DuelQuestionRow = {
   sliderMin: number | null;
   sliderMax: number | null;
   answerMargin: number | null;
-  bloomLevel: string;
-  bloomCategory: string;
-  bloomWeight: number;
+  points: number;
   timeLimit: number;
   order: number;
 };
@@ -47,7 +45,7 @@ type QuestionFormState = {
   answerMargin: string;
   bloomLevel: string;
   bloomCategory: string;
-  bloomWeight: string;
+  points: string;
   timeLimit: string;
   order: string;
 };
@@ -61,9 +59,7 @@ const DEFAULT_FORM: QuestionFormState = {
   sliderMin: "1",
   sliderMax: "10",
   answerMargin: "1",
-  bloomLevel: "C1",
-  bloomCategory: "Remember",
-  bloomWeight: "10",
+  points: "10",
   timeLimit: "30",
   order: "1",
 };
@@ -264,9 +260,7 @@ export default function DuelQuestionsAdminPage() {
           sliderMin: form.questionType === "slider" ? Number(form.sliderMin) : null,
           sliderMax: form.questionType === "slider" ? Number(form.sliderMax) : null,
           answerMargin: form.questionType === "slider" ? Number(form.answerMargin) : null,
-          bloomLevel: form.bloomLevel,
-          bloomCategory: form.bloomCategory,
-          bloomWeight: Number(form.bloomWeight),
+  points: Number(form.points),
           timeLimit: Number(form.timeLimit),
           order: Number(form.order),
         }),
@@ -491,13 +485,12 @@ export default function DuelQuestionsAdminPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bloomCategory">Kategori</Label>
-                  <Input id="bloomCategory" value={form.bloomCategory} onChange={(event) => setForm((current) => ({ ...current, bloomCategory: event.target.value }))} />
+                  
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bloomWeight">Poin</Label>
-                  <Input id="bloomWeight" type="number" value={form.bloomWeight} onChange={(event) => setForm((current) => ({ ...current, bloomWeight: event.target.value }))} />
+                  <Input id="points" type="number" value={form.points} onChange={(event) => setForm((current) => ({ ...current, points: event.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
@@ -584,13 +577,13 @@ export default function DuelQuestionsAdminPage() {
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
-                            <span>Bloom {question.bloomLevel}</span>
+                            
                             <span>•</span>
-                            <span>{question.bloomCategory}</span>
+                            
                             <span>•</span>
                             <span>{question.timeLimit}s</span>
                             <span>•</span>
-                            <span>{question.bloomWeight} pts</span>
+                            <span>{question.points} pts</span>
                           </div>
                         </div>
                       ))}

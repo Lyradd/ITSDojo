@@ -409,7 +409,7 @@ export function QuestionBankImporter({ courseId, usageType, onSelectItems, onClo
 
                             {/* Metadata row */}
                             <div className="flex items-center gap-2 mt-1.5 text-[10px] text-zinc-500">
-                              <span>{item.bloomLevel}</span>
+                              
                               <span>•</span>
                               <span className="capitalize">{item.difficulty}</span>
                               {item.timeLimit > 0 && (<><span>•</span><span>{item.timeLimit}s</span></>)}

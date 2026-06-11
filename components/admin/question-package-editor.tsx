@@ -203,7 +203,6 @@ export default function QuestionPackageEditor({ pkg, initialItems }: QuestionPac
         options: item.options,
         correctAnswer: item.correctAnswer,
         puzzlePairs: item.puzzlePairs,
-        bloomLevel: item.bloomLevel || "C1",
         difficulty: item.difficulty || "medium",
         points: item.points || 10,
         timeLimit: item.timeLimit,
@@ -373,7 +372,7 @@ export default function QuestionPackageEditor({ pkg, initialItems }: QuestionPac
                           <div className="flex items-center gap-2 mt-1.5 text-[10px] text-zinc-500">
                             <span>{item.points} pts</span>
                             <span>•</span>
-                            <span>{item.bloomLevel}</span>
+                            
                             <span>•</span>
                             <span className="capitalize">{item.difficulty}</span>
                           </div>

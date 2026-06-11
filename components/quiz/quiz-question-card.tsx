@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Question } from '@/lib/quiz-mock-data';
-import { BloomBadge } from './bloom-badge';
 import { Timer, CheckCircle2, XCircle } from 'lucide-react';
 
 interface QuizQuestionCardProps {
@@ -218,7 +217,7 @@ export function QuizQuestionCard({
           <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400">
             Soal {questionNumber} dari {totalQuestions}
           </div>
-          <BloomBadge level={question.bloomLevel} category={question.bloomCategory} />
+          
         </div>
 
         <div className="flex items-center gap-2 text-lg font-bold">
@@ -265,7 +264,7 @@ export function QuizQuestionCard({
             }`}>
               {isCorrect ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
               <span className="font-bold">
-                {isCorrect ? `Jawaban Benar! (+${question.bloomWeight} Poin)` : 'Jawaban Salah!'}
+                {isCorrect ? `Jawaban Benar! (+${question.points || 10} Poin)` : 'Jawaban Salah!'}
               </span>
             </div>
           );

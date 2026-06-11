@@ -235,9 +235,6 @@ export const duelQuestions = pgTable('duel_questions', {
   sliderMin: integer('slider_min'),
   sliderMax: integer('slider_max'),
   answerMargin: integer('answer_margin'),
-  bloomLevel: text('bloom_level').notNull(),
-  bloomCategory: text('bloom_category').notNull(),
-  bloomWeight: integer('bloom_weight').default(10).notNull(),
   timeLimit: integer('time_limit').default(30).notNull(),
   order: integer('order').notNull(),
 });
@@ -290,7 +287,6 @@ export const questionBankItems = pgTable('question_bank_items', {
   options: jsonb('options').default([]),
   correctAnswer: text('correct_answer'),
   puzzlePairs: jsonb('puzzle_pairs').default([]),
-  bloomLevel: text('bloom_level').default('C1').notNull(),
   difficulty: text('difficulty').default('medium').notNull(),
   points: integer('points').default(10).notNull(),
   timeLimit: integer('time_limit'),

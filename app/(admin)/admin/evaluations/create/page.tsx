@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
-import { EvaluationMetadata, Question, calculateTotalPoints, calculateBloomDistribution, BloomDistribution, QuizGroup } from "@/lib/evaluation-types";
+import { EvaluationMetadata, Question, calculateTotalPoints, QuizGroup } from "@/lib/evaluation-types";
 import { EvaluationForm } from "@/components/admin/evaluation-form";
 import { QuestionBuilder } from "@/components/admin/question-builder";
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,7 @@ export default function CreateEvaluationPage() {
   }, []);
 
   const totalPoints = calculateTotalPoints(questions);
-  const bloomDistribution = calculateBloomDistribution(questions);
-
+  
   const canProceedToStep2 = metadata.title.trim().length > 0 && metadata.duration > 0 && !!metadata.courseId;
   const canProceedToStep3 = questions.length > 0;
   const canPublish = canProceedToStep2 && canProceedToStep3;
@@ -67,7 +66,6 @@ export default function CreateEvaluationPage() {
         description: finalDescription,
         totalPoints,
         questions,
-        bloomDistribution,
       };
 
       const res = await createEvaluation(evaluationData);
@@ -200,7 +198,6 @@ export default function CreateEvaluationPage() {
               <PreviewSection
                 metadata={metadata}
                 questions={questions}
-                bloomDistribution={bloomDistribution}
                 totalPoints={totalPoints}
               />
             </>
@@ -256,11 +253,10 @@ export default function CreateEvaluationPage() {
 interface PreviewSectionProps {
   metadata: EvaluationMetadata;
   questions: Question[];
-  bloomDistribution: BloomDistribution;
   totalPoints: number;
 }
 
-function PreviewSection({ metadata, questions, bloomDistribution, totalPoints }: PreviewSectionProps) {
+function PreviewSection({ metadata, questions, totalPoints }: PreviewSectionProps) {
   return (
     <div className="space-y-6">
       {/* Metadata Summary */}
@@ -314,12 +310,7 @@ function PreviewSection({ metadata, questions, bloomDistribution, totalPoints }:
                 <div className="flex-1">
                   <p className="font-medium text-zinc-900 dark:text-white mb-2">{q.question || 'Untitled Question'}</p>
                   <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
-                      {q.type.replace('_', ' ').toUpperCase()}
-                    </span>
-                    <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
-                      {q.bloomLevel}
-                    </span>
+                    
                     <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">
                       {q.points} pts
                     </span>

@@ -283,7 +283,7 @@ function ArenaContent() {
     const loginUrl = `/login?redirectTo=${encodeURIComponent(window.location.href)}`;
     return (
       <div className="container mx-auto px-4 py-16 max-w-xl min-h-screen flex items-center justify-center">
-        <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shadow-2xl rounded-3xl text-center">
+        <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-card/80 backdrop-blur-md shadow-2xl rounded-3xl text-center">
           <Globe className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-4 animate-pulse" />
           <h2 className="text-2xl font-bold mb-3 text-zinc-800 dark:text-zinc-100">
             Bergabung ke Arena Multiplayer
@@ -331,7 +331,7 @@ function ArenaContent() {
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
         {/* Left column: Topic list */}
         <section>
-          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md rounded-2xl shadow-xl">
+          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
                 Pilih Topik Duel
@@ -385,7 +385,7 @@ function ArenaContent() {
         <aside className="space-y-6">
           {/* Invite Code card */}
           {inviteLink && (
-            <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md rounded-2xl shadow-xl">
+            <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
               <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-2">Undang Pemain</h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
                 Bagikan link ini agar teman-temanmu dapat bergabung dalam Arena ini secara real-time.
@@ -414,7 +414,7 @@ function ArenaContent() {
           )}
 
           {/* Lobby participants */}
-          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md rounded-2xl shadow-xl flex-1">
+          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl flex-1">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">
@@ -462,14 +462,14 @@ function ArenaContent() {
             </div>
 
             {/* Start button for host */}
-            {isHost && room && room.players.length >= 1 && (
+            {isHost && room && (
               <Button
                 onClick={handleStartGame}
-                disabled={!selectedTopic}
+                disabled={!selectedTopic || room.players.length < 2}
                 className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-5 h-5 fill-current" />
-                Mulai Arena
+                {room.players.length < 2 ? "Butuh Minimal 2 Pemain" : "Mulai Arena"}
               </Button>
             )}
 

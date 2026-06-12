@@ -51,12 +51,15 @@ export default function DosenEvaluationsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (role !== 'dosen') {
-      router.push('/login');
+    if (role !== 'dosen' && role !== '') {
+      if (role === 'admin') router.push('/admin');
+      else router.push('/learn');
       return;
     }
 
-    loadEvals();
+    if (role === 'dosen') {
+      loadEvals();
+    }
   }, [role, router]);
 
   if (!isMounted || role !== 'dosen') return null;

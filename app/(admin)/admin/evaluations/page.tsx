@@ -51,12 +51,15 @@ export default function AdminEvaluationsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (role !== 'admin') {
-      router.push('/login');
+    if (role !== 'admin' && role !== '') {
+      if (role === 'dosen') router.push('/dosen');
+      else router.push('/learn');
       return;
     }
 
-    loadEvals();
+    if (role === 'admin') {
+      loadEvals();
+    }
   }, [role, router]);
 
   if (!isMounted || role !== 'admin') return null;

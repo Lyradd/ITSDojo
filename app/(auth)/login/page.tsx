@@ -248,22 +248,7 @@ export default function LoginPage() {
                   </div>
                 </button>
 
-                {/* Developer Shortcut */}
-                <div className="pt-4 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setRole('admin');
-                      login();
-                      await bypassLoginAsAdmin(); // Set cookie di server backend
-                      router.push('/admin');
-                    }}
-                    className="text-[10px] font-bold text-zinc-400 hover:text-blue-500 uppercase tracking-widest transition-colors flex items-center gap-1.5 opacity-50 hover:opacity-100"
-                  >
-                    <Shield className="w-3 h-3" />
-                    Bypass to Super Admin (Dev Only)
-                  </button>
-                </div>
+                {/* Developer Shortcut (Hidden by user request, bypass via /admin) */}
               </motion.div>
             ) : (
               // Login Form
@@ -305,7 +290,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={selectedRole === 'dosen' ? 'dosen@its.ac.id' : 'nrp@student.its.ac.id'}
+                  placeholder="user@itsdojo.id"
                   className="h-11"
                   required
                 />

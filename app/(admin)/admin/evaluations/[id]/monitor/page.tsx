@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress, updateEvaluation, nextQuestion, pauseQuestion, resumeQuestion, getEvaluationSessionStatus } from "@/actions/evaluations";
+import { getEvaluationById, getLiveEvaluationProgress, startEvaluationSession, pauseEvaluationSession, deleteStudentProgress, updateEvaluation, nextQuestion, pauseQuestion, resumeQuestion, getEvaluationSessionStatus, restartQuestions } from "@/actions/evaluations";
 import { Evaluation, Question } from "@/lib/evaluation-types";
 import { QuestionBuilder } from "@/components/admin/question-builder";
 import { Button } from "@/components/ui/button";
@@ -230,6 +230,7 @@ export default function MonitorEvaluationPage() {
   // Add countdown timer display for the current question
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [autoNext, setAutoNext] = useState<boolean>(false);
+  const [autoRepeat, setAutoRepeat] = useState<boolean>(false);
   const isCallingNext = useRef<boolean>(false);
 
   useEffect(() => {
@@ -244,22 +245,33 @@ export default function MonitorEvaluationPage() {
       const rem = Math.max(0, limit - elapsed);
       setTimeLeft(Math.floor(rem));
 
-      if (rem === 0 && autoNext && !isCallingNext.current && currentQuestionIndex < (evaluation.questions?.length || 0) - 1) {
-        isCallingNext.current = true;
-        const res = await nextQuestion(evaluation.id);
-        if (res.success) {
-          toast.success("Otomatis pindah ke soal berikutnya!");
+      if (rem === 0 && !isCallingNext.current) {
+        if (autoNext && currentQuestionIndex < (evaluation.questions?.length || 0) - 1) {
+          isCallingNext.current = true;
+          const res = await nextQuestion(evaluation.id);
+          if (res.success) {
+            toast.success("Otomatis pindah ke soal berikutnya!");
+          }
+          setTimeout(() => {
+            isCallingNext.current = false;
+          }, 2000);
+        } else if (autoRepeat && currentQuestionIndex >= (evaluation.questions?.length || 0) - 1) {
+          isCallingNext.current = true;
+          const res = await restartQuestions(evaluation.id);
+          if (res.success) {
+            toast.success("Otomatis mengulang dari soal pertama!");
+          }
+          setTimeout(() => {
+            isCallingNext.current = false;
+          }, 2000);
         }
-        setTimeout(() => {
-          isCallingNext.current = false;
-        }, 2000);
       }
     };
     
     tick();
     const intv = setInterval(tick, 1000);
     return () => clearInterval(intv);
-  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus, autoNext]);
+  }, [evaluation, currentQuestionIndex, questionStartedAt, isPaused, sessionStatus, autoNext, autoRepeat]);
 
   if (loading) {
     return <div className="p-8 text-center text-zinc-500">Loading evaluation data...</div>;
@@ -460,6 +472,23 @@ export default function MonitorEvaluationPage() {
                     />
                   </div>
                   <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Auto-Next</span>
+                </div>
+                <div className="flex items-center gap-2 ml-2 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4">
+                  <div 
+                    className={cn(
+                      "w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300", 
+                      autoRepeat ? "bg-pink-500" : "bg-zinc-300 dark:bg-zinc-700"
+                    )}
+                    onClick={() => setAutoRepeat(!autoRepeat)}
+                  >
+                    <div 
+                      className={cn(
+                        "bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ease-in-out", 
+                        autoRepeat ? "translate-x-6" : ""
+                      )}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Auto-Repeat</span>
                 </div>
               </div>
             </div>
@@ -822,9 +851,7 @@ function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDe
         {/* Score / Accuracy */}
         <div className="text-right">
           <div className="flex items-center gap-2 justify-end mb-1">
-            <div className="text-2xl font-bold text-purple-600">
-              {Math.round(accuracyPercentage)}%
-            </div>
+            {/* Accuracy percentage removed */}
             <button
               onClick={() => onDelete(student.studentId, student.name)}
               className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"

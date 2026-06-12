@@ -520,6 +520,21 @@ export async function nextQuestion(evaluationId: string) {
   }
 }
 
+export async function restartQuestions(evaluationId: string) {
+  try {
+    await db.update(evaluations).set({
+      currentQuestionIndex: 0,
+      questionStartedAt: new Date(),
+      isPaused: false,
+      pausedAt: null
+    }).where(eq(evaluations.id, evaluationId));
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to restartQuestions:", error);
+    return { success: false };
+  }
+}
+
 export async function pauseQuestion(evaluationId: string) {
   try {
     await db.update(evaluations).set({

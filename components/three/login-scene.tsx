@@ -25,14 +25,46 @@ const COLORS = {
 };
 
 const SHAPES_CFG: ShapeProps[] = [
-  { initialPosition: [-5.5, 3, -4], geometry: 'book', color: COLORS.indigo, scale: 1.4, speed: 2.0 },
-  { initialPosition: [5.2, -2, -5], geometry: 'pencil', color: COLORS.purple, scale: 1.2, speed: 2.2 },
-  { initialPosition: [3, 3.5, -6], geometry: 'eraser', color: COLORS.blue, scale: 1.2, speed: 2.5 },
-  { initialPosition: [-4, -3, -5], geometry: 'ruler', color: COLORS.sky, scale: 1.1, speed: 1.8 },
-  { initialPosition: [0, -4, -7], geometry: 'book', color: COLORS.blue, scale: 1.6, speed: 1.5 },
-  { initialPosition: [-2.5, 5, -8], geometry: 'pencil', color: COLORS.purple, scale: 1.2, speed: 2.8 },
-  { initialPosition: [7, 1, -9], geometry: 'eraser', color: COLORS.indigo, scale: 1.3, speed: 1.9 },
-  { initialPosition: [1.5, -5, -4], geometry: 'ruler', color: COLORS.blue, scale: 1.0, speed: 2.6 },
+  // Original 8 items (scaled to 60%)
+  { initialPosition: [-5.5, 3, -4], geometry: 'book', color: COLORS.indigo, scale: 0.84, speed: 2.0 },
+  { initialPosition: [5.2, -2, -5], geometry: 'pencil', color: COLORS.purple, scale: 0.72, speed: 2.2 },
+  { initialPosition: [3, 3.5, -6], geometry: 'eraser', color: COLORS.blue, scale: 0.72, speed: 2.5 },
+  { initialPosition: [-4, -3, -5], geometry: 'ruler', color: COLORS.sky, scale: 0.66, speed: 1.8 },
+  { initialPosition: [0, -4, -7], geometry: 'book', color: COLORS.blue, scale: 0.96, speed: 1.5 },
+  { initialPosition: [-2.5, 5, -8], geometry: 'pencil', color: COLORS.purple, scale: 0.72, speed: 2.8 },
+  { initialPosition: [7, 1, -9], geometry: 'eraser', color: COLORS.indigo, scale: 0.78, speed: 1.9 },
+  { initialPosition: [1.5, -5, -4], geometry: 'ruler', color: COLORS.blue, scale: 0.60, speed: 2.6 },
+  
+  // Additional 12 items to fill the space
+  { initialPosition: [-7, -1, -6], geometry: 'pencil', color: COLORS.pink, scale: 0.78, speed: 2.4 },
+  { initialPosition: [6, 4, -7], geometry: 'book', color: COLORS.teal, scale: 0.90, speed: 1.7 },
+  { initialPosition: [-1, 6, -5], geometry: 'eraser', color: COLORS.amber, scale: 0.66, speed: 2.1 },
+  { initialPosition: [4, -6, -8], geometry: 'ruler', color: COLORS.pink, scale: 0.72, speed: 2.0 },
+  { initialPosition: [-6, -5, -9], geometry: 'book', color: COLORS.sky, scale: 0.84, speed: 1.6 },
+  { initialPosition: [2, 7, -6], geometry: 'pencil', color: COLORS.teal, scale: 0.66, speed: 2.9 },
+  { initialPosition: [-3, -7, -4], geometry: 'eraser', color: COLORS.purple, scale: 0.84, speed: 2.3 },
+  { initialPosition: [8, -3, -5], geometry: 'ruler', color: COLORS.amber, scale: 0.78, speed: 1.9 },
+  { initialPosition: [-8, 4, -8], geometry: 'book', color: COLORS.pink, scale: 0.72, speed: 2.2 },
+  { initialPosition: [5, 6, -5], geometry: 'eraser', color: COLORS.indigo, scale: 0.90, speed: 1.8 },
+  { initialPosition: [0, 2, -9], geometry: 'pencil', color: COLORS.sky, scale: 0.66, speed: 2.5 },
+  { initialPosition: [-4, 2, -3], geometry: 'ruler', color: COLORS.teal, scale: 0.84, speed: 1.5 },
+  
+  // Extra 12 items requested by user (3 for each geometry)
+  { initialPosition: [9, -2, -7], geometry: 'book', color: COLORS.purple, scale: 0.84, speed: 2.1 },
+  { initialPosition: [-9, -4, -6], geometry: 'book', color: COLORS.amber, scale: 0.72, speed: 1.8 },
+  { initialPosition: [2, -8, -5], geometry: 'book', color: COLORS.indigo, scale: 0.90, speed: 1.5 },
+
+  { initialPosition: [-5, 8, -8], geometry: 'pencil', color: COLORS.blue, scale: 0.78, speed: 2.5 },
+  { initialPosition: [8, 5, -4], geometry: 'pencil', color: COLORS.amber, scale: 0.84, speed: 2.0 },
+  { initialPosition: [-2, -6, -9], geometry: 'pencil', color: COLORS.pink, scale: 0.66, speed: 2.7 },
+
+  { initialPosition: [5, -7, -6], geometry: 'eraser', color: COLORS.teal, scale: 0.96, speed: 1.7 },
+  { initialPosition: [-8, 2, -5], geometry: 'eraser', color: COLORS.sky, scale: 0.72, speed: 2.2 },
+  { initialPosition: [3, 8, -8], geometry: 'eraser', color: COLORS.pink, scale: 0.84, speed: 1.9 },
+
+  { initialPosition: [-7, 6, -7], geometry: 'ruler', color: COLORS.indigo, scale: 0.78, speed: 2.4 },
+  { initialPosition: [6, -4, -4], geometry: 'ruler', color: COLORS.purple, scale: 0.60, speed: 2.8 },
+  { initialPosition: [1, -9, -7], geometry: 'ruler', color: COLORS.blue, scale: 0.90, speed: 1.6 },
 ];
 
 function EducationalShape({ type, color }: { type: string, color: string }) {

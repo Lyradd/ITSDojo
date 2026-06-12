@@ -249,33 +249,21 @@ export default function LoginPage() {
                 </button>
 
                 {/* Developer Shortcut */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setRole('admin');
-                    login();
-                    await bypassLoginAsAdmin(); // Set cookie di server backend
-                    router.push('/admin');
-                  }}
-                  className="w-full p-6 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all duration-300 group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-4 bg-orange-100 dark:bg-orange-900/50 rounded-xl group-hover:bg-orange-200 dark:group-hover:bg-orange-800/50 transition-colors">
-                      <Shield className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-lg text-zinc-800 dark:text-zinc-100">
-                        Super Admin
-                      </div>
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                        Bypass access for developers
-                      </div>
-                    </div>
-                    <div className="text-orange-600 dark:text-orange-400 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all">
-                      →
-                    </div>
-                  </div>
-                </button>
+                <div className="pt-4 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setRole('admin');
+                      login();
+                      await bypassLoginAsAdmin(); // Set cookie di server backend
+                      router.push('/admin');
+                    }}
+                    className="text-[10px] font-bold text-zinc-400 hover:text-blue-500 uppercase tracking-widest transition-colors flex items-center gap-1.5 opacity-50 hover:opacity-100"
+                  >
+                    <Shield className="w-3 h-3" />
+                    Bypass to Super Admin (Dev Only)
+                  </button>
+                </div>
               </motion.div>
             ) : (
               // Login Form

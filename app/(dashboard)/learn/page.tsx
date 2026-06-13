@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -25,13 +25,15 @@ import {
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
 import { StatWidget } from "@/components/shared/stat-widget";
-import { DailyGoalWidget } from "@/components/shared/daily-goal-widget";
-import { LeaderboardWidget } from "@/components/shared/leaderboard-widget";
 import { CourseSelectorDropdown } from "@/components/shared/course-selector-dropdown";
-import { StreakCalendarWidget } from "@/components/shared/streak-calendar-widget";
 import { ComputedLessonNode, RoadmapNode } from "@/components/learn/roadmap-node";
-import { AlertModal } from "@/components/shared/alert-modal";
 import { EmptyState } from "@/components/ui/empty-state";
+import dynamic from "next/dynamic";
+
+const DailyGoalWidget = dynamic(() => import("@/components/shared/daily-goal-widget").then(mod => mod.DailyGoalWidget));
+const LeaderboardWidget = dynamic(() => import("@/components/shared/leaderboard-widget").then(mod => mod.LeaderboardWidget));
+const StreakCalendarWidget = dynamic(() => import("@/components/shared/streak-calendar-widget").then(mod => mod.StreakCalendarWidget));
+const AlertModal = dynamic(() => import("@/components/shared/alert-modal").then(mod => mod.AlertModal), { ssr: false });
 
 // Helper: Warna tema berdasarkan kursus aktif
 const getCourseTheme = (courseId: string) => {
@@ -52,6 +54,7 @@ export default function LearnPage() {
     level,
     xp,
     weeklyXp,
+    xpToNextLevel,
     activeCourseId,
     streak,
     dailyGoals,
@@ -199,10 +202,23 @@ export default function LearnPage() {
             {role === 'mahasiswa' && (
               <>
                 <StatWidget 
+                  align="left"
                   icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
-                  hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+                  hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
                 />
-                <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
+                <StatWidget 
+                  align="center"
+                  icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
+                  hoverContent={
+                    <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-xl p-3 w-48 text-center animate-in fade-in zoom-in-95 duration-200">
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">XP Saya</div>
+                      <div className="font-bold text-sm text-blue-600 dark:text-blue-400 mb-1">Level {level}</div>
+                      <div className="text-xs text-zinc-600 dark:text-zinc-300">
+                        Butuh <strong className="text-zinc-900 dark:text-zinc-100">{xpToNextLevel} XP</strong> lagi untuk naik level!
+                      </div>
+                    </div>
+                  }
+                />
                 <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
               </>
             )}
@@ -213,20 +229,20 @@ export default function LearnPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-2xl flex items-center justify-between gap-4 shadow-xl"
+              className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-4 shadow-xl"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                  <PartyPopper className="w-7 h-7 text-yellow-300" />
+              <div className="flex items-start sm:items-center gap-4 w-full sm:w-auto">
+                <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <PartyPopper className="w-6 h-6 sm:w-7 sm:h-7 text-yellow-300" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg">Selamat! Kursus Selesai 🎉</h3>
-                  <p className="text-sm opacity-90">Anda telah menyelesaikan seluruh materi di kursus {activeCourse?.title || 'ini'}.</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base sm:text-lg leading-tight">Selamat! Kursus Selesai 🎉</h3>
+                  <p className="text-sm opacity-90 mt-1 line-clamp-2">Anda telah menyelesaikan seluruh materi di kursus {activeCourse?.title || 'ini'}.</p>
                 </div>
               </div>
-              <Link href="/courses">
-                <Button size="sm" className="bg-white text-green-700 hover:bg-white/90 border-none gap-2 rounded-xl font-bold px-4">
-                  Pilih Kursus Lain <ArrowRight className="w-4 h-4" />
+              <Link href="/courses" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto bg-white text-green-700 hover:bg-white/90 border-none gap-2 rounded-xl font-bold px-4">
+                  Pilih Kursus Lain <ArrowRight className="w-4 h-4 shrink-0" />
                 </Button>
               </Link>
             </motion.div>
@@ -234,20 +250,20 @@ export default function LearnPage() {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xl border border-zinc-800 dark:border-zinc-200"
+              className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-4 shadow-xl border border-zinc-800 dark:border-zinc-200"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <Play className="w-6 h-6 text-white fill-current" />
+              <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-current shrink-0" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-sm">Lanjutkan belajar!</h3>
-                  <p className="text-xs opacity-70">Stage {activeNodeIndex + 1}: {activeNode.title}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-sm sm:text-base truncate">Lanjutkan belajar!</h3>
+                  <p className="text-xs opacity-70 truncate">Stage {activeNodeIndex + 1}: {activeNode.title}</p>
                 </div>
               </div>
-              <Link href={`/learn/lesson/${activeNode.id}`}>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white border-none gap-2 rounded-xl group px-4">
-                  Lanjutkan <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Link href={`/learn/lesson/${activeNode.id}`} className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white border-none gap-2 rounded-xl group px-4">
+                  Lanjutkan <ArrowRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </motion.div>
@@ -458,16 +474,33 @@ export default function LearnPage() {
             {role === 'mahasiswa' && (
               <div className="flex items-center gap-2 flex-1 justify-end">
                 <StatWidget 
+                  align="center"
                   icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
-                  hoverContent={<StreakCalendarWidget activityHistory={activityHistory} streak={streak} />} 
+                  hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
                 />
-                <StatWidget icon={Zap} color="text-blue-500" label="XP" value={xp} />
+                <StatWidget 
+                  align="center"
+                  icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
+                  hoverContent={
+                    <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-xl p-3 w-48 text-center animate-in fade-in zoom-in-95 duration-200">
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">XP Saya</div>
+                      <div className="font-bold text-sm text-blue-600 dark:text-blue-400 mb-1">Level {level}</div>
+                      <div className="text-xs text-zinc-600 dark:text-zinc-300">
+                        Butuh <strong className="text-zinc-900 dark:text-zinc-100">{xpToNextLevel} XP</strong> lagi untuk naik level!
+                      </div>
+                    </div>
+                  }
+                />
                 <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
               </div>
             )}
           </div>
 
-          {role === 'mahasiswa' && <DailyGoalWidget dailyGoals={dailyGoals} />}
+          {role === 'mahasiswa' && (
+            <Suspense fallback={<div className="h-40 w-full animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-2xl" />}>
+              <DailyGoalWidget dailyGoals={dailyGoals} />
+            </Suspense>
+          )}
 
           {role === 'mahasiswa' && (
             <Card className="hidden lg:block p-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
@@ -481,13 +514,15 @@ export default function LearnPage() {
           )}
 
           {role === 'mahasiswa' && (
-            <LeaderboardWidget
-              topUsers={computedLeaderboard}
-              currentUserId="current"
-              currentUserName={name}
-              currentUserXp={weeklyXp}
-              currentUserRank={userRank}
-            />
+            <Suspense fallback={<div className="h-64 w-full animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-2xl" />}>
+              <LeaderboardWidget
+                topUsers={computedLeaderboard}
+                currentUserId="current"
+                currentUserName={name}
+                currentUserXp={weeklyXp}
+                currentUserRank={userRank}
+              />
+            </Suspense>
           )}
         </div>
       </div>

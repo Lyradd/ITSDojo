@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import CountUp from "react-countup";
+import { useEffect, useState } from "react";
+import { motion, useSpring, useTransform } from "framer-motion";
 
 interface AnimatedNumberProps {
   value: number;
@@ -9,22 +9,30 @@ interface AnimatedNumberProps {
   prefix?: string;
 }
 
-export function AnimatedNumber({ value, className, prefix }: AnimatedNumberProps) {
-  const prevValue = useRef(value);
+export function AnimatedNumber({ value, className, prefix = "" }: AnimatedNumberProps) {
+  const [mounted, setMounted] = useState(false);
+  
+  const spring = useSpring(value, {
+    mass: 0.8,
+    stiffness: 75,
+    damping: 15
+  });
+
+  const display = useTransform(spring, (current) => {
+    return prefix + Math.round(current).toLocaleString("id-ID");
+  });
 
   useEffect(() => {
-    prevValue.current = value;
-  }, [value]);
+    setMounted(true);
+  }, []);
 
-  return (
-    <CountUp
-      start={prevValue.current} 
-      end={value}               
-      duration={1.5}          
-      separator="."
-      prefix={prefix}
-      className={className}
-      preserveValue={true}
-    />
-  );
+  useEffect(() => {
+    spring.set(value);
+  }, [spring, value]);
+
+  if (!mounted) {
+    return <span className={className}>{prefix}{value.toLocaleString("id-ID")}</span>;
+  }
+
+  return <motion.span className={className}>{display}</motion.span>;
 }

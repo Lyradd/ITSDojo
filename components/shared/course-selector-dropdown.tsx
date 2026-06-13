@@ -32,7 +32,7 @@ export function CourseSelectorDropdown({ courses }: CourseSelectorDropdownProps)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 p-2.5 px-3 rounded-xl border-2 border-transparent bg-white dark:bg-zinc-900 shadow-sm hover:bg-zinc-100 hover:border-zinc-200 dark:hover:bg-zinc-800 transition-all hover:scale-105 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0">
+        <button aria-label="Pilih Kursus" className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-all hover:scale-105 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0">
           <div className="w-6 h-6 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
             <GraduationCap className="w-4 h-4 text-white" />
           </div>

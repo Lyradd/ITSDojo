@@ -158,6 +158,8 @@ export interface UserState {
   addGems: (amount: number) => void;
   setRole: (role: 'mahasiswa' | 'dosen' | 'admin') => void;
   setSemester: (semester: number) => void;
+  sessionValidated: boolean;
+  setSessionValidated: (val: boolean) => void;
 
   // 2. Progress & Learning
   xp: number; 
@@ -215,7 +217,7 @@ export interface UserState {
   lastDailyReset: string;
   monthlyCompletedGoals: number; // NEW: Progressive monthly goals
   claimedMonthlyMilestones: number[]; // NEW: Monthly challenge reward tracking
-  weeklyActiveDays: number; // NEW: Progressive weekly active days
+  getWeeklyActiveDays: () => number; // NEW: Derived weekly active days from history
   claimedWeeklyMilestones: number[]; // NEW: Claimed milestones (e.g. [3, 5, 7])
   followingCount: number; // NEW: Social stats
   followersCount: number; // NEW: Social stats
@@ -238,6 +240,7 @@ export interface UserState {
 
 // --- INITIAL STATE UNTUK RESET ---
 const INITIAL_STATE = {
+  sessionValidated: false,
   lastProgressUpdate: 0,
   isLoggedIn: false,
   id: '',
@@ -272,7 +275,6 @@ const INITIAL_STATE = {
   longestStreak: 0,
   mostXpInDay: 0,
   totalPerfectLessons: 0,
-  weeklyActiveDays: 0,
   perfectWeeksCount: 0,
   claimedWeeklyMilestones: [],
   league: "Bronze",
@@ -339,6 +341,8 @@ export const useUserStore = create<UserState>()(
           rejectedCourseIds: [],
           acceptedCourseIds: [],
           completedLessonIds: data.completedLessonIds || [],
+          lastActiveDate: gData.lastActiveDate || '',
+          lastDailyReset: gData.lastDailyReset || formatLocalDate(new Date()),
           activityHistory: gData.activityHistory || [],
           earnedBadges: gData.earnedBadges || [],
           unlockedAchievements: gData.unlockedAchievements || [],
@@ -391,6 +395,8 @@ export const useUserStore = create<UserState>()(
           completedLessonIds: data.completedLessonIds || state.completedLessonIds || [],
           ...(data.enrolledCourseIds ? { enrolledCourseIds: data.enrolledCourseIds } : {}),
           ...(gData ? {
+            lastActiveDate: gData.lastActiveDate || state.lastActiveDate,
+            lastDailyReset: gData.lastDailyReset || state.lastDailyReset,
             bio: gData.bio !== undefined ? gData.bio : state.bio,
             activityHistory: gData.activityHistory || [],
             earnedBadges: gData.earnedBadges || [],
@@ -438,6 +444,26 @@ export const useUserStore = create<UserState>()(
       addGems: (amount: number) => set((state) => ({ gems: state.gems + amount, lastProgressUpdate: Date.now() })),
       setRole: (role) => set({ role }),
       setSemester: (semester) => set({ semester }),
+      setSessionValidated: (val) => set({ sessionValidated: val }),
+      getWeeklyActiveDays: () => {
+        const state = get();
+        const history = state.activityHistory;
+        if (!history || history.length === 0) return 0;
+        
+        const now = new Date();
+        const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1, 0, 0, 0, 0);
+
+        const uniqueDays = new Set<string>();
+        history.forEach(h => {
+          const [year, month, day] = h.date.split('-').map(Number);
+          const d = new Date(year, month - 1, day, 0, 0, 0, 0);
+          if (d >= monday && (h.count > 0 || h.xpEarned > 0 || h.freezeUsed)) {
+            uniqueDays.add(h.date);
+          }
+        });
+        return Math.min(uniqueDays.size, 7);
+      },
 
       // --- ACTIONS: PROGRESS ---
       addXp: (amount: number) => {
@@ -578,10 +604,9 @@ export const useUserStore = create<UserState>()(
             set((s) => {
               // Self-heal: don't double count if it was somehow already counted, 
               // but since streak is 0, weeklyActiveDays likely missed today's count.
-              const nextActiveDays = s.weeklyActiveDays + 1;
+              const nextActiveDays = s.getWeeklyActiveDays() + 1;
               const nextPerfectWeeks = nextActiveDays === 7 ? s.perfectWeeksCount + 1 : s.perfectWeeksCount;
               return {
-                weeklyActiveDays: Math.min(nextActiveDays, 7),
                 perfectWeeksCount: nextPerfectWeeks
               };
             });
@@ -741,7 +766,6 @@ export const useUserStore = create<UserState>()(
             const lastResetDayOfWeek = lastResetDate.getDay() === 0 ? 7 : lastResetDate.getDay();
             
             if (diffDaysWeekly >= 7 || currentDayOfWeek < lastResetDayOfWeek) {
-              updates.weeklyActiveDays = 0;
               updates.claimedWeeklyMilestones = [];
               updates.weeklyXp = 0;
             }
@@ -820,7 +844,7 @@ export const useUserStore = create<UserState>()(
       claimWeeklyMilestone: (milestone: number) => {
         const state = get();
         if (state.claimedWeeklyMilestones.includes(milestone)) return;
-        if (state.weeklyActiveDays < milestone) return;
+        if (state.getWeeklyActiveDays() < milestone) return;
 
         let reward = 50;
         if (milestone === 5) reward = 100;
@@ -925,6 +949,8 @@ export const useUserStore = create<UserState>()(
         if (!state.isLoggedIn || !state.id) return;
 
         const gamificationData = {
+          lastActiveDate: state.lastActiveDate,
+          lastDailyReset: state.lastDailyReset,
           activityHistory: state.activityHistory,
           earnedBadges: state.earnedBadges,
           unlockedAchievements: state.unlockedAchievements,
@@ -980,7 +1006,7 @@ export const useUserStore = create<UserState>()(
 if (typeof window !== 'undefined') {
   let syncTimeout: any = null;
   useUserStore.subscribe((state, prevState) => {
-    if (!state.isLoggedIn || !state.id) return;
+    if (!state.isLoggedIn || !state.id || !state.sessionValidated) return;
     
     // Cek apakah ada field krusial yang berubah
     const extendedDataChanged = 

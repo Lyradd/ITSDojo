@@ -23,9 +23,63 @@ import {
 import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
 import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
-import { StreakCalendarModal } from "@/components/shared/streak-calendar-modal";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import dynamic from "next/dynamic";
+import React from "react";
 import { ChevronRight as ChevronRightIcon } from "lucide-react";
+
+const StreakCalendarModal = dynamic(() => import("@/components/shared/streak-calendar-modal").then(mod => mod.StreakCalendarModal), { ssr: false });
+const ConfirmModal = dynamic(() => import("@/components/shared/confirm-modal").then(mod => mod.ConfirmModal), { ssr: false });
+
+const ResetTimerText = React.memo(() => {
+  const [resetTimeLeft, setResetTimeLeft] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateResetTime = () => {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+      setResetTimeLeft(`${hours}h ${minutes}m`);
+    };
+    updateResetTime();
+    const interval = setInterval(updateResetTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!resetTimeLeft) return null;
+
+  return (
+    <p className="text-sm font-medium text-zinc-500 flex items-center gap-1">
+      <Clock className="w-4 h-4" /> Reset dalam {resetTimeLeft}
+    </p>
+  );
+});
+
+const MultiplierBanner = React.memo(() => {
+  const timeLeft = useMultiplierTimer();
+  const xpMultiplier = useUserStore(s => s.xpMultiplier);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="animate-in slide-in-from-top-4 duration-500 bg-linear-to-r from-purple-600 to-pink-600 rounded-2xl p-4 text-white shadow-lg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm animate-pulse">
+          <Zap className="w-6 h-6 text-yellow-300 fill-current" />
+        </div>
+        <div>
+          <h3 className="font-bold text-lg leading-none">Double XP Aktif!</h3>
+          <p className="text-purple-100 text-xs">Semua XP dikalikan {xpMultiplier}x</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-2xl font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-lg border border-white/10">
+        <Clock className="w-5 h-5" />
+        {timeLeft}
+      </div>
+    </div>
+  );
+});
 
 // --- Helper Functions for Goal Styling ---
 const getGoalCardStyle = (goal: any) => {
@@ -65,7 +119,7 @@ export default function GoalsPage() {
     xpMultiplier,
     activityHistory,
     xp,
-    weeklyActiveDays,
+    getWeeklyActiveDays,
     claimedWeeklyMilestones,
     claimWeeklyMilestone,
     monthlyCompletedGoals,
@@ -77,8 +131,7 @@ export default function GoalsPage() {
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
-  const timeLeft = useMultiplierTimer();
-  const [resetTimeLeft, setResetTimeLeft] = useState<string | null>(null);
+  const weeklyActiveDays = getWeeklyActiveDays();
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [claimingGoals, setClaimingGoals] = useState<Set<string>>(new Set());
 
@@ -91,21 +144,6 @@ export default function GoalsPage() {
       router.push("/login");
     }
   }, [isLoggedIn, router, isMounted]);
-
-  // Timer Mundur untuk Reset Harian (Midnight)
-  useEffect(() => {
-    const updateResetTime = () => {
-      const now = new Date();
-      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const diff = tomorrow.getTime() - now.getTime();
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / 1000 / 60) % 60);
-      setResetTimeLeft(`${hours}h ${minutes}m`);
-    };
-    updateResetTime();
-    const interval = setInterval(updateResetTime, 60000); // Update setiap menit
-    return () => clearInterval(interval);
-  }, []);
 
   if (!isMounted || !isLoggedIn) return null;
 
@@ -131,7 +169,7 @@ export default function GoalsPage() {
   const handleClaim = (goalId: string) => {
     // Mencegah double-click eksploitasi dalam rentang waktu yang sama
     if (claimingGoals.has(goalId)) return;
-    
+
     // Optimistic UI Update: Kunci tombol langsung
     setClaimingGoals(prev => new Set(prev).add(goalId));
 
@@ -167,11 +205,7 @@ export default function GoalsPage() {
                   Misi
                 </h1>
               </div>
-              {resetTimeLeft && (
-                <p className="text-sm font-medium text-zinc-500 flex items-center gap-1">
-                  <Clock className="w-4 h-4" /> Reset dalam {resetTimeLeft}
-                </p>
-              )}
+              <ResetTimerText />
             </div>
 
             <div className="flex items-center gap-3">
@@ -191,23 +225,7 @@ export default function GoalsPage() {
           </div>
 
           {/* BANNER 1: Active Boost */}
-          {timeLeft && (
-            <div className="animate-in slide-in-from-top-4 duration-500 bg-linear-to-r from-purple-600 to-pink-600 rounded-2xl p-4 text-white shadow-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm animate-pulse">
-                  <Zap className="w-6 h-6 text-yellow-300 fill-current" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-none">Double XP Aktif!</h3>
-                  <p className="text-purple-100 text-xs">Semua XP dikalikan {xpMultiplier}x</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-2xl font-mono font-bold tracking-widest bg-black/20 px-3 py-1 rounded-lg border border-white/10">
-                <Clock className="w-5 h-5" />
-                {timeLeft}
-              </div>
-            </div>
-          )}
+          <MultiplierBanner />
 
           {/* BANNER 2: Hadiah Harian Hero */}
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
@@ -244,7 +262,7 @@ export default function GoalsPage() {
                   >
                     <Card className={`p-4 sm:p-5 rounded-2xl border-2 transition-all duration-500 ${getGoalCardStyle(goal)}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        
+
                         {/* Wrapper Icon & Progress untuk Mobile */}
                         <div className="flex items-center gap-3 sm:gap-4 w-full flex-1">
                           {/* Icon Box */}
@@ -257,11 +275,10 @@ export default function GoalsPage() {
                             <div className="flex flex-col">
                               <div className="flex justify-between items-start sm:items-center mb-0.5 gap-2">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md ${
-                                    goal.category === 'academic' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' :
-                                    goal.category === 'competitive' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' :
-                                    'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400'
-                                  }`}>
+                                  <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md ${goal.category === 'academic' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' :
+                                      goal.category === 'competitive' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' :
+                                        'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400'
+                                    }`}>
                                     {goal.category}
                                   </span>
                                   <h3 className={`font-bold text-sm sm:text-base line-clamp-1 break-words transition-colors duration-500 ${goal.isClaimed ? 'text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-200'}`}>
@@ -280,9 +297,9 @@ export default function GoalsPage() {
                             {/* Progress Bar */}
                             <div className="h-2.5 sm:h-3 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
                               <motion.div
-                                className={`h-full rounded-full transition-colors duration-500 ${getGoalProgressBarStyle(goal)}`}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${Math.min((goal.currentProgress / goal.targetValue) * 100, 100)}%` }}
+                                className={`h-full rounded-full origin-left ${getGoalProgressBarStyle(goal)}`}
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: Math.min((goal.currentProgress / goal.targetValue), 1) }}
                                 transition={{ duration: 1, ease: "easeOut" }}
                               />
                             </div>
@@ -368,8 +385,7 @@ export default function GoalsPage() {
                     <span className={`text-[10px] sm:text-xs font-bold uppercase ${item.isToday ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
                       {item.day}
                     </span>
-                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border-2 transition-all ${
-                      item.active
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border-2 transition-all ${item.active
                         ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
                         : item.isFreeze
                           ? 'bg-blue-100 border-blue-200 text-blue-500 dark:bg-blue-900/40 dark:border-blue-800 shadow-sm'
@@ -399,11 +415,11 @@ export default function GoalsPage() {
                 <div className="mx-4 relative h-8 mt-4">
                   {/* The Background Track & Filled Part */}
                   <div className="absolute inset-0 bg-zinc-200/50 dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden">
-                    <div 
-                      className="absolute top-0 left-0 h-full bg-linear-to-r from-orange-400 to-orange-500 transition-all duration-1000 ease-out"
-                      style={{ width: `${Math.min((weeklyActiveDays / 7) * 100, 100)}%` }}
+                    <div
+                      className="absolute top-0 left-0 h-full w-full bg-linear-to-r from-orange-400 to-orange-500 transition-transform duration-1000 ease-out origin-left"
+                      style={{ transform: `scaleX(${Math.min((weeklyActiveDays / 7), 1)})` }}
                     >
-                       <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
+                      <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
                     </div>
                   </div>
 
@@ -419,41 +435,40 @@ export default function GoalsPage() {
                     const positionPercent = (milestone.days / 7) * 100;
 
                     return (
-                      <div 
+                      <div
                         key={milestone.days}
                         className="absolute top-1/2 flex flex-col items-center z-10"
                         style={{ left: `${positionPercent}%`, transform: 'translate(-50%, -50%)' }}
                       >
-                         {/* Node */}
-                         <div 
-                           onClick={() => {
-                             if (isAvailable) {
-                               claimWeeklyMilestone(milestone.days);
-                               triggerConfetti();
-                               playCoinSound();
-                             }
-                           }}
-                           className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all ${
-                             isClaimed 
-                               ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
-                               : isAvailable
-                                 ? 'bg-yellow-400 border-white dark:border-zinc-950 text-yellow-900 shadow-lg cursor-pointer hover:scale-110 animate-bounce'
-                                 : isReached
-                                    ? 'bg-orange-500 border-white dark:border-zinc-950 text-white' 
-                                    : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
-                           }`}
-                         >
-                           {isClaimed ? <CheckCircle className="w-5 h-5" /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />}
-                         </div>
-                         {/* Labels */}
-                         <div className="absolute top-11 flex flex-col items-center w-20">
-                           <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                             {milestone.days} Hari
-                           </span>
-                           <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>
-                             <Gem className="w-2.5 h-2.5" /> {milestone.reward}
-                           </span>
-                         </div>
+                        {/* Node */}
+                        <div
+                          onClick={() => {
+                            if (isAvailable) {
+                              claimWeeklyMilestone(milestone.days);
+                              triggerConfetti();
+                              playCoinSound();
+                            }
+                          }}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all ${isClaimed
+                              ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
+                              : isAvailable
+                                ? 'bg-yellow-400 border-white dark:border-zinc-950 text-yellow-900 shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                                : isReached
+                                  ? 'bg-orange-500 border-white dark:border-zinc-950 text-white'
+                                  : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
+                            }`}
+                        >
+                          {isClaimed ? <CheckCircle className="w-5 h-5" /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />}
+                        </div>
+                        {/* Labels */}
+                        <div className="absolute top-11 flex flex-col items-center w-20">
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                            {milestone.days} Hari
+                          </span>
+                          <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>
+                            <Gem className="w-2.5 h-2.5" /> {milestone.reward}
+                          </span>
+                        </div>
                       </div>
                     );
                   })}
@@ -497,11 +512,11 @@ export default function GoalsPage() {
                 <div className="mx-4 relative h-8 mt-6">
                   {/* The Background Track & Filled Part */}
                   <div className="absolute inset-0 bg-zinc-200/50 dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden">
-                    <div 
+                    <div
                       className="absolute top-0 left-0 h-full bg-linear-to-r from-purple-400 to-purple-600 transition-all duration-1000 ease-out"
                       style={{ width: `${Math.min((monthlyCompletedGoals / 45) * 100, 100)}%` }}
                     >
-                       <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
+                      <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
                     </div>
                   </div>
 
@@ -517,43 +532,42 @@ export default function GoalsPage() {
                     const positionPercent = (milestone.target / 45) * 100;
 
                     return (
-                      <div 
+                      <div
                         key={milestone.target}
                         className="absolute top-1/2 flex flex-col items-center z-10"
                         style={{ left: `${positionPercent}%`, transform: 'translate(-50%, -50%)' }}
                       >
-                         {/* Node */}
-                         <div 
-                           onClick={() => {
-                             if (isAvailable) {
-                               claimMonthlyMilestone(milestone.target, milestone.reward, milestone.tier);
-                               triggerConfetti();
-                               playCoinSound();
-                             }
-                           }}
-                           className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 transition-all ${
-                             isClaimed 
-                               ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
-                               : isAvailable
-                                 ? 'bg-purple-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
-                                 : isReached
-                                    ? 'bg-purple-600 border-white dark:border-zinc-950 text-white' 
-                                    : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
-                           }`}
-                         >
-                           {isClaimed ? <CheckCircle className="w-6 h-6" /> : (
-                             milestone.target === 45 ? <Trophy className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />
-                           )}
-                         </div>
-                         {/* Labels */}
-                         <div className="absolute top-14 flex flex-col items-center w-24">
-                           <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-purple-600 dark:text-purple-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                             {milestone.target} Misi
-                           </span>
-                           <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>
-                             <Gem className="w-2.5 h-2.5" /> {milestone.reward}
-                           </span>
-                         </div>
+                        {/* Node */}
+                        <div
+                          onClick={() => {
+                            if (isAvailable) {
+                              claimMonthlyMilestone(milestone.target, milestone.reward, milestone.tier);
+                              triggerConfetti();
+                              playCoinSound();
+                            }
+                          }}
+                          className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 transition-all ${isClaimed
+                              ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
+                              : isAvailable
+                                ? 'bg-purple-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                                : isReached
+                                  ? 'bg-purple-600 border-white dark:border-zinc-950 text-white'
+                                  : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
+                            }`}
+                        >
+                          {isClaimed ? <CheckCircle className="w-6 h-6" /> : (
+                            milestone.target === 45 ? <Trophy className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />
+                          )}
+                        </div>
+                        {/* Labels */}
+                        <div className="absolute top-14 flex flex-col items-center w-24">
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-purple-600 dark:text-purple-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                            {milestone.target} Misi
+                          </span>
+                          <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>
+                            <Gem className="w-2.5 h-2.5" /> {milestone.reward}
+                          </span>
+                        </div>
                       </div>
                     );
                   })}

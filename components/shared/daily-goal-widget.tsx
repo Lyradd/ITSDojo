@@ -34,8 +34,8 @@ export const DailyGoalWidget = ({ dailyGoals }: DailyGoalWidgetProps) => {
               </div>
               <div className="h-2.5 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
                 <div
-                  className={`h-full transition-all duration-700 ease-out ${goal.isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}
-                  style={{ width: `${Math.min((goal.currentProgress / goal.targetValue) * 100, 100)}%` }}
+                  className={`h-full transition-transform duration-700 ease-out origin-left ${goal.isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}
+                  style={{ transform: `scaleX(${Math.min((goal.currentProgress / goal.targetValue), 1)})` }}
                 />
               </div>
             </div>

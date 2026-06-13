@@ -184,7 +184,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               </p>
               {role === 'mahasiswa' ? (
                 <div className="flex flex-col gap-1 mt-1">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tighter">
                     <span>Level {level}</span>
                     <span className="flex items-center gap-0.5 text-blue-500">
                       <Gem className="w-2.5 h-2.5 fill-current" /> {gems}
@@ -198,12 +198,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
                       className="h-full bg-linear-to-r from-blue-500 to-cyan-400"
                     />
                   </div>
-                  <p className="text-[9px] text-zinc-400 font-medium">
+                  <p className="text-[9px] text-zinc-500 dark:text-zinc-400 font-medium">
                     {xp} / {xpToNextLevel} XP
                   </p>
                 </div>
               ) : (
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter mt-0.5">
+                <p className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tighter mt-0.5">
                   {role === 'dosen' ? 'Dosen' : role === 'admin' ? 'Admin' : 'Mahasiswa'}
                 </p>
               )}
@@ -213,7 +213,8 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
             <ThemeToggle />
             <Link
               href={role === 'dosen' ? '/dosen/settings' : role === 'admin' ? '/admin/settings' : '/settings'}
-              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
+              aria-label="Pengaturan Profil"
+              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
             >
               <MoreVertical className="w-4 h-4" />
             </Link>

@@ -44,6 +44,7 @@ export default function ClientLayout({
       const fetchProfile = async () => {
         const res = await getUserProfile(id);
         if (res.success && res.user) {
+          useUserStore.getState().setSessionValidated(true);
           // Untuk role non-mahasiswa: hanya sync data profil dasar,
           // abaikan seluruh data gamifikasi agar tidak muncul di UI
           const isMahasiswa = res.user.role === 'mahasiswa';
@@ -65,7 +66,7 @@ export default function ClientLayout({
   }, [isLoggedIn, id, syncFromServer]);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative">
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-black relative transition-colors duration-300 ease-in-out">
       <LevelUpModal />
       <RewardAnimation />
       <DynamicEnvironment />

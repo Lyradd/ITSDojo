@@ -87,7 +87,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col transition-colors duration-300 ease-in-out`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <main className="flex-1">
             {children}

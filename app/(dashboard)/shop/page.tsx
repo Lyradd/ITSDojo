@@ -16,13 +16,15 @@ import { PurchaseModal } from "@/components/shared/purchase-modal";
 import { AlertModal } from "@/components/shared/alert-modal";
 import { PurchaseHistoryModal } from "@/components/shared/purchase-history-modal";
 import { toast } from "react-hot-toast";
+import { buyShopItemAction } from "@/actions/gamification";
 
 export default function ShopPage() {
   const router = useRouter();
   const { 
-    gems, streakFreezeCount, buyItem, multiplierEndTime, 
-    purchaseHistory = [], level, unlockedInventorySlotIds = [], unlockInventorySlot,
-    hasGemMiner, hasShieldPack, useShieldPack, addGems, isLoggedIn
+    gems, streakFreezeCount, multiplierEndTime, useShieldPack, unlockInventorySlot,
+    purchaseHistory = [], level, unlockedInventorySlotIds = [],
+    hasGemMiner, hasShieldPack, addGems, isLoggedIn,
+    updateProfile
   } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ type: string, cost: number, title: string, icon: React.ReactNode, actionType?: 'buy' | 'unlock' } | null>(null);
@@ -54,44 +56,41 @@ export default function ShopPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  const confirmBuy = () => {
+  const confirmBuy = async () => {
     if (!selectedItem || gems < selectedItem.cost || isProcessing) return;
     
     setIsProcessing(true);
 
-    if (selectedItem.actionType === 'unlock') {
-      const success = unlockInventorySlot(selectedItem.type, selectedItem.cost);
-      if (success) {
-        triggerConfetti();
-        playCoinSound();
-        toast.success(`${selectedItem.title} berhasil dibuka!`);
-        setSelectedItem(null);
-      }
-      setIsProcessing(false);
-      return;
-    }
+    // Kirim request ke backend untuk mutasi (Aman dari manipulasi client)
+    const res = await buyShopItemAction(selectedItem.type, selectedItem.cost);
+    
+    if (res.success) {
+      // Sinkronisasikan state Zustand dengan hasil validasi backend
+      updateProfile({
+         gems: res.newGems,
+         streakFreezeCount: res.gamificationData.streakFreezeCount,
+         hasGemMiner: res.gamificationData.hasGemMiner,
+         hasShieldPack: res.gamificationData.hasShieldPack,
+         unlockedInventorySlotIds: res.gamificationData.unlockedInventorySlotIds,
+         xpMultiplier: res.gamificationData.xpMultiplier,
+         multiplierEndTime: res.gamificationData.multiplierEndTime,
+         purchaseHistory: res.gamificationData.purchaseHistory,
+      });
 
-    // Safety check: Jangan biarkan beli jika sudah penuh/aktif
-    const itemInCatalog = storeItems.find(i => i.type === selectedItem.type);
-    if (itemInCatalog && (itemInCatalog.isFull || itemInCatalog.isActive)) {
+      triggerConfetti();
+      playCoinSound();
+      toast.success(`${selectedItem.title} berhasil ${selectedItem.actionType === 'unlock' ? 'dibuka' : 'dibeli'}!`);
+      setSelectedItem(null);
+    } else {
       setAlertInfo({
-        title: 'Penyimpanan Penuh',
-        message: 'Anda sudah memiliki item ini atau penyimpanan untuk item ini sudah penuh!',
+        title: 'Transaksi Gagal',
+        message: res.error || 'Terjadi kesalahan saat memproses transaksi.',
         icon: <ShieldAlert className="w-10 h-10 text-red-500" />
       });
       setSelectedItem(null);
-      return;
-    }
-
-    const success = buyItem(selectedItem.type as any, selectedItem.cost);
-    if (success) {
-      triggerConfetti();
-      playCoinSound();
-      toast.success(`${selectedItem.title} berhasil dibeli!`);
-      setSelectedItem(null);
     }
     
-    setTimeout(() => setIsProcessing(false), 500); // Lock UI briefly for visual feedback
+    setIsProcessing(false);
   };
 
   const isMultiplierActive = multiplierEndTime && multiplierEndTime > Date.now();

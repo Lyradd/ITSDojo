@@ -39,6 +39,8 @@ import { Input } from "@/components/ui/input";
 import Editor from "@monaco-editor/react";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import 'react-quill-new/dist/quill.snow.css';
+import { completeLessonAction } from "@/actions/gamification";
+import { toast } from "react-hot-toast";
 
 type LessonStep = 'video' | 'summary' | 'practice';
 
@@ -54,7 +56,7 @@ export default function LessonIDEPage() {
   const params = useParams();
   const lessonId = params?.id as string;
 
-  const { completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email, unlockAchievement } = useUserStore();
+  const { level, completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email, unlockAchievement, updateProfile } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<any>(null);
@@ -418,15 +420,51 @@ export default function LessonIDEPage() {
           unlockAchievement("flawless");
         }
 
-        // Tandai lesson selesai setelah delay singkat agar user bisa lihat hasil
-        setTimeout(() => {
-          completeLesson(lessonId, failCount === 0, data.xpReward || lesson?.xpReward, data.gemReward || lesson?.gemReward);
-          triggerConfetti();
-          playSuccessSound();
+        // Jalankan Server Action untuk memvalidasi dan menyimpan progres ke Database
+        const res = await completeLessonAction(
+          lessonId, 
+          failCount === 0, 
+          data.xpReward || lesson?.xpReward || 50, 
+          data.gemReward || lesson?.gemReward || 10
+        );
+
+        if (res.success) {
+          // Trigger Level Up Modal if leveled up
+          const didLevelUp = (res.newLevel || level) > level;
+          const levelUpPayload = didLevelUp ? {
+            isLevelUpModalOpen: true,
+            levelUpData: { oldLevel: level, newLevel: res.newLevel as number, gemsGained: ((res.newLevel as number) - level) * 50 }
+          } : {};
+
+          // Sinkronisasi Store dengan Drizzle
+          updateProfile({
+            xp: res.newXp,
+            weeklyXp: res.newLeaderboardXp,
+            gems: res.newGems,
+            level: res.newLevel,
+            streak: res.newStreak,
+            completedLessonIds: res.isNew ? [...completedLessonIds, lessonId] : completedLessonIds,
+            activityHistory: res.gamificationData.activityHistory,
+            lastActiveDate: res.gamificationData.lastActiveDate,
+            dailyGoals: res.gamificationData.dailyGoals,
+            ...levelUpPayload
+          });
+
+          // Fallback trigger lokal untuk daily goals increment & notifikasi internal
+          completeLesson(lessonId, failCount === 0);
+
           setTimeout(() => {
-            router.push("/learn");
-          }, 1500);
-        }, 800);
+            triggerConfetti();
+            playSuccessSound();
+            toast.success(`Materi Selesai! +${res.earnedXp} XP, +${res.earnedGems} Gems`);
+            setTimeout(() => {
+              router.push("/learn");
+            }, 1500);
+          }, 800);
+        } else {
+          setIsError(true);
+          toast.error(res.error || "Gagal menyimpan progres ke server.");
+        }
       } else {
         setIsError(true);
         // Track fail count untuk achievement "Brute Force"

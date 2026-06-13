@@ -154,7 +154,7 @@ export interface UserState {
     avatar?: string | null;
   }) => void;
   logout: () => void;
-  updateProfile: (data: { name?: string, email?: string, bio?: string, avatarUrl?: string | null }) => void;
+  updateProfile: (data: Partial<UserState>) => void;
   addGems: (amount: number) => void;
   setRole: (role: 'mahasiswa' | 'dosen' | 'admin') => void;
   setSemester: (semester: number) => void;
@@ -190,7 +190,7 @@ export interface UserState {
   multiplierEndTime: number | null;
   
   addXp: (amount: number) => void;
-  completeLesson: (lessonId?: string, isPerfect?: boolean, xpReward?: number, gemReward?: number) => void;
+  completeLesson: (lessonId?: string, isPerfect?: boolean) => void;
   setActiveCourse: (courseId: string) => void;
   requestEnrollment: (courseId: string) => void;
   acceptEnrollment: (courseId: string) => void;
@@ -406,9 +406,11 @@ export const useUserStore = create<UserState>()(
             purchaseHistory: gData.purchaseHistory || [],
             streakFreezeCount: gData.streakFreezeCount || 0,
             hasGemMiner: gData.hasGemMiner || false,
+            hasShieldPack: gData.hasShieldPack || false,
             hasXpBoost: gData.hasXpBoost || false,
             xpMultiplier: gData.xpMultiplier || 1,
             multiplierEndTime: gData.multiplierEndTime || null,
+            unlockedInventorySlotIds: gData.unlockedInventorySlotIds || [],
             courseAccessHistory: gData.courseAccessHistory || {},
             perfectWeeksCount: gData.perfectWeeksCount || 0,
             nocturnalCount: gData.nocturnalCount || 0,
@@ -428,6 +430,7 @@ export const useUserStore = create<UserState>()(
           lastActiveDate: '',
           lastDailyReset: formatLocalDate(new Date()),
         } as any);
+        if (typeof window !== 'undefined') localStorage.removeItem('itsdojo-user-store');
       },
       clearStore: () => {
         set({
@@ -436,12 +439,16 @@ export const useUserStore = create<UserState>()(
           lastActiveDate: '',
           lastDailyReset: formatLocalDate(new Date()),
         } as any);
+        if (typeof window !== 'undefined') localStorage.removeItem('itsdojo-user-store');
       },
       updateProfile: (data) => {
         set((state) => ({ ...state, ...data, lastProgressUpdate: Date.now() }));
         get().forceSyncProgress(); // Instantly sync profile changes (bio, name, avatar)
       },
-      addGems: (amount: number) => set((state) => ({ gems: state.gems + amount, lastProgressUpdate: Date.now() })),
+      addGems: (amount: number) => {
+        set((state) => ({ gems: state.gems + amount, lastProgressUpdate: Date.now() }));
+        get().forceSyncProgress();
+      },
       setRole: (role) => set({ role }),
       setSemester: (semester) => set({ semester }),
       setSessionValidated: (val) => set({ sessionValidated: val }),
@@ -527,125 +534,17 @@ export const useUserStore = create<UserState>()(
         get().forceSyncProgress();
       },
 
-      completeLesson: (lessonId, isPerfect, xpReward, gemReward) => {
-        let earnedXp = 0;
-        let earnedGems = 0;
-        let streakIncreased = false;
+      completeLesson: (lessonId, isPerfect) => {
         set((state) => {
-          const updatedGoals = state.dailyGoals.map((goal) => {
-            if (goal.type === 'lesson') {
-              const newCurrent = Math.min(goal.currentProgress + 1, goal.targetValue);
-              return { ...goal, currentProgress: newCurrent, isCompleted: newCurrent >= goal.targetValue };
-            }
-            if (goal.type === 'perfect' && isPerfect) {
-              const newCurrent = Math.min(goal.currentProgress + 1, goal.targetValue);
-              return { ...goal, currentProgress: newCurrent, isCompleted: newCurrent >= goal.targetValue };
-            }
-            return goal;
-          });
-
-          const isNew = lessonId && !state.completedLessonIds.includes(lessonId);
-          const updatedLessonIds = isNew ? [...state.completedLessonIds, lessonId!] : state.completedLessonIds;
-          
-          // XP penuh untuk pelajaran baru, XP latihan (10) untuk pengulangan
-          earnedXp = isNew ? (xpReward || 50) : 10;
-          const baseGems = gemReward || 10;
-          earnedGems = isNew ? (state.hasGemMiner ? baseGems * 2 : baseGems) : 0;
-
-          let newHistory = [...state.activityHistory];
-          let newStreak = state.streak;
-          let newLastActiveDate = state.lastActiveDate;
-
-          // ACTIVITY & STREAK DIHITUNG MESKIPUN BUKAN PELAJARAN BARU (PRACTICE)
-          const today = formatLocalDate(new Date());
-          const todayIndex = newHistory.findIndex((h) => h.date === today);
-          if (todayIndex !== -1) {
-            newHistory[todayIndex] = { ...newHistory[todayIndex], count: newHistory[todayIndex].count + 1 };
-          } else {
-            newHistory.push({ date: today, count: 1, xpEarned: 0 });
-          }
-
-          // --- STREAK CALCULATION (Timezone-safe, midnight-normalized) ---
-          // Normalize both dates to midnight (00:00:00) to prevent hour/minute 
-          // differences from causing incorrect day-diff calculations.
-          const normalizeToMidnight = (dateStr: string): Date => {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            return new Date(year, month - 1, day, 0, 0, 0, 0);
-          };
-
-          // Self-heal: If lastActiveDate is today but streak is 0, it means it was corrupted by the previous logout bug.
-          const isCorruptedState = newLastActiveDate === today && newStreak === 0;
-
-          if (!newLastActiveDate || newLastActiveDate !== today || isCorruptedState) {
-            if (newLastActiveDate && newLastActiveDate !== '') {
-              const todayMidnight = normalizeToMidnight(today);
-              const lastActiveMidnight = normalizeToMidnight(newLastActiveDate);
-              const diffMs = todayMidnight.getTime() - lastActiveMidnight.getTime();
-              const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-              if (diffDays === 1) {
-                // Hari berurutan: lanjutkan streak
-                newStreak += 1;
-                streakIncreased = true;
-              } else if (diffDays > 1 || isCorruptedState) {
-                // Streak terputus atau state corrupt: hari ini adalah awal streak BARU (=1, bukan 0)
-                newStreak = 1;
-                streakIncreased = true;
-              }
-            } else {
-              // Pertama kali beraktivitas (lastActiveDate kosong/null): mulai streak dari 1
-              newStreak = 1;
-              streakIncreased = true;
-            }
-
-            newLastActiveDate = today;
-            
-            // Increment weekly active days and check for perfect week
-            set((s) => {
-              // Self-heal: don't double count if it was somehow already counted, 
-              // but since streak is 0, weeklyActiveDays likely missed today's count.
-              const nextActiveDays = s.getWeeklyActiveDays() + 1;
-              const nextPerfectWeeks = nextActiveDays === 7 ? s.perfectWeeksCount + 1 : s.perfectWeeksCount;
-              return {
-                perfectWeeksCount: nextPerfectWeeks
-              };
-            });
-          }
-          // Jika lastActiveDate === today: jangan ubah streak (sudah dihitung hari ini)
-
-          let newAchievements = [...(state.unlockedAchievements || [])];
-          let newNocturnalCount = state.nocturnalCount || 0;
-          let newEarlyBirdCount = state.earlyBirdCount || 0;
-
-          const hour = new Date().getHours();
-          if (hour >= 0 && hour < 5) {
-            newNocturnalCount++;
-            if (!newAchievements.includes('nocturnal')) newAchievements.push('nocturnal');
-          }
-          if (hour >= 6 && hour <= 9) {
-            newEarlyBirdCount++;
-            if (!newAchievements.includes('early-bird')) newAchievements.push('early-bird');
-          }
-
           const activeCourse = state.activeCourseId;
           const newCourseAccess = { ...(state.courseAccessHistory || {}) };
           if (activeCourse) newCourseAccess[activeCourse] = new Date().toISOString();
 
           return { 
-            lastProgressUpdate: Date.now(),
-            dailyGoals: updatedGoals, completedLessonIds: updatedLessonIds, 
-            gems: state.gems + earnedGems, activityHistory: newHistory,
-            courseAccessHistory: newCourseAccess, unlockedAchievements: newAchievements,
-            nocturnalCount: newNocturnalCount, earlyBirdCount: newEarlyBirdCount,
-            longestStreak: Math.max(state.longestStreak, newStreak),
-            streak: newStreak, lastActiveDate: newLastActiveDate,
-            totalPerfectLessons: isPerfect ? (state.totalPerfectLessons + 1) : state.totalPerfectLessons
+            courseAccessHistory: newCourseAccess,
+            lastProgressUpdate: Date.now()
           };
         });
-        if (streakIncreased) get().incrementProgress('cons-2', 1);
-        if (earnedXp > 0) get().addXp(earnedXp);
-        if (earnedGems > 0) get().triggerReward('gem', 5);
-        get().forceSyncProgress(); // GUARANTEE IMMEDIATE SYNC
       },
 
       setActiveCourse: (courseId) => set((state) => ({
@@ -703,6 +602,7 @@ export const useUserStore = create<UserState>()(
         if (state.gems < cost) return false;
         if (state.unlockedInventorySlotIds.includes(slotId)) return true;
         set({ gems: state.gems - cost, unlockedInventorySlotIds: [...state.unlockedInventorySlotIds, slotId], lastProgressUpdate: Date.now() });
+        get().forceSyncProgress();
         return true;
       },
       
@@ -720,22 +620,22 @@ export const useUserStore = create<UserState>()(
         if (type === "freeze") {
           if (state.streakFreezeCount >= 3) return false;
           set({ gems: state.gems - cost, streakFreezeCount: state.streakFreezeCount + 1, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
-          return true;
         } else if (type === "multiplier") {
           const durationMs = 60 * 60 * 1000;
           const currentEndTime = state.multiplierEndTime && state.multiplierEndTime > Date.now() ? state.multiplierEndTime : Date.now();
           set({ gems: state.gems - cost, xpMultiplier: 2, multiplierEndTime: currentEndTime + durationMs, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
-          return true;
         } else if (type === "shield-3x") {
           if (state.hasShieldPack) return false;
           set({ gems: state.gems - cost, hasShieldPack: true, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
-          return true;
         } else if (type === "gem-miner") {
           if (state.hasGemMiner) return false;
           set({ gems: state.gems - cost, hasGemMiner: true, purchaseHistory: currentHistory, lastProgressUpdate: Date.now() });
-          return true;
+        } else {
+          return false;
         }
-        return false;
+        
+        get().forceSyncProgress();
+        return true;
       },
       
       useShieldPack: () => {
@@ -958,6 +858,8 @@ export const useUserStore = create<UserState>()(
           purchaseHistory: state.purchaseHistory,
           streakFreezeCount: state.streakFreezeCount,
           hasGemMiner: state.hasGemMiner,
+          hasShieldPack: state.hasShieldPack,
+          unlockedInventorySlotIds: state.unlockedInventorySlotIds,
           xpMultiplier: state.xpMultiplier,
           multiplierEndTime: state.multiplierEndTime,
           courseAccessHistory: state.courseAccessHistory,
@@ -1017,6 +919,8 @@ if (typeof window !== 'undefined') {
       state.purchaseHistory !== prevState.purchaseHistory ||
       state.streakFreezeCount !== prevState.streakFreezeCount ||
       state.hasGemMiner !== prevState.hasGemMiner ||
+      state.hasShieldPack !== prevState.hasShieldPack ||
+      state.unlockedInventorySlotIds !== prevState.unlockedInventorySlotIds ||
       state.xpMultiplier !== prevState.xpMultiplier ||
       state.multiplierEndTime !== prevState.multiplierEndTime ||
       state.courseAccessHistory !== prevState.courseAccessHistory ||
@@ -1050,6 +954,8 @@ if (typeof window !== 'undefined') {
           purchaseHistory: state.purchaseHistory,
           streakFreezeCount: state.streakFreezeCount,
           hasGemMiner: state.hasGemMiner,
+          hasShieldPack: state.hasShieldPack,
+          unlockedInventorySlotIds: state.unlockedInventorySlotIds,
           xpMultiplier: state.xpMultiplier,
           multiplierEndTime: state.multiplierEndTime,
           courseAccessHistory: state.courseAccessHistory,

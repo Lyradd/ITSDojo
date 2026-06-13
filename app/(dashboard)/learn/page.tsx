@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
+import { completeLessonAction, resetLearningProgressAction } from "@/actions/gamification";
 import { INITIAL_LEADERBOARD } from "@/lib/evaluation-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -56,10 +57,13 @@ export default function LearnPage() {
     weeklyXp,
     xpToNextLevel,
     activeCourseId,
+    setActiveCourse: setZustandActiveCourse,
+    semester,
     streak,
     dailyGoals,
     completeLesson,
     completedLessonIds,
+    updateProfile,
     resetProgress,
     activityHistory,
     role
@@ -79,14 +83,40 @@ export default function LearnPage() {
     setLoading(true);
     try {
       // Fetch course info
-      const coursesRes = await fetch('/api/courses');
+      // Fetch course info with user semester parameter to prioritize correctly
+      const coursesRes = await fetch(`/api/courses?semester=${semester}`);
       const allCourses = await coursesRes.json();
       setAllCoursesList(allCourses);
-      const course = allCourses.find((c: any) => c.id === activeCourseId) || allCourses[0];
-      setActiveCourse(course);
+      
+      // LOGIKA CERDAS: Pilih active course berdasarkan semester
+      let courseToActivate = null;
+      
+      // Jika pengguna sudah pernah memilih course aktif sebelumnya, gunakan itu
+      if (activeCourseId) {
+         courseToActivate = allCourses.find((c: any) => c.id === activeCourseId);
+      }
+      
+      // Jika tidak ada active course, cari course yang cocok dengan semesternya
+      if (!courseToActivate) {
+         courseToActivate = allCourses.find((c: any) => c.requiredSemester === semester);
+      }
+      
+      // Fallback terakhir: Ambil index 0 (karena API sudah di-order berdasarkan semester di backend)
+      if (!courseToActivate) {
+         courseToActivate = allCourses[0];
+      }
+
+      setActiveCourse(courseToActivate);
+      
+      // Simpan preferensi default ke state lokal jika sebelumnya belum ada
+      if (!activeCourseId && courseToActivate) {
+         setZustandActiveCourse(courseToActivate.id);
+      }
 
       // Fetch units + lessons
-      const courseIdToFetch = course?.id || activeCourseId;
+      const courseIdToFetch = courseToActivate?.id;
+      if (!courseIdToFetch) return; // Guard jika tidak ada course sama sekali
+
       const unitsRes = await fetch(`/api/courses/${courseIdToFetch}/units`);
       const unitsData = await unitsRes.json();
 
@@ -110,10 +140,15 @@ export default function LearnPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeCourseId]);
+  }, [activeCourseId, semester, setZustandActiveCourse]);
 
   useEffect(() => { setIsMounted(true); }, []);
-  useEffect(() => { if (isMounted && isLoggedIn) fetchCourseData(); }, [isMounted, isLoggedIn, fetchCourseData]);
+  useEffect(() => { 
+    // Mencegah Race Condition: Pastikan data user (terutama semester) sudah siap dari Zustand
+    if (isMounted && isLoggedIn && semester !== undefined) {
+      fetchCourseData(); 
+    }
+  }, [isMounted, isLoggedIn, semester, fetchCourseData]);
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
@@ -133,12 +168,33 @@ export default function LearnPage() {
   computedLeaderboard.sort((a, b) => b.score - a.score);
   const userRank = computedLeaderboard.findIndex(u => u.userId === 'current') + 1;
 
-  const handleSimulateLesson = () => {
+  const handleSimulateLesson = async () => {
     const activeNodeData = lessonNodes.find((n: any) => !completedLessonIds.includes(String(n.id)));
     if (activeNodeData) {
-      completeLesson(String(activeNodeData.id), true, activeNodeData.xpReward, activeNodeData.gemReward);
-      triggerConfetti();
-      playSuccessSound();
+      const res = await completeLessonAction(String(activeNodeData.id), true, activeNodeData.xpReward, activeNodeData.gemReward);
+      if (res.success) {
+        const didLevelUp = (res.newLevel || level) > level;
+        const levelUpPayload = didLevelUp ? {
+          isLevelUpModalOpen: true,
+          levelUpData: { oldLevel: level, newLevel: res.newLevel as number, gemsGained: ((res.newLevel as number) - level) * 50 }
+        } : {};
+
+        updateProfile({
+          xp: res.newXp,
+          weeklyXp: res.newLeaderboardXp,
+          gems: res.newGems,
+          level: res.newLevel,
+          streak: res.newStreak,
+          completedLessonIds: res.isNew ? [...completedLessonIds, String(activeNodeData.id)] : completedLessonIds,
+          activityHistory: res.gamificationData.activityHistory,
+          lastActiveDate: res.gamificationData.lastActiveDate,
+          dailyGoals: res.gamificationData.dailyGoals,
+          ...levelUpPayload
+        });
+        completeLesson(String(activeNodeData.id), true);
+        triggerConfetti();
+        playSuccessSound();
+      }
     } else {
       setAlertConfig({
         isOpen: true,
@@ -197,29 +253,37 @@ export default function LearnPage() {
         <div className="flex flex-col gap-10">
 
           {/* STAT WIDGETS (MOBILE ONLY) */}
-          <div className="flex lg:hidden items-center justify-between gap-2">
-            <CourseSelectorDropdown courses={allCoursesList} />
+          <div className="w-full grid grid-cols-4 gap-2 lg:hidden">
+            <div className="flex items-center justify-center">
+              <CourseSelectorDropdown courses={allCoursesList} />
+            </div>
             {role === 'mahasiswa' && (
               <>
-                <StatWidget 
-                  align="left"
-                  icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
-                  hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
-                />
-                <StatWidget 
-                  align="center"
-                  icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
-                  hoverContent={
-                    <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-xl p-3 w-48 text-center animate-in fade-in zoom-in-95 duration-200">
-                      <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">XP Saya</div>
-                      <div className="font-bold text-sm text-blue-600 dark:text-blue-400 mb-1">Level {level}</div>
-                      <div className="text-xs text-zinc-600 dark:text-zinc-300">
-                        Butuh <strong className="text-zinc-900 dark:text-zinc-100">{xpToNextLevel} XP</strong> lagi untuk naik level!
+                <div className="flex items-center justify-center">
+                  <StatWidget 
+                    align="center"
+                    icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                    hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
+                  />
+                </div>
+                <div className="flex items-center justify-center">
+                  <StatWidget 
+                    align="center"
+                    icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
+                    hoverContent={
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-xl p-3 w-48 text-center animate-in fade-in zoom-in-95 duration-200">
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">XP Saya</div>
+                        <div className="font-bold text-sm text-blue-600 dark:text-blue-400 mb-1">Level {level}</div>
+                        <div className="text-xs text-zinc-600 dark:text-zinc-300">
+                          Butuh <strong className="text-zinc-900 dark:text-zinc-100">{xpToNextLevel} XP</strong> lagi untuk naik level!
+                        </div>
                       </div>
-                    </div>
-                  }
-                />
-                <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-center">
+                  <StatWidget align="center" icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+                </div>
               </>
             )}
           </div>
@@ -282,9 +346,14 @@ export default function LearnPage() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     if (confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
-                      resetProgress();
+                      const res = await resetLearningProgressAction();
+                      if (res.success) {
+                        resetProgress();
+                      } else {
+                        alert("Gagal melakukan reset pada database.");
+                      }
                     }
                   }}
                   className="bg-black/20 hover:bg-black/40 border-none text-white transition-colors"
@@ -466,33 +535,41 @@ export default function LearnPage() {
         </div>
 
         {/* =========================================
-            KOLOM KANAN: WIDGETS (Tetap Sama)
+            KOLOM KANAN: WIDGETS
            ========================================= */}
-        <div className="flex flex-col gap-6">
-          <div className="hidden lg:flex items-center justify-between gap-2">
-            <CourseSelectorDropdown courses={allCoursesList} />
+        <div className="flex flex-col justify-start gap-6 h-fit sticky top-6">
+          <div className="hidden lg:grid w-full grid-cols-4 gap-2">
+            <div className="flex items-center justify-center">
+              <CourseSelectorDropdown courses={allCoursesList} />
+            </div>
             {role === 'mahasiswa' && (
-              <div className="flex items-center gap-2 flex-1 justify-end">
-                <StatWidget 
-                  align="center"
-                  icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
-                  hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
-                />
-                <StatWidget 
-                  align="center"
-                  icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
-                  hoverContent={
-                    <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-xl p-3 w-48 text-center animate-in fade-in zoom-in-95 duration-200">
-                      <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">XP Saya</div>
-                      <div className="font-bold text-sm text-blue-600 dark:text-blue-400 mb-1">Level {level}</div>
-                      <div className="text-xs text-zinc-600 dark:text-zinc-300">
-                        Butuh <strong className="text-zinc-900 dark:text-zinc-100">{xpToNextLevel} XP</strong> lagi untuk naik level!
+              <>
+                <div className="flex items-center justify-center">
+                  <StatWidget 
+                    align="center"
+                    icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                    hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
+                  />
+                </div>
+                <div className="flex items-center justify-center">
+                  <StatWidget 
+                    align="center"
+                    icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
+                    hoverContent={
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-xl p-3 w-48 text-center animate-in fade-in zoom-in-95 duration-200">
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">XP Saya</div>
+                        <div className="font-bold text-sm text-blue-600 dark:text-blue-400 mb-1">Level {level}</div>
+                        <div className="text-xs text-zinc-600 dark:text-zinc-300">
+                          Butuh <strong className="text-zinc-900 dark:text-zinc-100">{xpToNextLevel} XP</strong> lagi untuk naik level!
+                        </div>
                       </div>
-                    </div>
-                  }
-                />
-                <StatWidget icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
-              </div>
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-center">
+                  <StatWidget align="center" icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+                </div>
+              </>
             )}
           </div>
 

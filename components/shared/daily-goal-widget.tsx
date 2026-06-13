@@ -14,7 +14,7 @@ export const DailyGoalWidget = ({ dailyGoals }: DailyGoalWidgetProps) => {
         <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Misi Harian</h3>
         <Link href="/goals" className="text-blue-500 font-bold text-[10px] sm:text-xs uppercase tracking-wider hover:underline bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg transition-colors">Lihat Semua</Link>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
         {dailyGoals.map((goal) => (
           <div key={goal.id} className="flex items-center gap-3">
             <div className={`p-2 rounded-lg transition-colors shrink-0 ${goal.isCompleted ? 'bg-green-100 text-green-600' :

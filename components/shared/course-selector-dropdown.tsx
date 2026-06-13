@@ -18,14 +18,16 @@ interface CourseSelectorDropdownProps {
 
 export function CourseSelectorDropdown({ courses }: CourseSelectorDropdownProps) {
   const router = useRouter();
-  const { activeCourseId, setActiveCourse, enrolledCourseIds } = useUserStore();
+  const { activeCourseId, setActiveCourse, enrolledCourseIds, semester } = useUserStore();
 
   const activeCourse = courses.find((c) => c.id === activeCourseId) || courses[0];
   
-  // Ambil hanya kursus yang di-enroll oleh user, atau tampilkan semua jika belum ada logika enroll yang ketat
-  const enrolledCourses = courses.filter((c) => 
-    enrolledCourseIds && enrolledCourseIds.length > 0 ? enrolledCourseIds.includes(c.id) : true
-  );
+  // Ambil kursus yang sesuai dengan semester pengguna (serta status enrollment)
+  const enrolledCourses = courses.filter((c) => {
+    const isEnrolled = enrolledCourseIds && enrolledCourseIds.length > 0 ? enrolledCourseIds.includes(c.id) : true;
+    const isMatchingSemester = semester ? c.requiredSemester === semester : true;
+    return isEnrolled && isMatchingSemester;
+  });
 
   if (!activeCourse) return null;
 
@@ -39,10 +41,10 @@ export function CourseSelectorDropdown({ courses }: CourseSelectorDropdownProps)
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64 rounded-2xl p-2 z-[100] border-zinc-200 dark:border-zinc-800 shadow-xl bg-white dark:bg-zinc-950 mt-1">
-        <DropdownMenuLabel className="text-xs text-zinc-500 font-black uppercase tracking-wider px-2 py-2">
+        <DropdownMenuLabel className="text-xs text-zinc-500 font-black uppercase tracking-wider px-2 py-2 mb-3">
           Kursus Saya
         </DropdownMenuLabel>
-        <div className="max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+        <div className="max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent hover:scrollbar-thumb-zinc-600">
           {enrolledCourses.length > 0 ? (
             enrolledCourses.map((course) => (
               <DropdownMenuItem
@@ -50,10 +52,10 @@ export function CourseSelectorDropdown({ courses }: CourseSelectorDropdownProps)
                 onClick={() => {
                   setActiveCourse(course.id);
                 }}
-                className={`flex items-center gap-3 p-3 cursor-pointer rounded-xl transition-colors mb-1 ${
+                className={`flex items-center gap-3 p-3 cursor-pointer rounded-xl transition-colors duration-200 mb-1 ${
                   activeCourseId === course.id
                     ? "bg-blue-50 dark:bg-blue-900/20"
-                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    : "hover:bg-zinc-100 dark:hover:bg-white/5"
                 }`}
               >
                 <div

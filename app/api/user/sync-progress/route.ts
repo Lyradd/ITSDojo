@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, userProgress } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getSession } from "@/lib/session";
 
 export async function POST(req: Request) {
@@ -51,13 +51,26 @@ export async function POST(req: Request) {
 
     // Execute update if there's anything to update
     if (Object.keys(updateData).length > 0) {
-      await db.update(users)
+      const clientLastUpdated = gamificationData?.lastUpdated || 0;
+
+      // Only apply OCC if we are actually updating gamificationData
+      const condition = gamificationData !== undefined && clientLastUpdated > 0
+        ? and(
+            eq(users.id, userId),
+            sql`COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) <= ${clientLastUpdated}`
+          )
+        : eq(users.id, userId);
+
+      const result = await db.update(users)
         .set(updateData)
-        .where(eq(users.id, userId));
+        .where(condition)
+        .returning({ id: users.id });
+
+      if (result.length === 0) {
+         // Race condition: Server has newer data than the client payload!
+         return NextResponse.json({ success: false, error: "Stale data, sync rejected.", requireSync: true }, { status: 409 });
+      }
     }
-
-
-    // Sync completed lessons if provided
     if (completedLessonIds && Array.isArray(completedLessonIds)) {
       const existing = await db
         .select({ lessonId: userProgress.lessonId })

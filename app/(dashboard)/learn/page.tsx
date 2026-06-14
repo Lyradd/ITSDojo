@@ -35,6 +35,7 @@ const DailyGoalWidget = dynamic(() => import("@/components/shared/daily-goal-wid
 const LeaderboardWidget = dynamic(() => import("@/components/shared/leaderboard-widget").then(mod => mod.LeaderboardWidget));
 const StreakCalendarWidget = dynamic(() => import("@/components/shared/streak-calendar-widget").then(mod => mod.StreakCalendarWidget));
 const AlertModal = dynamic(() => import("@/components/shared/alert-modal").then(mod => mod.AlertModal), { ssr: false });
+import { StreakDisplay } from "@/components/shared/streak-display";
 
 // Helper: Warna tema berdasarkan kursus aktif
 const getCourseTheme = (courseId: string) => {
@@ -260,9 +261,8 @@ export default function LearnPage() {
             {role === 'mahasiswa' && (
               <>
                 <div className="flex items-center justify-center">
-                  <StatWidget 
-                    align="center"
-                    icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                  <StreakDisplay 
+                    variant="stat-widget" 
                     hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
                   />
                 </div>
@@ -545,9 +545,8 @@ export default function LearnPage() {
             {role === 'mahasiswa' && (
               <>
                 <div className="flex items-center justify-center">
-                  <StatWidget 
-                    align="center"
-                    icon={Flame} color="text-orange-500" label="Streak" value={streak} href="/goals" 
+                  <StreakDisplay 
+                    variant="stat-widget" 
                     hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
                   />
                 </div>

@@ -36,13 +36,13 @@ import { StatWidget } from "@/components/shared/stat-widget";
 import { ActivityHeatmap } from "@/components/profile/activity-heatmap";
 import { getAchievementsData } from "@/lib/profile-data";
 import { Diamond, Target } from "lucide-react"; // Ikon tambahan
+import { StreakDisplay } from "@/components/shared/streak-display";
 
 const ProfileStatCard = ({
   icon: Icon,
   value,
   label,
   iconColor,
-  isActiveStreak = false,
   badge = "",
   fillIcon = true
 }: {
@@ -50,27 +50,9 @@ const ProfileStatCard = ({
   value: string | number;
   label: string;
   iconColor: string;
-  isActiveStreak?: boolean;
   badge?: string;
   fillIcon?: boolean;
 }) => {
-  if (isActiveStreak) {
-    return (
-      <div className="relative flex items-center p-3 sm:p-4 bg-[#FFC800] border-2 border-[#FFC800] rounded-2xl gap-3 sm:gap-4 overflow-hidden">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 text-[#FF9600]">
-          <Icon className="w-full h-full" fill={fillIcon ? "currentColor" : "none"} strokeWidth={fillIcon ? 1 : 2.5} />
-        </div>
-        <div className="flex flex-col z-10">
-          <span className="text-lg sm:text-xl font-bold text-white leading-none mb-1">{value}</span>
-          <span className="text-xs sm:text-sm font-bold text-white/90">{label}</span>
-        </div>
-        {/* Sparkles decorative */}
-        <div className="absolute top-2 right-2 text-white/70">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative flex items-center p-3 sm:p-4 bg-transparent border-2 border-zinc-200 dark:border-zinc-800 rounded-2xl gap-3 sm:gap-4">
@@ -299,13 +281,7 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Statistik</h2>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <ProfileStatCard 
-                icon={Flame} 
-                value={streak} 
-                label="Hari beruntun"
-                iconColor="text-zinc-300 dark:text-zinc-600"
-                isActiveStreak={streak > 0}
-              />
+              <StreakDisplay variant="profile-card" />
               <ProfileStatCard 
                 icon={Zap} 
                 value={xp.toLocaleString('id-ID')} 

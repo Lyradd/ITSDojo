@@ -93,7 +93,7 @@ export function StreakCalendarWidget({ activityHistory, streak }: StreakCalendar
                   active 
                     ? 'bg-orange-500 text-white shadow-sm' 
                     : freeze
-                      ? 'bg-blue-50 border-2 border-blue-200 text-blue-500 dark:bg-blue-900/20 dark:border-blue-800'
+                      ? 'border-2 border-cyan-500/50 bg-cyan-500/20 text-cyan-500 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                       : today 
                         ? 'border-2 border-orange-500 text-orange-500' 
                         : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
@@ -101,7 +101,7 @@ export function StreakCalendarWidget({ activityHistory, streak }: StreakCalendar
               >
                 <span className="text-[10px] sm:text-xs font-bold">{day}</span>
                 {active && <Check className="w-2 h-2 absolute bottom-0.5 sm:bottom-1" />}
-                {freeze && <Snowflake className="w-2 h-2 absolute bottom-0.5 sm:bottom-1 text-blue-500" />}
+                {freeze && <Snowflake className="w-3 h-3 absolute bottom-0.5 sm:bottom-1 text-cyan-500 dark:text-cyan-400" />}
                 
                 {/* Tooltip on hover */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-zinc-800 text-white text-[10px] rounded opacity-0 group-hover/day:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-xl">

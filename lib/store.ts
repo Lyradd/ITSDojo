@@ -4,29 +4,33 @@ import { formatLocalDate } from './utils';
 import { z } from 'zod';
 
 const GamificationSchema = z.object({
-  activityHistory: z.array(z.any()).optional(),
-  earnedBadges: z.array(z.any()).optional(),
-  unlockedAchievements: z.array(z.string()).optional(),
-  bookmarkedCourseIds: z.array(z.string()).optional(),
-  dailyGoals: z.array(z.any()).optional(),
-  purchaseHistory: z.array(z.any()).optional(),
-  streakFreezeCount: z.number().optional(),
-  hasGemMiner: z.boolean().optional(),
-  hasXpBoost: z.boolean().optional(),
-  xpMultiplier: z.number().optional(),
-  multiplierEndTime: z.number().nullable().optional(),
-  courseAccessHistory: z.any().optional(),
-  perfectWeeksCount: z.number().optional(),
-  nocturnalCount: z.number().optional(),
-  earlyBirdCount: z.number().optional(),
-  longestStreak: z.number().optional(),
-  mostXpInDay: z.number().optional(),
-  totalPerfectLessons: z.number().optional(),
-  claimedMonthlyMilestones: z.array(z.number()).optional(),
-  monthlyCompletedGoals: z.number().optional(),
-  lastUpdated: z.number().optional(),
-  bio: z.string().optional(),
-});
+  activityHistory: z.array(z.any()).catch([]),
+  earnedBadges: z.array(z.any()).catch([]),
+  unlockedAchievements: z.array(z.string()).catch([]),
+  bookmarkedCourseIds: z.array(z.string()).catch([]),
+  dailyGoals: z.array(z.any()).catch([]),
+  purchaseHistory: z.array(z.any()).catch([]),
+  streakFreezeCount: z.number().catch(0),
+  hasGemMiner: z.boolean().catch(false),
+  hasShieldPack: z.boolean().catch(false),
+  hasXpBoost: z.boolean().catch(false),
+  xpMultiplier: z.number().catch(1),
+  multiplierEndTime: z.number().nullable().catch(null),
+  unlockedInventorySlotIds: z.array(z.string()).catch([]),
+  courseAccessHistory: z.any().catch({}),
+  perfectWeeksCount: z.number().catch(0),
+  nocturnalCount: z.number().catch(0),
+  earlyBirdCount: z.number().catch(0),
+  longestStreak: z.number().catch(0),
+  mostXpInDay: z.number().catch(0),
+  totalPerfectLessons: z.number().catch(0),
+  claimedMonthlyMilestones: z.array(z.number()).catch([]),
+  monthlyCompletedGoals: z.number().catch(0),
+  lastUpdated: z.number().catch(0),
+  lastActiveDate: z.string().catch(""),
+  lastDailyReset: z.string().catch(""),
+  bio: z.string().catch(""),
+}).passthrough();
 
 const parseGamificationData = (data: any) => {
   let parsedData = data;
@@ -34,14 +38,20 @@ const parseGamificationData = (data: any) => {
     try {
       parsedData = JSON.parse(data);
     } catch (e) {
-      return {};
+      return GamificationSchema.parse({});
     }
   }
-  if (!parsedData || typeof parsedData !== 'object') return {};
+  if (!parsedData || typeof parsedData !== 'object') return GamificationSchema.parse({});
   
-  // Kita bypass strict Zod validation untuk data dari DB 
-  // agar tidak mereset seluruh progress pengguna jika ada field yang missmatch tipe datanya.
-  return parsedData;
+  // Menerapkan Graceful Degradation menggunakan Zod
+  // Key yang undefined atau malformed akan diselamatkan menjadi nilai default
+  // Key tambahan (.passthrough) tidak akan dihapus
+  try {
+    return GamificationSchema.parse(parsedData);
+  } catch (e) {
+    console.warn("Gamification data fallback parsing:", e);
+    return GamificationSchema.parse({});
+  }
 };
 
 // --- SHARED TYPES ---
@@ -221,7 +231,7 @@ export interface UserState {
   claimedWeeklyMilestones: number[]; // NEW: Claimed milestones (e.g. [3, 5, 7])
   followingCount: number; // NEW: Social stats
   followersCount: number; // NEW: Social stats
-  checkDailyReset: () => void;
+  checkDailyReset: () => Promise<void>;
   claimWeeklyMilestone: (milestone: number) => void;
   claimMonthlyMilestone: (milestone: number, reward: number, tier: string) => void; // NEW: Method to claim monthly reward
   claimGoalReward: (goalId: string) => void;
@@ -351,7 +361,7 @@ export const useUserStore = create<UserState>()(
           purchaseHistory: gData.purchaseHistory || [],
           streakFreezeCount: gData.streakFreezeCount || 0,
           hasGemMiner: gData.hasGemMiner || false,
-          hasXpBoost: gData.hasXpBoost || false,
+          hasShieldPack: gData.hasShieldPack || false,
           xpMultiplier: gData.xpMultiplier || 1,
           multiplierEndTime: gData.multiplierEndTime || null,
           courseAccessHistory: gData.courseAccessHistory || {},
@@ -363,7 +373,7 @@ export const useUserStore = create<UserState>()(
           totalPerfectLessons: gData.totalPerfectLessons || 0,
           claimedMonthlyMilestones: gData.claimedMonthlyMilestones || [],
           monthlyCompletedGoals: gData.monthlyCompletedGoals || 0,
-        } as any);
+        });
       },
       syncFromServer: (data) => {
         const state = get();
@@ -407,7 +417,6 @@ export const useUserStore = create<UserState>()(
             streakFreezeCount: gData.streakFreezeCount || 0,
             hasGemMiner: gData.hasGemMiner || false,
             hasShieldPack: gData.hasShieldPack || false,
-            hasXpBoost: gData.hasXpBoost || false,
             xpMultiplier: gData.xpMultiplier || 1,
             multiplierEndTime: gData.multiplierEndTime || null,
             unlockedInventorySlotIds: gData.unlockedInventorySlotIds || [],
@@ -421,7 +430,7 @@ export const useUserStore = create<UserState>()(
             claimedMonthlyMilestones: gData.claimedMonthlyMilestones || [],
             monthlyCompletedGoals: gData.monthlyCompletedGoals || 0,
           } : {})
-        } as any));
+        }));
       },
       logout: () => {
         set({
@@ -429,7 +438,7 @@ export const useUserStore = create<UserState>()(
           dailyGoals: generateDailyGoals(formatLocalDate(new Date())),
           lastActiveDate: '',
           lastDailyReset: formatLocalDate(new Date()),
-        } as any);
+        });
         if (typeof window !== 'undefined') localStorage.removeItem('itsdojo-user-store');
       },
       clearStore: () => {
@@ -438,7 +447,7 @@ export const useUserStore = create<UserState>()(
           dailyGoals: generateDailyGoals(formatLocalDate(new Date())),
           lastActiveDate: '',
           lastDailyReset: formatLocalDate(new Date()),
-        } as any);
+        });
         if (typeof window !== 'undefined') localStorage.removeItem('itsdojo-user-store');
       },
       updateProfile: (data) => {
@@ -646,16 +655,38 @@ export const useUserStore = create<UserState>()(
       },
 
       // --- ACTIONS: GOALS ---
-      checkDailyReset: () => {
+      checkDailyReset: async () => {
         let requiresServerSync = false;
+        const state = get();
+        const now = new Date();
+        const today = formatLocalDate(now);
+        const hasOldSchema = state.dailyGoals.length > 0 && state.dailyGoals[0].targetValue === undefined;
+        
+        if (state.lastDailyReset !== today || state.dailyGoals.length < 3 || hasOldSchema) {
+          let fetchedGoals = state.dailyGoals;
+          let fetchedResetDate = today;
 
-        set((state) => {
-          const now = new Date();
-          const today = formatLocalDate(now);
-          const hasOldSchema = state.dailyGoals.length > 0 && state.dailyGoals[0].targetValue === undefined;
-          
-          if (state.lastDailyReset !== today || state.dailyGoals.length < 3 || hasOldSchema) {
-            const updates: any = { dailyGoals: generateDailyGoals(today), lastDailyReset: today };
+          // Panggil True Random Shuffle Action di Backend
+          try {
+            if (state.isLoggedIn) {
+              const { generateNewDailyGoalsAction } = await import('@/actions/gamification');
+              const timezoneOffset = new Date().getTimezoneOffset();
+              const res = await generateNewDailyGoalsAction(timezoneOffset);
+              if (res && res.success && res.dailyGoals) {
+                fetchedGoals = res.dailyGoals;
+                fetchedResetDate = res.lastDailyReset || today;
+              } else {
+                fetchedGoals = generateDailyGoals(today);
+              }
+            } else {
+              fetchedGoals = generateDailyGoals(today);
+            }
+          } catch (e) {
+            fetchedGoals = generateDailyGoals(today);
+          }
+
+          set((s) => {
+            const updates: any = { dailyGoals: fetchedGoals, lastDailyReset: fetchedResetDate };
             
             // Robust weekly reset check
             const [lrYear, lrMonth, lrDay] = state.lastDailyReset.split('-').map(Number);
@@ -730,15 +761,14 @@ export const useUserStore = create<UserState>()(
 
             updates.lastProgressUpdate = Date.now();
             return updates;
-          }
-          return state;
-        });
+          }); // Close set
 
-        // [FIX 2 Lanjutan]: Paksa database menerima bahwa streak telah hangus (0), 
-        // sehingga proses fetch profile dari server tidak menimpa ulang data kita.
-        if (requiresServerSync) {
-          get().forceSyncProgress();
-        }
+          // [FIX 2 Lanjutan]: Paksa database menerima bahwa streak telah hangus (0), 
+          // sehingga proses fetch profile dari server tidak menimpa ulang data kita.
+          if (requiresServerSync) {
+            get().forceSyncProgress();
+          }
+        } // Close outer if
       },
 
       claimWeeklyMilestone: (milestone: number) => {

@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/lib/store";
-import { Trophy, Flame } from "lucide-react";
+import { Trophy, Flame, Snowflake, Shield } from "lucide-react";
+import { StreakDisplay } from "@/components/shared/streak-display";
 
 export function Navbar() {
-  const { xp, level, xpToNextLevel, name } = useUserStore();
+  const { xp, level, xpToNextLevel, name, streak, streakFreezeCount } = useUserStore();
 
 
   const progress = Math.min((xp / xpToNextLevel) * 100, 100);
@@ -33,10 +34,7 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           
           {/* Daily Streak */}
-          <div className="hidden md:flex items-center gap-1 text-orange-500 font-bold text-sm">
-            <Flame className="h-4 w-4 fill-current" />
-            <span>3</span>
-          </div>
+          <StreakDisplay variant="navbar" />
 
           {/* XP & Level Bar */}
           <div className="flex flex-col items-end w-32 md:w-40">

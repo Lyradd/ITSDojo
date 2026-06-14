@@ -271,6 +271,7 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
     let idleTimeout: NodeJS.Timeout;
 
     const timer = setInterval(() => {
+      if (document.hidden) return; // Menghemat CPU saat tab tidak aktif (background)
       setDuelTimeLeft((prev) => {
         if (prev <= 1) {
           setDuelActiveAnswer(Math.floor(Math.random() * 4));
@@ -281,15 +282,19 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
     }, 1000);
 
     const duelSequence = setInterval(() => {
+      if (document.hidden) return; // Jeda animasi berat saat tab tidak dilihat pengguna
       setDuelPhase('colliding');
       clashTimeout = setTimeout(() => {
+        if (document.hidden) return;
         setDuelPhase('clashing');
         setRivalHealth(prev => Math.max(0, prev - 150));
       }, 300);
       retreatTimeout = setTimeout(() => {
+        if (document.hidden) return;
         setDuelPhase('retreating');
       }, 1000);
       idleTimeout = setTimeout(() => {
+        if (document.hidden) return;
         setDuelPhase('idle');
       }, 1500);
     }, 6000);

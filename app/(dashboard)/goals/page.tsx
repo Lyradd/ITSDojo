@@ -26,6 +26,7 @@ import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
 import dynamic from "next/dynamic";
 import React from "react";
 import { ChevronRight as ChevronRightIcon } from "lucide-react";
+import { StreakDisplay } from "@/components/shared/streak-display";
 
 const StreakCalendarModal = dynamic(() => import("@/components/shared/streak-calendar-modal").then(mod => mod.StreakCalendarModal), { ssr: false });
 const ConfirmModal = dynamic(() => import("@/components/shared/confirm-modal").then(mod => mod.ConfirmModal), { ssr: false });
@@ -217,10 +218,7 @@ export default function GoalsPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 rounded-xl font-bold">
-                <Flame className="w-5 h-5 fill-current" />
-                <span>{streak} Hari Streak</span>
-              </div>
+              <StreakDisplay variant="goals-badge" />
             </div>
           </div>
 
@@ -369,9 +367,7 @@ export default function GoalsPage() {
           <Card className="p-4 sm:p-6 rounded-2xl border-2">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg text-zinc-700 dark:text-zinc-200">Streak Kamu</h3>
-              <div className="flex items-center gap-1 text-orange-500 font-bold">
-                <Flame className="w-5 h-5 fill-current" /> {streak}
-              </div>
+              <StreakDisplay variant="goals-simple" />
             </div>
 
             {/* Row Hari Senin-Minggu - Clickable Preview */}

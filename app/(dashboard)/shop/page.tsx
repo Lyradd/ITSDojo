@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Flame, Zap, ShieldAlert, Crown, Gem, Clock, Store, Briefcase, History, X, AlertCircle, Package, ShieldCheck, Lock, Dices, ChevronRight, Lightbulb, HelpCircle, Target, Trophy } from "lucide-react";
+import { Flame, Zap, ShieldAlert, Crown, Gem, Clock, Store, Briefcase, History, X, AlertCircle, Package, ShieldCheck, Lock, Dices, ChevronRight, Lightbulb, HelpCircle, Target, Trophy, Snowflake } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
@@ -100,11 +100,11 @@ export default function ShopPage() {
       id: 'freeze',
       title: 'Streak Freeze',
       description: 'Lupa belajar sehari? Item ini membekukan streak Anda agar tidak reset ke 0.',
-      icon: <Flame className="w-10 h-10 text-orange-500" fill="currentColor" />,
+      icon: <Snowflake className="w-10 h-10 text-cyan-400" fill="currentColor" />,
       badge: <ShieldAlert className="w-5 h-5 text-blue-500 absolute -bottom-1 -right-1 drop-shadow-md" />,
       cost: SHOP_PRICES.STREAK_FREEZE,
       type: 'freeze',
-      color: 'from-orange-100 to-orange-50 dark:from-orange-950/40 dark:to-orange-900/10',
+      color: 'from-cyan-100 to-cyan-50 dark:from-cyan-950/40 dark:to-cyan-900/10',
       isFull: streakFreezeCount >= 3,
       fullText: 'Penuh (3/3)'
     },
@@ -202,18 +202,18 @@ export default function ShopPage() {
         
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
            {/* Slot Streak Freeze */}
-           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-orange-500/50 transition-all ${streakFreezeCount > 0 ? 'border-orange-500/50 ring-2 ring-orange-500/10' : ''}`}>
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative transition-all ${streakFreezeCount > 0 ? 'bg-linear-to-br from-orange-400 to-orange-600 text-white scale-105 shadow-lg shadow-orange-500/30' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'}`}>
-                 <Flame className={`w-8 h-8 ${streakFreezeCount > 0 ? 'animate-pulse' : ''}`} />
+           <div className={`bg-white dark:bg-zinc-950 border-2 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm group hover:border-cyan-500/50 transition-all ${streakFreezeCount > 0 ? 'border-cyan-500/50 ring-2 ring-cyan-500/10' : ''}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center relative transition-all ${streakFreezeCount > 0 ? 'bg-linear-to-br from-cyan-400 to-blue-500 text-white scale-105 shadow-lg shadow-cyan-500/30' : 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500'}`}>
+                 <Snowflake className={`w-8 h-8 ${streakFreezeCount > 0 ? 'animate-pulse' : ''}`} />
                  {streakFreezeCount > 0 && (
-                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-white dark:bg-zinc-800 text-orange-600 rounded-full flex items-center justify-center text-sm font-bold border-2 border-orange-500 shadow-md">
+                    <div className="absolute -top-2 -right-2 w-7 h-7 bg-white dark:bg-zinc-800 text-cyan-600 rounded-full flex items-center justify-center text-sm font-bold border-2 border-cyan-500 shadow-md">
                        {streakFreezeCount}
                     </div>
                  )}
               </div>
               <div className="text-center">
                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">Freeze</p>
-                <p className={`text-sm font-black ${streakFreezeCount > 0 ? 'text-orange-600' : 'text-zinc-800 dark:text-zinc-200'}`}>{streakFreezeCount}/3</p>
+                <p className={`text-sm font-black ${streakFreezeCount > 0 ? 'text-cyan-600' : 'text-zinc-800 dark:text-zinc-200'}`}>{streakFreezeCount}/3</p>
               </div>
            </div>
 
@@ -252,7 +252,7 @@ export default function ShopPage() {
                        setAlertInfo({
                          title: 'Slot Freeze Penuh',
                          message: 'Tidak dapat menggunakan Shield Pack. Slot Streak Freeze Anda sudah penuh (3/3).',
-                         icon: <Flame className="w-10 h-10 text-orange-500" />
+                         icon: <Snowflake className="w-10 h-10 text-cyan-500" />
                        });
                      } else {
                        useShieldPack();
@@ -483,7 +483,7 @@ export default function ShopPage() {
                      >
                         <div className="flex items-center gap-3">
                            <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 dark:text-zinc-400">
-                              {log.type === 'freeze' ? <Flame className="w-5 h-5 text-orange-500" /> : 
+                              {log.type === 'freeze' ? <Snowflake className="w-5 h-5 text-cyan-500" /> : 
                                log.type === 'multiplier' ? <Zap className="w-5 h-5 text-purple-500" /> :
                                log.type === 'shield-3x' ? <ShieldCheck className="w-5 h-5 text-green-500" /> :
                                <Package className="w-5 h-5 text-blue-500" />}

@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { evaluations, evaluationResults, users } from "@/db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
+import { evaluateStreak } from "@/lib/gamification/streak";
 
 export async function createEvaluation(data: any) {
   try {
@@ -323,51 +324,80 @@ export async function submitEvaluationResult(data: {
       .limit(1);
     const isFirstSubmission = previous.length === 0;
 
-    await db.insert(evaluationResults).values({
-      evaluationId: data.evaluationId,
-      studentId: userId,
-      score: data.score,
-      accuracy: data.accuracy,
-      timeSpent: data.timeSpent,
-      completedAt: new Date(),
-    });
-
-    // Tambahkan reward ke profil user. Hanya pada submission pertama untuk evaluasi ini.
-    // Mapping reward (skripsi: dual-XP system):
-    //   - Per soal benar: +10 leaderboard XP (sudah dihandle saat sesi via score)
-    //   - Selesai evaluasi (≥60% akurasi): +30 profile_xp, +5 gems
-    //   - Bonus akurasi ≥80%: +20 profile_xp, +5 gems
     let xpAdded = 0;
     let profileXpAdded = 0;
     let gemsAdded = 0;
+    let occSuccess = true; // Default true untuk re-attempt
 
+    // Tambahkan reward ke profil user. Hanya pada submission pertama untuk evaluasi ini.
     if (isFirstSubmission) {
-      // Leaderboard XP (kompetitif) — score absolut yang didapat dari menjawab benar
-      if (data.score > 0) {
-        xpAdded = data.score;
-      }
-
-      // Profile XP & Gems (status/growth) — milestone-based
+      occSuccess = false; // Harus terbukti berhasil update di OCC loop
+      if (data.score > 0) xpAdded = data.score;
       const passed = data.accuracy >= 60;
       const excellent = data.accuracy >= 80;
-      if (passed) {
-        profileXpAdded += 30;
-        gemsAdded += 5;
-      }
-      if (excellent) {
-        profileXpAdded += 20;
-        gemsAdded += 5;
+      if (passed) { profileXpAdded += 30; gemsAdded += 5; }
+      if (excellent) { profileXpAdded += 20; gemsAdded += 5; }
+
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const userRec = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { streak: true, gamificationData: true, xp: true, profileXp: true, gems: true }
+          });
+
+          if (!userRec) break; // User not found
+
+          const gData: any = userRec.gamificationData || {};
+          const currentLastUpdated = gData.lastUpdated || 0;
+
+          // --- STREAK EVALUATION ---
+          const streakResult = evaluateStreak(userRec.streak, gData.lastActiveDate, gData.streakFreezeCount || 0);
+          
+          gData.lastActiveDate = streakResult.lastActiveDate;
+          gData.streakFreezeCount = streakResult.freezeCount;
+          gData.lastUpdated = Date.now();
+          
+          const today = new Date().toLocaleDateString('en-CA');
+          let history = gData.activityHistory || [];
+          const todayIndex = history.findIndex((h: any) => h.date === today);
+          if (todayIndex !== -1) {
+            history[todayIndex].count += 1;
+            history[todayIndex].xpEarned = (history[todayIndex].xpEarned || 0) + profileXpAdded;
+            if (streakResult.freezeUsed > 0) history[todayIndex].freezeUsed = true;
+          } else {
+            history.push({ date: today, count: 1, xpEarned: profileXpAdded, freezeUsed: streakResult.freezeUsed > 0 });
+          }
+          gData.activityHistory = history;
+
+          const updateCondition = currentLastUpdated > 0
+            ? sql`COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = ${currentLastUpdated}`
+            : sql`${users.gamificationData}->>'lastUpdated' IS NULL OR COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = 0`;
+
+          const result = await db.update(users)
+            .set({
+              xp: userRec.xp + xpAdded,
+              profileXp: userRec.profileXp + profileXpAdded,
+              gems: userRec.gems + gemsAdded,
+              streak: streakResult.streak,
+              gamificationData: gData,
+            })
+            .where(and(eq(users.id, userId), updateCondition))
+            .returning({ id: users.id });
+
+          if (result.length > 0) {
+            occSuccess = true;
+            break; // Berhasil update
+          }
+          retries--;
+        } catch (err) {
+          console.error("OCC Error during evaluation reward:", err);
+          retries--;
+        }
       }
 
-      if (xpAdded > 0 || profileXpAdded > 0 || gemsAdded > 0) {
-        await db
-          .update(users)
-          .set({
-            xp: sql`${users.xp} + ${xpAdded}`,
-            profileXp: sql`${users.profileXp} + ${profileXpAdded}`,
-            gems: sql`${users.gems} + ${gemsAdded}`,
-          })
-          .where(eq(users.id, userId));
+      if (!occSuccess) {
+        return { success: false, error: "Gagal menyimpan poin karena kendala server (Race Condition). Silakan coba Submit ulang." };
       }
 
       // Broadcast leaderboard fresh ke semua client yang subscribe via Socket.IO.
@@ -382,6 +412,17 @@ export async function submitEvaluationResult(data: {
         console.warn("Leaderboard broadcast failed (non-fatal):", err);
       }
     }
+
+    // Insert hasil ke database HANYA JIKA update user (OCC) berhasil atau jika ini bukan submission pertama
+    // Ini mencegah user stuck dan kehilangan hadiah (Phantom Reset)
+    await db.insert(evaluationResults).values({
+      evaluationId: data.evaluationId,
+      studentId: userId,
+      score: data.score,
+      accuracy: data.accuracy,
+      timeSpent: data.timeSpent,
+      completedAt: new Date(),
+    });
 
     return {
       success: true,

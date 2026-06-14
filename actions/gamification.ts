@@ -92,6 +92,9 @@ export async function buyShopItemAction(type: string, cost: number) {
         };
       }
       retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20)); // Jitter backoff
+      }
     } catch (err) {
       console.error("Shop Error:", err);
       return { success: false, error: "Internal Error" };
@@ -122,6 +125,16 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
       });
 
       const isNew = !existingProgress;
+
+      let isReviewedToday = false;
+      if (!isNew && existingProgress.completedAt) {
+        const completedDate = new Date(existingProgress.completedAt);
+        const todayDate = new Date();
+        isReviewedToday = completedDate.getFullYear() === todayDate.getFullYear() &&
+                          completedDate.getMonth() === todayDate.getMonth() &&
+                          completedDate.getDate() === todayDate.getDate();
+      }
+
       const gData: any = user.gamificationData || {};
       const currentLastUpdated = gData.lastUpdated || 0;
       const hasMiner = gData.hasGemMiner || false;
@@ -129,32 +142,15 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
       const multTime = gData.multiplierEndTime || null;
       const isMultActive = multTime && multTime > Date.now();
 
-      let earnedXp = isNew ? (baseRewardXp || 50) : 10;
+      let earnedXp = isNew ? (baseRewardXp || 50) : (!isReviewedToday ? 10 : 0);
       if (isMultActive) earnedXp *= mult;
 
       let earnedGems = isNew ? (baseRewardGems || 10) : 0;
       if (hasMiner) earnedGems *= 2;
 
-      if (gData.dailyGoals && Array.isArray(gData.dailyGoals)) {
-        gData.dailyGoals.forEach((goal: any) => {
-          if (!goal.isCompleted) {
-            if (goal.type === 'xp') {
-              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + earnedXp);
-            } else if (goal.type === 'lesson') {
-              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + 1);
-            } else if (goal.type === 'perfect' && isPerfect) {
-              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + 1);
-            }
 
-            if (goal.currentProgress >= goal.targetValue) {
-              goal.isCompleted = true;
-              earnedGems += goal.reward || 0;
-            }
-          }
-        });
-      }
 
-      const today = new Date().toLocaleDateString('en-CA'); 
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); 
       let history = gData.activityHistory || [];
       const todayIndex = history.findIndex((h: any) => h.date === today);
       if (todayIndex !== -1) {
@@ -163,6 +159,10 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
       } else {
         history.push({ date: today, count: 1, xpEarned: earnedXp });
       }
+
+      // Update mostXpInDay
+      const currentTodayEntry = history.find((h: any) => h.date === today);
+      gData.mostXpInDay = Math.max(gData.mostXpInDay || 0, currentTodayEntry ? currentTodayEntry.xpEarned : 0);
 
       // --- STREAK EVALUATION ---
       const streakResult = evaluateStreak(user.streak, gData.lastActiveDate, gData.streakFreezeCount || 0);
@@ -176,6 +176,31 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
         if (tIndex !== -1) {
           history[tIndex].freezeUsed = true;
         }
+      }
+
+      // --- DAILY GOALS EVALUATION (Moved after streak to allow streak trigger) ---
+      if (gData.dailyGoals && Array.isArray(gData.dailyGoals)) {
+        gData.dailyGoals.forEach((goal: any) => {
+          if (!goal.isCompleted) {
+            if (goal.type === 'xp') {
+              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + earnedXp);
+            } else if (goal.type === 'lesson') {
+              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + 1);
+            } else if (goal.type === 'perfect' && isPerfect) {
+              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + 1);
+            } else if (goal.type === 'streak' && gData.lastActiveDate !== newLastActiveDate) {
+              // Jika lastActiveDate berubah hari ini, berarti streak telah "diperpanjang" (dimulai hari ini)
+              goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + 1);
+            }
+
+            if (goal.currentProgress >= goal.targetValue) {
+              goal.isCompleted = true;
+              // Catatan: rewardXP dan rewardGems akan diklaim melalui fungsi claim, bukan otomatis di sini,
+              // KECUALI jika ada field goal.reward yang bersifat legacy.
+              earnedGems += goal.reward || 0; 
+            }
+          }
+        });
       }
 
       let newLevel = user.level;
@@ -240,6 +265,8 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
         // Mencegah partial failure (stuck) jika OCC conflict gagal
         if (isNew) {
           await db.insert(userProgress).values({ userId: session.userId, lessonId }).onConflictDoNothing();
+        } else if (!isReviewedToday) {
+          await db.update(userProgress).set({ completedAt: new Date() }).where(and(eq(userProgress.userId, session.userId), eq(userProgress.lessonId, lessonId)));
         }
 
         return { 
@@ -256,6 +283,9 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
         };
       }
       retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20)); // Jitter backoff
+      }
     } catch (err) {
       console.error("Complete Lesson Error:", err);
       return { success: false, error: "Internal Error" };
@@ -271,18 +301,6 @@ export async function resetLearningProgressAction() {
 
     // Hapus seluruh progress lesson pengguna ini
     await db.delete(userProgress).where(eq(userProgress.userId, session.userId));
-
-    // Reset status profil ke default
-    await db.update(users)
-      .set({
-        xp: 0,
-        profileXp: 0,
-        gems: 0,
-        level: 1,
-        streak: 0,
-        gamificationData: {} // Kosongkan seluruh data statis dan array
-      })
-      .where(eq(users.id, session.userId));
 
     // Revalidasi cache Next.js agar tidak menampilkan data usang
     revalidatePath('/dashboard');
@@ -380,3 +398,239 @@ export async function generateNewDailyGoalsAction(timezoneOffsetMinutes: number 
     return { success: false, error: "Internal Error" };
   }
 }
+
+export async function claimDailyGoalAction(goalId: string) {
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      const session = await getSession();
+      if (!session || !session.userId) return { success: false, error: "Unauthorized" };
+
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.userId),
+        columns: { xp: true, profileXp: true, gems: true, level: true, gamificationData: true }
+      });
+      if (!user) return { success: false, error: "User not found" };
+
+      const gData: any = user.gamificationData || {};
+      const currentLastUpdated = gData.lastUpdated || 0;
+      const goals = gData.dailyGoals || [];
+      const goalIndex = goals.findIndex((g: any) => g.id === goalId);
+
+      if (goalIndex === -1) return { success: false, error: "Misi tidak ditemukan" };
+      const goal = goals[goalIndex];
+      
+      if (!goal.isCompleted) return { success: false, error: "Misi belum selesai" };
+      if (goal.isClaimed) return { success: false, error: "Misi sudah diklaim" };
+
+      goal.isClaimed = true;
+      const earnedXp = goal.rewardXP || 0;
+      const earnedGems = goal.rewardGems || 0;
+
+      let newLevel = user.level;
+      let newXp = user.profileXp + earnedXp;
+      let xpToNextLevel = 100;
+      for (let i = 1; i <= newLevel; i++) {
+          if (i > 1) xpToNextLevel = Math.floor(xpToNextLevel * 1.5);
+      }
+      let levelUpGems = 0;
+      while (newXp >= xpToNextLevel) {
+          newLevel += 1;
+          levelUpGems += 50;
+          xpToNextLevel = Math.floor(xpToNextLevel * 1.5);
+      }
+      const totalEarnedGems = earnedGems + levelUpGems;
+      const newGems = user.gems + totalEarnedGems;
+      const newLeaderboardXp = user.xp + earnedXp;
+
+      gData.monthlyCompletedGoals = (gData.monthlyCompletedGoals || 0) + 1;
+      gData.dailyGoals = goals;
+      gData.lastUpdated = Date.now();
+
+      const updateCondition = currentLastUpdated > 0
+          ? sql`COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = ${currentLastUpdated}`
+          : sql`${users.gamificationData}->>'lastUpdated' IS NULL OR COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = 0`;
+
+      const result = await db.update(users)
+        .set({
+            xp: newLeaderboardXp,
+            profileXp: newXp,
+            gems: newGems,
+            level: newLevel,
+            gamificationData: gData
+        })
+        .where(and(eq(users.id, session.userId), updateCondition))
+        .returning({ id: users.id });
+
+      if (result.length > 0) {
+        return { 
+            success: true, 
+            earnedXp, 
+            earnedGems: totalEarnedGems, 
+            newLevel,
+            gamificationData: gData,
+            newGems,
+            newXp,
+            newLeaderboardXp
+        };
+      }
+      
+      retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20)); // Jitter backoff
+      }
+    } catch (err) {
+      console.error("Claim Goal Error:", err);
+      return { success: false, error: "Internal Error" };
+    }
+  }
+  return { success: false, error: "Transaksi gagal karena konflik data. Silakan coba lagi." };
+}
+
+export async function claimMonthlyMilestoneAction(milestone: number, rewardGems: number, tier: string) {
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      const session = await getSession();
+      if (!session || !session.userId) return { success: false, error: "Unauthorized" };
+
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.userId),
+        columns: { gems: true, gamificationData: true }
+      });
+      if (!user) return { success: false, error: "User not found" };
+
+      const gData: any = user.gamificationData || {};
+      const currentLastUpdated = gData.lastUpdated || 0;
+      const claimedMonthly = gData.claimedMonthlyMilestones || [];
+      const completedGoals = gData.monthlyCompletedGoals || 0;
+
+      if (completedGoals < milestone) return { success: false, error: "Milestone belum tercapai" };
+      if (claimedMonthly.includes(milestone)) return { success: false, error: "Milestone sudah diklaim" };
+
+      claimedMonthly.push(milestone);
+      const newGems = user.gems + rewardGems;
+      
+      const newEarnedBadges = gData.earnedBadges || [];
+      const badgeId = `monthly-${milestone}-${new Date().toISOString().slice(0,7)}`;
+      if (!newEarnedBadges.some((b: any) => b.id === badgeId)) {
+        newEarnedBadges.push({
+           id: badgeId,
+           name: `Pekerja Keras ${tier}`,
+           date: new Date().toISOString(),
+           tier
+        });
+      }
+
+      gData.claimedMonthlyMilestones = claimedMonthly;
+      gData.earnedBadges = newEarnedBadges;
+      gData.lastUpdated = Date.now();
+
+      const updateCondition = currentLastUpdated > 0
+          ? sql`COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = ${currentLastUpdated}`
+          : sql`${users.gamificationData}->>'lastUpdated' IS NULL OR COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = 0`;
+
+      const result = await db.update(users)
+        .set({
+            gems: newGems,
+            gamificationData: gData
+        })
+        .where(and(eq(users.id, session.userId), updateCondition))
+        .returning({ id: users.id });
+
+      if (result.length > 0) {
+        return { 
+            success: true, 
+            earnedGems: rewardGems, 
+            gamificationData: gData,
+            newGems
+        };
+      }
+      
+      retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20)); // Jitter backoff
+      }
+    } catch (err) {
+      console.error("Claim Milestone Error:", err);
+      return { success: false, error: "Internal Error" };
+    }
+  }
+  return { success: false, error: "Transaksi gagal karena konflik data. Silakan coba lagi." };
+}
+
+// ==========================================
+// UNIVERSAL GOAL EVALUATOR (Server Action)
+// ==========================================
+export async function updateGoalProgressAction(goalType: string, amount: number = 1, targetUserId?: string) {
+  try {
+    let userId = targetUserId;
+    if (!userId) {
+      const session = await getSession();
+      if (!session || !session.userId) return { success: false, error: "Unauthorized" };
+      userId = session.userId;
+    }
+
+    let retries = 3;
+    while (retries > 0) {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: { gamificationData: true, gems: true }
+      });
+
+      if (!user) return { success: false, error: "User not found" };
+
+      const gData: any = user.gamificationData || {};
+      const currentLastUpdated = gData.lastUpdated || 0;
+      let updated = false;
+      let earnedGems = 0;
+
+      if (gData.dailyGoals && Array.isArray(gData.dailyGoals)) {
+        gData.dailyGoals.forEach((goal: any) => {
+          if (!goal.isCompleted && goal.type === goalType) {
+            const oldProgress = goal.currentProgress;
+            goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + amount);
+            
+            if (goal.currentProgress !== oldProgress) {
+               updated = true;
+               if (goal.currentProgress >= goal.targetValue) {
+                 goal.isCompleted = true;
+                 earnedGems += goal.reward || 0; // Legacy reward support
+               }
+            }
+          }
+        });
+      }
+
+      if (!updated) {
+        return { success: true, message: "No active goals updated", gamificationData: gData, newGems: user.gems };
+      }
+
+      gData.lastUpdated = Date.now();
+      const newGems = user.gems + earnedGems;
+
+      const updateCondition = currentLastUpdated > 0
+          ? sql`COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = ${currentLastUpdated}`
+          : sql`${users.gamificationData}->>'lastUpdated' IS NULL OR COALESCE((${users.gamificationData}->>'lastUpdated')::bigint, 0) = 0`;
+
+      const result = await db.update(users)
+        .set({
+            gems: newGems,
+            gamificationData: gData
+        })
+        .where(and(eq(users.id, userId), updateCondition))
+        .returning({ id: users.id });
+
+      if (result.length > 0) {
+        return { success: true, gamificationData: gData, newGems };
+      }
+      retries--;
+      if (retries > 0) await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20));
+    }
+    return { success: false, error: "OCC Conflict" };
+  } catch (err) {
+    console.error("updateGoalProgressAction Error:", err);
+    return { success: false, error: "Internal Error" };
+  }
+}
+

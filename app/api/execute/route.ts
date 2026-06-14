@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 
 // ============================================
-// KONFIGURASI KEAMANAN & CACHE
+// KONFIGURASI KEAMANAN & BATASAN
 // ============================================
 
 /** Batas ukuran sumber kode: 64KB */
@@ -17,48 +17,39 @@ const ONLINE_COMPILER_SYNC_URL = "https://api.onlinecompiler.io/api/run-code-syn
 /** Timeout untuk request ke API eksternal (dalam milidetik) */
 const API_TIMEOUT_MS = 15_000; // 15 detik
 
-/** Batas maksimal entri di execution cache untuk mencegah memory leak */
-const MAX_CACHE_SIZE = 500;
-
 // ============================================
-// RATE LIMITER & DEDUPLICATION CACHE
+// REDIS-READY ABSTRACTION: RATE LIMITER
 // ============================================
 
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-// Limit kita naikkan menjadi 10 karena kuota kita sekarang raksasa (1.000.000/bulan)
-const RATE_LIMIT_MAX = 10; 
-const RATE_LIMIT_WINDOW_MS = 60_000;
+class RateLimiter {
+  private map = new Map<string, { count: number; resetTime: number }>();
+  private maxRequests = 10;
+  private windowMs = 60_000; // 1 menit
 
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(userId);
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+  // Didesain asinkron agar mudah diganti dengan Upstash Redis
+  async check(userId: string): Promise<boolean> {
+    const now = Date.now();
+    const entry = this.map.get(userId);
+    
+    // Lazy Evaluation: Hapus/Timpa jika kedaluwarsa saat diakses
+    if (!entry || now > entry.resetTime) {
+      this.map.set(userId, { count: 1, resetTime: now + this.windowMs });
+      return true;
+    }
+    
+    if (entry.count >= this.maxRequests) {
+      return false;
+    }
+    
+    entry.count++;
     return true;
   }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
 }
 
-// Simple LRU Cache (In-Memory) untuk deduplikasi request jika kode tidak diubah
-const executionCache = new Map<string, any>();
-
-if (typeof globalThis !== 'undefined') {
-  const cleanupKey = '__compilerCleanupInterval';
-  if (!(globalThis as any)[cleanupKey]) {
-    (globalThis as any)[cleanupKey] = setInterval(() => {
-      const now = Date.now();
-      for (const [key, val] of rateLimitMap) {
-        if (now > val.resetTime) rateLimitMap.delete(key);
-      }
-      executionCache.clear();
-    }, 10 * 60_000);
-  }
-}
+const rateLimiter = new RateLimiter();
 
 // ============================================
-// UTILS
+// REDIS-READY ABSTRACTION: LAZY TTL CACHE
 // ============================================
 
 interface ExecuteResponse {
@@ -74,6 +65,45 @@ interface ExecuteResponse {
     memory?: number;   // 🏆 Metrik baru: Untuk gamifikasi "The Big-O Master"
   };
 }
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+class ExecutionCache {
+  private cache = new Map<string, CacheEntry<ExecuteResponse>>();
+  private maxSize = 500;
+  private ttlMs = 15 * 60_000; // True TTL: 15 menit
+
+  // Didesain asinkron agar siap diganti ke eksekusi Redis (Upstash)
+  async get(key: string): Promise<ExecuteResponse | null> {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    // Lazy Evaluation: Evaluasi kedaluwarsa hanya saat diakses (mencegah setInterval & Cache Stampede)
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  async set(key: string, value: ExecuteResponse): Promise<void> {
+    // FIFO Displacement: Cegah memory leak di serverless Vercel jika map membengkak
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, { value, expiresAt: Date.now() + this.ttlMs });
+  }
+}
+
+const executionCache = new ExecutionCache();
+
+// ============================================
+// UTILS
+// ============================================
 
 function errorResponse(language: string, message: string): NextResponse {
   return NextResponse.json({
@@ -97,13 +127,14 @@ export async function POST(req: Request) {
   let language = "unknown";
 
   try {
-    // ━━━ 1. AUTENTIKASI & RATE LIMIT ━━━
+    // ━━━ 1. AUTENTIKASI & RATE LIMIT (Abstraksi Redis-Ready) ━━━
     const session = await getSession();
     if (!session?.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!checkRateLimit(session.userId)) {
+    const isAllowed = await rateLimiter.check(session.userId);
+    if (!isAllowed) {
       return errorResponse(language, "Terlalu banyak permintaan (Spam Filter). Tunggu 1 menit.");
     }
 
@@ -118,10 +149,6 @@ export async function POST(req: Request) {
     }
 
     // ━━━ 2.5 BLACKLIST POLA KODE BERBAHAYA (Defense-in-Depth) ━━━
-    // Catatan: OnlineCompiler.io sudah menjalankan kode di Docker sandbox tanpa
-    // akses jaringan dengan batas 30 detik & 512MB RAM. Filter ini adalah lapisan
-    // pertahanan tambahan untuk memblokir pola yang jelas-jelas berbahaya sebelum
-    // request dikirim ke API (menghemat kuota & waktu).
     const DANGEROUS_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
       { pattern: /\bsystem\s*\(/i,      message: "Pemanggilan system() tidak diizinkan." },
       { pattern: /\bexec\s*[vlp]*\s*\(/i, message: "Pemanggilan exec() tidak diizinkan." },
@@ -146,13 +173,14 @@ export async function POST(req: Request) {
     else if (language === 'c') compilerId = 'gcc-15';
     else if (language === 'java') compilerId = 'openjdk-25';
 
-    // ━━━ 4. DEDUPLICATION CACHE ━━━
+    // ━━━ 4. DEDUPLICATION CACHE (Lazy TTL) ━━━
     const codeHash = Buffer.from(code).toString('base64');
     const stdinHash = Buffer.from(stdin).toString('base64');
     const cacheKey = `${compilerId}:${codeHash}:${stdinHash}`;
     
-    if (executionCache.has(cacheKey)) {
-      return NextResponse.json(executionCache.get(cacheKey));
+    const cachedResult = await executionCache.get(cacheKey);
+    if (cachedResult) {
+      return NextResponse.json(cachedResult);
     }
 
     // ━━━ 5. VALIDASI KREDENSIAL ━━━
@@ -191,7 +219,7 @@ export async function POST(req: Request) {
       return errorResponse(language, `Compiler API Error: ${errTxt}`);
     }
 
-    // ━━━ 6. PEMROSESAN RESPONSE METRICS ━━━
+    // ━━━ 7. PEMROSESAN RESPONSE METRICS ━━━
     const resultData = await submissionResponse.json();
 
     const stdoutText = resultData.output || resultData.stdout || "";
@@ -216,12 +244,7 @@ export async function POST(req: Request) {
       }
     };
 
-    // KEAMANAN: Batasi ukuran cache untuk mencegah memory leak
-    if (executionCache.size >= MAX_CACHE_SIZE) {
-      const firstKey = executionCache.keys().next().value;
-      if (firstKey) executionCache.delete(firstKey);
-    }
-    executionCache.set(cacheKey, responsePayload);
+    await executionCache.set(cacheKey, responsePayload);
 
     return NextResponse.json(responsePayload);
 

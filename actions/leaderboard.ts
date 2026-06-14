@@ -5,11 +5,19 @@ import { users, enrollments, evaluationResults } from "@/db/schema";
 import { desc, eq, sql, and, inArray, countDistinct } from "drizzle-orm";
 import { getAngkatanFromSemester } from "@/lib/academic-utils";
 import { LeaderboardEntry } from "@/lib/evaluation-store";
+import { updateGoalProgressAction } from "@/actions/gamification";
+import { getSession } from "@/lib/session";
 
 export async function getLeaderboardData(filter?: {
   courseId?: string; // filter ke mahasiswa yang enrolled+accepted di course ini
 }): Promise<LeaderboardEntry[]> {
   try {
+    const session = await getSession();
+    if (session && session.userId) {
+      // Async trigger, we don't need to await it
+      updateGoalProgressAction('leaderboard', 1).catch(err => console.error(err));
+    }
+
     let dbUsers: Array<{
       id: string;
       name: string;

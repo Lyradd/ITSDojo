@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playCoinSound } from "@/lib/sounds";
+import { claimDailyGoalAction, claimMonthlyMilestoneAction } from "@/actions/gamification";
 import { useMultiplierTimer } from "@/hooks/use-multiplier-timer";
 import dynamic from "next/dynamic";
 import React from "react";
@@ -115,7 +116,6 @@ export default function GoalsPage() {
   const {
     dailyGoals,
     streak,
-    claimGoalReward,
     multiplierEndTime,
     xpMultiplier,
     activityHistory,
@@ -125,7 +125,6 @@ export default function GoalsPage() {
     claimWeeklyMilestone,
     monthlyCompletedGoals,
     claimedMonthlyMilestones,
-    claimMonthlyMilestone,
     streakFreezeCount,
     level,
     isLoggedIn
@@ -166,26 +165,43 @@ export default function GoalsPage() {
   });
 
 
-  // 4. Wrapper Fungsi Klaim Hadiah dengan Anti-Eksploitasi (Debounce/Lock)
-  const handleClaim = (goalId: string) => {
-    // Mencegah double-click eksploitasi dalam rentang waktu yang sama
+  // 4. Wrapper Fungsi Klaim Hadiah dengan Anti-Eksploitasi (Debounce/Lock via Server Action)
+  const handleClaim = async (goalId: string) => {
     if (claimingGoals.has(goalId)) return;
-
-    // Optimistic UI Update: Kunci tombol langsung
     setClaimingGoals(prev => new Set(prev).add(goalId));
 
-    claimGoalReward(goalId);
-    triggerConfetti();
-    playCoinSound();
-
-    // Lepas kunci setelah animasi selesai (opsional, tapi aman jika user refresh)
-    setTimeout(() => {
-      setClaimingGoals(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(goalId);
-        return newSet;
-      });
-    }, 1000);
+    try {
+      const res = await claimDailyGoalAction(goalId);
+      if (res.success && res.gamificationData) {
+         // Sync state from server response (OCC Safe)
+         useUserStore.getState().syncFromServer({
+             level: res.newLevel as number,
+             profileXp: res.newXp as number,
+             xp: res.newLeaderboardXp as number,
+             gems: res.newGems as number,
+             streak: useUserStore.getState().streak, 
+             accuracy: useUserStore.getState().accuracy,
+             gamificationData: res.gamificationData
+         });
+         
+         triggerConfetti();
+         playCoinSound();
+         useUserStore.getState().triggerReward('gem', Math.min(res.earnedGems as number, 10));
+         if ((res.earnedXp as number) > 0) useUserStore.getState().triggerReward('xp', Math.min(res.earnedXp as number, 10));
+      } else {
+         console.error("Gagal klaim misi:", res.error);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTimeout(() => {
+        setClaimingGoals(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(goalId);
+          return newSet;
+        });
+      }, 500);
+    }
   };
 
   return (
@@ -535,11 +551,34 @@ export default function GoalsPage() {
                       >
                         {/* Node */}
                         <div
-                          onClick={() => {
-                            if (isAvailable) {
-                              claimMonthlyMilestone(milestone.target, milestone.reward, milestone.tier);
-                              triggerConfetti();
-                              playCoinSound();
+                          onClick={async () => {
+                            if (isAvailable && !claimingGoals.has(`milestone-${milestone.target}`)) {
+                              setClaimingGoals(prev => new Set(prev).add(`milestone-${milestone.target}`));
+                              try {
+                                const res = await claimMonthlyMilestoneAction(milestone.target, milestone.reward, milestone.tier);
+                                if (res.success && res.gamificationData) {
+                                  useUserStore.getState().syncFromServer({
+                                      level: useUserStore.getState().level,
+                                      profileXp: useUserStore.getState().xp,
+                                      xp: useUserStore.getState().weeklyXp,
+                                      gems: res.newGems as number,
+                                      streak: useUserStore.getState().streak, 
+                                      accuracy: useUserStore.getState().accuracy,
+                                      gamificationData: res.gamificationData
+                                  });
+                                  triggerConfetti();
+                                  playCoinSound();
+                                  useUserStore.getState().triggerReward('gem', Math.min(res.earnedGems as number, 15));
+                                }
+                              } catch (err) {
+                                console.error("Milestone error:", err);
+                              } finally {
+                                setClaimingGoals(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(`milestone-${milestone.target}`);
+                                  return newSet;
+                                });
+                              }
                             }
                           }}
                           className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 transition-all ${isClaimed

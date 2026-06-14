@@ -163,6 +163,17 @@ async function finalizeRoundSession(
       } catch (dbErr) {
         console.error(`Failed to update arena reward for user ${playerId}:`, dbErr);
       }
+      
+      // Trigger Gamification Goals
+      try {
+        const { updateGoalProgressAction } = await import("@/actions/gamification");
+        updateGoalProgressAction('duel', 1, playerId).catch(console.error);
+        if (winnerId === playerId) {
+          updateGoalProgressAction('duel_win', 1, playerId).catch(console.error);
+        }
+      } catch (goalErr) {
+        console.error("Failed to trigger duel goals:", goalErr);
+      }
     }
 
     // Broadcast update if websocket is active

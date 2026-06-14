@@ -39,8 +39,8 @@ export function evaluateStreak(
     const localTime = new Date(now.getTime() - timezoneOffsetMinutes * 60000);
     todayStr = localTime.toISOString().split('T')[0];
   } else {
-    // Fallback yang konsisten: YYYY-MM-DD dalam UTC
-    todayStr = now.toISOString().split('T')[0];
+    // Fallback yang konsisten: YYYY-MM-DD dalam Asia/Jakarta
+    todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
   }
 
   if (!lastActiveDate || lastActiveDate === '') {

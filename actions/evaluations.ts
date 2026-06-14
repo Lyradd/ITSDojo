@@ -352,11 +352,25 @@ export async function submitEvaluationResult(data: {
           const currentLastUpdated = gData.lastUpdated || 0;
 
           // --- STREAK EVALUATION ---
+          const oldLastActiveDate = gData.lastActiveDate;
           const streakResult = evaluateStreak(userRec.streak, gData.lastActiveDate, gData.streakFreezeCount || 0);
           
           gData.lastActiveDate = streakResult.lastActiveDate;
           gData.streakFreezeCount = streakResult.freezeCount;
           gData.lastUpdated = Date.now();
+          
+          // --- DAILY GOALS EVALUATION FOR STREAK ---
+          if (gData.dailyGoals && Array.isArray(gData.dailyGoals)) {
+            gData.dailyGoals.forEach((goal: any) => {
+              if (goal.type === 'streak' && !goal.isCompleted && oldLastActiveDate !== streakResult.lastActiveDate) {
+                goal.currentProgress = Math.min(goal.targetValue, goal.currentProgress + 1);
+                if (goal.currentProgress >= goal.targetValue) {
+                   goal.isCompleted = true;
+                   gemsAdded += goal.reward || 0;
+                }
+              }
+            });
+          }
           
           const today = new Date().toLocaleDateString('en-CA');
           let history = gData.activityHistory || [];
@@ -368,6 +382,11 @@ export async function submitEvaluationResult(data: {
           } else {
             history.push({ date: today, count: 1, xpEarned: profileXpAdded, freezeUsed: streakResult.freezeUsed > 0 });
           }
+          
+          // Update mostXpInDay
+          const currentTodayEntry = history.find((h: any) => h.date === today);
+          gData.mostXpInDay = Math.max(gData.mostXpInDay || 0, currentTodayEntry ? currentTodayEntry.xpEarned : 0);
+
           gData.activityHistory = history;
 
           const updateCondition = currentLastUpdated > 0
@@ -390,9 +409,15 @@ export async function submitEvaluationResult(data: {
             break; // Berhasil update
           }
           retries--;
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20)); // Jitter backoff
+          }
         } catch (err) {
           console.error("OCC Error during evaluation reward:", err);
           retries--;
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20)); // Jitter backoff
+          }
         }
       }
 

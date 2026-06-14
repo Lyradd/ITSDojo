@@ -196,6 +196,21 @@ async function finalizeRoundSession(
       console.error("Failed to update user rewards on duel end:", dbErr);
     }
 
+    // Trigger Gamification Goals (Safe async fire-and-forget)
+    try {
+      const { updateGoalProgressAction } = await import("@/actions/gamification");
+      if (hostId) {
+        updateGoalProgressAction('duel', 1, hostId).catch(console.error);
+        if (winnerId === hostId) updateGoalProgressAction('duel_win', 1, hostId).catch(console.error);
+      }
+      if (guestId) {
+        updateGoalProgressAction('duel', 1, guestId).catch(console.error);
+        if (winnerId === guestId) updateGoalProgressAction('duel_win', 1, guestId).catch(console.error);
+      }
+    } catch (goalErr) {
+      console.error("Failed to trigger duel goals:", goalErr);
+    }
+
     // Broadcast updated leaderboard to all connected clients
     try {
       const io = (globalThis as any).__io;

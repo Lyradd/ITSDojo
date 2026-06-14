@@ -245,6 +245,8 @@ export default function LessonIDEPage() {
     }));
 
     setLanguage(newLang);
+    setExecutionResult(null);
+    setIsError(false);
 
     // Get code for new language, or fall back to template
     const savedCodeForNewLang = codes[newLang];

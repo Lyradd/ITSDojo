@@ -305,6 +305,11 @@ function ArenaQuizContent() {
               gamificationData: res.user.gamificationData,
               enrolledCourseIds: res.user.enrolledCourseIds,
             });
+            // Update UI Daily Goals instantly
+            useUserStore.getState().incrementProgress('comp-1', 1); // duel
+            if (isWinner) {
+              useUserStore.getState().incrementProgress('comp-2', 1); // duel_win
+            }
           }
         } catch (e) {
           console.error("Failed to sync profile after arena end:", e);

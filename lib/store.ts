@@ -233,8 +233,6 @@ export interface UserState {
   followersCount: number; // NEW: Social stats
   checkDailyReset: () => Promise<void>;
   claimWeeklyMilestone: (milestone: number) => void;
-  claimMonthlyMilestone: (milestone: number, reward: number, tier: string) => void; // NEW: Method to claim monthly reward
-  claimGoalReward: (goalId: string) => void;
   incrementProgress: (missionId: string, amount: number) => void;
 
   // 5. UI State & Animations
@@ -603,7 +601,7 @@ export const useUserStore = create<UserState>()(
         };
       }),
       
-      resetProgress: () => set({ completedLessonIds: ['fe-basic-1'] }),
+      resetProgress: () => set({ completedLessonIds: [] }),
 
       // --- ACTIONS: SHOP ---
       unlockInventorySlot: (slotId, cost) => {
@@ -789,61 +787,6 @@ export const useUserStore = create<UserState>()(
         get().forceSyncProgress();
       },
 
-      claimMonthlyMilestone: (milestone, reward, tier) => {
-        const state = get();
-        if (state.claimedMonthlyMilestones.includes(milestone)) return;
-        if (state.monthlyCompletedGoals < milestone) return;
-
-        let newEarnedBadges = [...state.earnedBadges];
-        // Hanya dapat badge jika menyelesaikan milestone terakhir (45)
-        if (milestone === 45) {
-          const newBadge = {
-             id: `badge-${tier}-${Date.now()}`,
-             name: `Pejuang ${new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`,
-             date: new Date().toISOString(),
-             tier: tier
-          };
-          newEarnedBadges.push(newBadge);
-        }
-
-        set((s) => ({ 
-          gems: s.gems + reward, 
-          claimedMonthlyMilestones: [...s.claimedMonthlyMilestones, milestone],
-          earnedBadges: newEarnedBadges,
-          lastProgressUpdate: Date.now()
-        }));
-        get().triggerReward('gem', Math.min(reward / 10, 25));
-        get().forceSyncProgress();
-      },
-
-      claimGoalReward: (goalId) => {
-        let earnedXP = 0;
-        let earnedGems = 0;
-        set((state) => {
-          const goalIndex = state.dailyGoals.findIndex((g) => g.id === goalId);
-          if (goalIndex === -1) return state;
-          const goal = state.dailyGoals[goalIndex];
-          if (!goal.isCompleted || goal.isClaimed) return state;
-
-          earnedXP = goal.rewardXP || 0;
-          earnedGems = goal.rewardGems || 0;
-          const updatedGoals = [...state.dailyGoals];
-          updatedGoals[goalIndex] = { ...goal, isClaimed: true };
-
-          return { 
-            lastProgressUpdate: Date.now(),
-            dailyGoals: updatedGoals,
-            monthlyCompletedGoals: (state.monthlyCompletedGoals || 0) + 1,
-            gems: state.gems + earnedGems
-          };
-        });
-        
-        const stateNow = get();
-        if (earnedGems > 0) stateNow.triggerReward('gem', Math.min(earnedGems, 10));
-        if (earnedXP > 0) stateNow.addXp(earnedXP);
-        
-        stateNow.forceSyncProgress();
-      },
 
       incrementProgress: (missionIdOrType, amount) => {
         set((state) => {

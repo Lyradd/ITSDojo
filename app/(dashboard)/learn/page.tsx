@@ -304,11 +304,11 @@ export default function LearnPage() {
                   <p className="text-sm opacity-90 mt-1 line-clamp-2">Anda telah menyelesaikan seluruh materi di kursus {activeCourse?.title || 'ini'}.</p>
                 </div>
               </div>
-              <Link href="/courses" className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto bg-white text-green-700 hover:bg-white/90 border-none gap-2 rounded-xl font-bold px-4">
+              <Button asChild size="sm" className="w-full sm:w-auto bg-white text-green-700 hover:bg-white/90 border-none gap-2 rounded-xl font-bold px-4">
+                <Link href="/courses">
                   Pilih Kursus Lain <ArrowRight className="w-4 h-4 shrink-0" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </motion.div>
           ) : activeNode && (
             <motion.div
@@ -325,11 +325,11 @@ export default function LearnPage() {
                   <p className="text-xs opacity-70 truncate">Stage {activeNodeIndex + 1}: {activeNode.title}</p>
                 </div>
               </div>
-              <Link href={`/learn/lesson/${activeNode.id}`} className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white border-none gap-2 rounded-xl group px-4">
+              <Button asChild size="sm" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white border-none gap-2 rounded-xl group px-4">
+                <Link href={`/learn/lesson/${activeNode.id}`}>
                   Lanjutkan <ArrowRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </motion.div>
           )}
 
@@ -361,11 +361,11 @@ export default function LearnPage() {
                 >
                   <RotateCcw className="w-4 h-4" />
                 </Button>
-                <Link href="/courses">
-                  <Button variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${theme.text}`}>
+                <Button asChild variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${theme.text}`}>
+                  <Link href="/courses">
                     Ganti Kursus
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
 
@@ -394,9 +394,9 @@ export default function LearnPage() {
               description="Master belum memberikan gulungan instruksi. Silakan kembali nanti atau eksplorasi kelas lain sementara admin menyusun materi."
               animate="bounce"
               action={
-                <Link href="/courses">
-                  <Button variant="outline" className="font-bold">Kembali ke Daftar Kelas</Button>
-                </Link>
+                <Button asChild variant="outline" className="font-bold">
+                  <Link href="/courses">Kembali ke Daftar Kelas</Link>
+                </Button>
               }
             />
           ) : (

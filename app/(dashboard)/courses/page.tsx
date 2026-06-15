@@ -15,7 +15,10 @@ import { toast } from "react-hot-toast";
 type SortOption = "name-asc" | "last-accessed" | "progress-desc";
 type ViewMode = "grid" | "list";
 
-import { CircularProgress } from "@/components/ui/circular-progress";
+import dynamic from "next/dynamic";
+const CircularProgress = dynamic(() => import("@/components/ui/circular-progress").then(m => m.CircularProgress));
+const EmptyState = dynamic(() => import("@/components/ui/empty-state").then(m => m.EmptyState));
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { EmptyState } from "@/components/ui/empty-state";
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -206,10 +208,10 @@ export default function CoursesPage() {
 
               {/* View Toggle */}
               <div className="flex items-center p-1 bg-background rounded-md border border-input shrink-0">
-                <Button variant="ghost" size="icon" className={`h-12 w-12 md:h-8 md:w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
+                <Button variant="ghost" size="icon" aria-label="Tampilan Grid" className={`h-12 w-12 md:h-8 md:w-8 rounded-sm ${viewMode === "grid" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("grid")}>
                   <LayoutGrid className="h-5 w-5 md:h-4 md:w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className={`h-12 w-12 md:h-8 md:w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
+                <Button variant="ghost" size="icon" aria-label="Tampilan List" className={`h-12 w-12 md:h-8 md:w-8 rounded-sm ${viewMode === "list" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`} onClick={() => setViewMode("list")}>
                   <List className="h-5 w-5 md:h-4 md:w-4" />
                 </Button>
               </div>
@@ -238,7 +240,7 @@ export default function CoursesPage() {
         />
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedCourses.map((course) => (
+          {sortedCourses.map((course, index) => (
             <div 
               key={course.id} 
               className="group relative flex flex-col h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/25 hover:-translate-y-2 hover:border-blue-500 dark:hover:border-blue-500 overflow-hidden"
@@ -253,6 +255,7 @@ export default function CoursesPage() {
                     src={course.image} 
                     alt={course.title} 
                     fill 
+                    priority={index < 6}
                     className="object-cover transition-transform duration-500 group-hover:scale-105" 
                     onError={() => setImageErrorIds(prev => [...prev, course.id])}
                   />
@@ -263,6 +266,7 @@ export default function CoursesPage() {
                 )}
                 {/* Bookmark Button Overlay */}
                 <button 
+                  aria-label={bookmarkedCourseIds.includes(course.id) ? "Hapus dari simpanan" : "Simpan kelas"}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleToggleBookmark(course.id);
@@ -282,7 +286,7 @@ export default function CoursesPage() {
 
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                     {course.difficulty}
                   </span>
                   <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
@@ -291,11 +295,11 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors">
+                <h2 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors">
                   {course.title}
-                </h3>
+                </h2>
 
-                <p className="text-xs text-zinc-400 mb-2">
+                <p className="text-xs text-zinc-500 mb-2">
                   Aktivitas terakhir: {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
                 </p>
 
@@ -331,7 +335,7 @@ export default function CoursesPage() {
       ) : (
         /* MODE 2: LIST VIEW */
         <div className="flex flex-col gap-4">
-          {sortedCourses.map((course) => (
+          {sortedCourses.map((course, index) => (
             <div key={course.id} className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border bg-card hover:bg-zinc-50/50 hover:border-blue-500/30 transition-all dark:hover:bg-zinc-900">
               {/* Icon Box */}
               <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
@@ -341,6 +345,7 @@ export default function CoursesPage() {
                     src={course.image} 
                     alt={course.title} 
                     fill 
+                    priority={index < 4}
                     className="object-cover" 
                     onError={() => setImageErrorIds(prev => [...prev, course.id])}
                   />
@@ -355,13 +360,14 @@ export default function CoursesPage() {
               <div className="flex-1 min-w-0 w-full">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold truncate group-hover:text-blue-600 transition-colors">
+                    <h2 className="text-lg font-bold truncate group-hover:text-blue-600 transition-colors">
                       {course.title}
-                    </h3>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
+                    </h2>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:text-zinc-300 dark:bg-zinc-800">
                       {course.difficulty}
                     </span>
                     <button 
+                      aria-label={bookmarkedCourseIds.includes(course.id) ? "Hapus dari simpanan" : "Simpan kelas"}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleToggleBookmark(course.id);
@@ -393,7 +399,7 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-zinc-400">
+                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
                   <span className="flex items-center gap-1">
                     <BookOpen className="w-3 h-3" /> {course.unitsCount} Unit • {course.lessonsCount} Materi
                   </span>

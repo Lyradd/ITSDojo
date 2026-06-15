@@ -343,9 +343,9 @@ export default function LessonIDEPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-zinc-500">Lesson tidak ditemukan.</p>
-        <Link href="/learn">
-          <Button>Kembali ke Learn</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/learn">Kembali ke Learn</Link>
+        </Button>
       </div>
     );
   }

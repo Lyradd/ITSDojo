@@ -135,8 +135,13 @@ export default function GoalsPage() {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [claimingGoals, setClaimingGoals] = useState<Set<string>>(new Set());
 
+  const [currentMonth, setCurrentMonth] = useState("");
+
   // 1. Cek Mounted 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => { 
+    setIsMounted(true); 
+    setCurrentMonth(new Date().toLocaleString('id-ID', { month: 'long', timeZone: 'Asia/Jakarta' }));
+  }, []);
 
   // Auth Guard redirect
   useEffect(() => {
@@ -343,7 +348,7 @@ export default function GoalsPage() {
                                   </>
                                 )}
                               </span>
-                              {!claimingGoals.has(goal.id) && <div className="absolute inset-0 bg-white/30 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />}
+                              {!claimingGoals.has(goal.id) && <span className="absolute inset-0 bg-white/30 w-full h-full -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />}
                             </Button>
                           ) : (
                             <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-1 text-zinc-400 w-full bg-zinc-50 dark:bg-zinc-900/30 sm:bg-transparent rounded-xl sm:rounded-none h-12">
@@ -504,7 +509,7 @@ export default function GoalsPage() {
                   <div className="flex flex-col min-w-0">
                     <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-widest truncate">Misi Bulanan</span>
                     <h4 className="font-black text-xl leading-tight text-zinc-800 dark:text-white truncate">
-                      Misi {now.toLocaleString('id-ID', { month: 'long' })}
+                      Misi {currentMonth || "..."}
                     </h4>
                     <p className="text-xs text-zinc-500 font-medium mt-0.5 truncate">Selesaikan Misi Harian</p>
                   </div>

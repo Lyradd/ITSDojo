@@ -9,7 +9,7 @@ import {
   upsertArenaSession,
 } from "@/lib/arena-session-store";
 import { recordHeartbeat, cleanupInactivePlayers } from "@/lib/arena-heartbeat";
-import { updateUserGameFinished } from "@/lib/gamification/streak-helper";
+import { updateUserGameFinished } from "@/lib/gamification/streak";
 
 const MIN_ARENA_ROUNDS = 3;
 

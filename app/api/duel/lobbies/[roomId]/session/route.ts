@@ -8,7 +8,7 @@ import {
   setDuelSession,
   upsertDuelSession,
 } from "@/lib/duel-session-store";
-import { updateUserGameFinished } from "@/lib/gamification/streak-helper";
+import { updateUserGameFinished } from "@/lib/gamification/streak";
 
 const MIN_DUEL_ROUNDS = 3;
 

@@ -47,17 +47,17 @@ export function evaluateStreak(
   }
 
   if (!lastActiveDate || lastActiveDate === '') {
-    return { streak: 1, lastActiveDate: todayStr, freezeCount, freezeUsed: 0, isReset: false };
+    return { streak: 1, lastActiveDate: todayStr, freezeCount, freezeUsed: 0, isReset: false, frozenDates: [] };
   }
 
   // Corrupted state fix: If streak is 0 but lastActiveDate is today, it's a new streak
   if (lastActiveDate === todayStr && currentStreak === 0) {
-    return { streak: 1, lastActiveDate: todayStr, freezeCount, freezeUsed: 0, isReset: false };
+    return { streak: 1, lastActiveDate: todayStr, freezeCount, freezeUsed: 0, isReset: false, frozenDates: [] };
   }
 
   if (lastActiveDate === todayStr) {
     // Sudah klaim hari ini
-    return { streak: currentStreak, lastActiveDate: todayStr, freezeCount, freezeUsed: 0, isReset: false };
+    return { streak: currentStreak, lastActiveDate: todayStr, freezeCount, freezeUsed: 0, isReset: false, frozenDates: [] };
   }
 
   // Helper normalisasi tengah malam UTC untuk kalkulasi hari

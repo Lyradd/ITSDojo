@@ -9,168 +9,162 @@
     "xpReward": 100,
     "units": [
       {
-        "title": "Unit 1: Pengenalan Algoritma",
-        "description": "Pahami apa itu algoritma dan cara menulis pseudocode.",
+        "title": "Unit 1: Pengantar dan Dasar C++",
+        "description": "Mempelajari sintaks dasar dan operasi I/O di C++.",
         "lessons": [
           {
-            "title": "Apa itu Algoritma?",
-            "duration": "10 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Apa itu Algoritma?</h3><p>Ini adalah ringkasan materi untuk Apa itu Algoritma?.</p>",
-            "problemTitle": "Program Pertama C: Hello ITSDojo!",
-            "problemDescription": "Tuliskan sebuah program C sederhana yang mencetak kalimat \"Hello ITSDojo!\" ke layar (standard output). Pastikan ejaan dan tanda serunya tepat.",
+            "title": "Pengenalan C++ & I/O Dasar",
+            "duration": "15 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Pengenalan C++ & I/O Dasar</h3>\n            <p>C++ adalah bahasa pemrograman tingkat menengah yang banyak digunakan karena kecepatannya. Struktur dasar program C++ terdiri dari:</p>\n            <ul>\n              <li><strong>#include &lt;iostream&gt;</strong>: Pustaka yang dibutuhkan untuk melakukan operasi input dan output.</li>\n              <li><strong>int main()</strong>: Fungsi utama yang akan dieksekusi pertama kali oleh program.</li>\n              <li><strong>std::cout</strong>: Digunakan untuk mencetak output ke layar.</li>\n              <li><strong>std::cin</strong>: Digunakan untuk mengambil input dari pengguna.</li>\n            </ul>\n            <p>Contoh kode dasar:</p>\n            <pre><code>#include &lt;iostream&gt;\nusing namespace std;\n\nint main() {\n    cout &lt;&lt; \"Halo Dunia!\" &lt;&lt; endl;\n    return 0;\n}</code></pre>\n          ",
+            "problemTitle": "Program Pertama C++: Hello ITSDojo!",
+            "problemDescription": "<p>Tuliskan program C++ sederhana yang mencetak kalimat 'Halo, ITSDojo!'</p>",
             "problemCategory": "Basic I/O",
-            "defaultLanguage": "c",
-            "starterCode": "#include <stdio.h>\n\nint main() {\n    // Tulis kode cetak Anda di sini\n    printf(\"Hello ITSDojo!\\n\");\n    return 0;\n}",
-            "sampleInput": null,
-            "sampleOutput": "Hello ITSDojo!",
+            "defaultLanguage": "cpp",
+            "starterCode": "#include <iostream>\nusing namespace std;\nint main() {\n    cout << \"Halo, ITSDojo!\" << endl;\n    return 0;\n}",
+            "sampleInput": "",
+            "sampleOutput": "Halo, ITSDojo!",
             "testCases": [
               {
                 "stdin": "",
-                "expected": "Hello ITSDojo!",
-                "hidden": false
+                "expected": "Halo, ITSDojo!",
+                "hidden": false,
+                "order": 1
               }
-            ]
+            ],
+            "xpReward": 50
           },
           {
-            "title": "Pseudocode dan Flowchart",
+            "title": "Tipe Data & Deklarasi Variabel",
             "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Pseudocode dan Flowchart</h3><p>Ini adalah ringkasan materi untuk Pseudocode dan Flowchart.</p>",
-            "problemTitle": "Penjumlahan Dua Bilangan",
-            "problemDescription": "Buatlah program C yang membaca dua bilangan bulat (integer) dari input pengguna (standard input), menjumlahkan keduanya, dan mencetak hasil penjumlahannya ke layar.",
-            "problemCategory": "Variables & Arithmetic",
-            "defaultLanguage": "c",
-            "starterCode": "#include <stdio.h>\n\nint main() {\n    int a, b;\n    // Baca dua bilangan bulat dan cetak hasil penjumlahan\n    if (scanf(\"%d %d\", &a, &b) == 2) {\n        printf(\"%d\\n\", a + b);\n    }\n    return 0;\n}",
-            "sampleInput": "5 7",
-            "sampleOutput": "12",
-            "testCases": [
-              {
-                "stdin": "5 7",
-                "expected": "12",
-                "hidden": false
-              },
-              {
-                "stdin": "-3 8",
-                "expected": "5",
-                "hidden": false
-              },
-              {
-                "stdin": "100 250",
-                "expected": "350",
-                "hidden": true
-              }
-            ]
-          },
-          {
-            "title": "Instalasi Compiler C/C++",
-            "duration": "12 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Instalasi Compiler C/C++</h3><p>Ini adalah ringkasan materi untuk Instalasi Compiler C/C++.</p>",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Tipe Data & Deklarasi Variabel</h3>\n            <p>Variabel adalah tempat untuk menyimpan data. Di C++, setiap variabel harus dideklarasikan tipe datanya terlebih dahulu.</p>\n            <p>Beberapa tipe data dasar di C++:</p>\n            <ul>\n              <li><strong>int</strong>: Untuk bilangan bulat (contoh: 10, -5).</li>\n              <li><strong>float / double</strong>: Untuk bilangan desimal (contoh: 3.14).</li>\n              <li><strong>char</strong>: Untuk satu karakter tunggal (contoh: 'A').</li>\n              <li><strong>bool</strong>: Untuk nilai kebenaran (true / false).</li>\n            </ul>\n            <p>Cara mendeklarasikan variabel:</p>\n            <pre><code>int umur = 20;\ndouble ipk = 3.8;\nchar nilai = 'A';</code></pre>\n          ",
             "problemTitle": null,
             "problemDescription": null,
             "problemCategory": null,
-            "defaultLanguage": "c",
+            "defaultLanguage": "cpp",
             "starterCode": null,
             "sampleInput": null,
             "sampleOutput": null,
-            "testCases": []
+            "testCases": [],
+            "xpReward": 15
+          },
+          {
+            "title": "Operator Aritmatika & Logika Dasar",
+            "duration": "20 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Operator Aritmatika & Logika Dasar</h3>\n            <p>Operator digunakan untuk melakukan operasi pada variabel atau nilai.</p>\n            <p><strong>Operator Aritmatika:</strong></p>\n            <ul>\n              <li>Penjumlahan: <code>+</code></li>\n              <li>Pengurangan: <code>-</code></li>\n              <li>Perkalian: <code>*</code></li>\n              <li>Pembagian: <code>/</code></li>\n              <li>Sisa Bagi (Modulo): <code>%</code></li>\n            </ul>\n            <p><strong>Operator Logika:</strong></p>\n            <ul>\n              <li>AND: <code>&&</code> (Benar jika keduanya benar)</li>\n              <li>OR: <code>||</code> (Benar jika salah satu benar)</li>\n              <li>NOT: <code>!</code> (Membalikkan nilai kebenaran)</li>\n            </ul>\n          ",
+            "problemTitle": null,
+            "problemDescription": null,
+            "problemCategory": null,
+            "defaultLanguage": "cpp",
+            "starterCode": null,
+            "sampleInput": null,
+            "sampleOutput": null,
+            "testCases": [],
+            "xpReward": 15
           }
         ]
       },
       {
-        "title": "Unit 2: Variabel dan Tipe Data",
-        "description": "Mengenal tipe data dasar seperti integer, float, dan char.",
+        "title": "Unit 2: Struktur Kontrol",
+        "description": "Mengendalikan alur eksekusi program.",
         "lessons": [
           {
-            "title": "Deklarasi Variabel",
-            "duration": "10 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Deklarasi Variabel</h3><p>Ini adalah ringkasan materi untuk Deklarasi Variabel.</p>",
+            "title": "Percabangan Dasar (If, Else If, Else)",
+            "duration": "20 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Percabangan Dasar (If, Else If, Else)</h3>\n            <p>Percabangan digunakan untuk mengeksekusi blok kode tertentu jika suatu kondisi terpenuhi (bernilai true).</p>\n            <pre><code>int nilai = 85;\nif (nilai >= 80) {\n    cout &lt;&lt; \"Nilai Anda A\";\n} else if (nilai >= 70) {\n    cout &lt;&lt; \"Nilai Anda B\";\n} else {\n    cout &lt;&lt; \"Anda harus remedial\";\n}</code></pre>\n            <p>Blok <strong>else</strong> akan dieksekusi jika semua kondisi di atasnya bernilai false.</p>\n          ",
             "problemTitle": null,
             "problemDescription": null,
             "problemCategory": null,
-            "defaultLanguage": "c",
+            "defaultLanguage": "cpp",
             "starterCode": null,
             "sampleInput": null,
             "sampleOutput": null,
-            "testCases": []
+            "testCases": [],
+            "xpReward": 15
           },
           {
-            "title": "Tipe Data Primitif",
-            "duration": "10 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Tipe Data Primitif</h3><p>Ini adalah ringkasan materi untuk Tipe Data Primitif.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "Operator Aritmatika",
+            "title": "Percabangan Ganda & Switch Case",
             "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Operator Aritmatika</h3><p>Ini adalah ringkasan materi untuk Operator Aritmatika.</p>",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Percabangan Ganda & Switch Case</h3>\n            <p><strong>Switch case</strong> adalah alternatif yang lebih rapi dari if-else if yang panjang, khususnya saat membandingkan suatu variabel dengan banyak nilai spesifik.</p>\n            <pre><code>int pilihan = 2;\nswitch(pilihan) {\n    case 1:\n        cout &lt;&lt; \"Anda memilih 1\";\n        break;\n    case 2:\n        cout &lt;&lt; \"Anda memilih 2\";\n        break;\n    default:\n        cout &lt;&lt; \"Pilihan tidak valid\";\n}</code></pre>\n            <p>Kata kunci <strong>break</strong> wajib digunakan untuk menghentikan pengecekan berlanjut ke case berikutnya.</p>\n          ",
             "problemTitle": null,
             "problemDescription": null,
             "problemCategory": null,
-            "defaultLanguage": "c",
+            "defaultLanguage": "cpp",
             "starterCode": null,
             "sampleInput": null,
             "sampleOutput": null,
-            "testCases": []
+            "testCases": [],
+            "xpReward": 15
+          },
+          {
+            "title": "Perulangan (For, While, Do-While)",
+            "duration": "25 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Perulangan (For, While, Do-While)</h3>\n            <p>Perulangan (looping) digunakan untuk menjalankan blok kode berulang kali.</p>\n            <p><strong>1. For Loop:</strong> Digunakan ketika jumlah perulangan sudah diketahui dengan pasti.</p>\n            <pre><code>for (int i = 0; i < 5; i++) {\n    cout &lt;&lt; i &lt;&lt; endl;\n}</code></pre>\n            <p><strong>2. While Loop:</strong> Digunakan ketika perulangan bergantung pada suatu kondisi yang mungkin berubah di tengah jalan.</p>\n            <pre><code>int n = 5;\nwhile (n > 0) {\n    cout &lt;&lt; n;\n    n--;\n}</code></pre>\n            <p><strong>3. Do-While:</strong> Mirip dengan while, namun blok kode akan dieksekusi minimal satu kali sebelum kondisi dicek.</p>\n          ",
+            "problemTitle": null,
+            "problemDescription": null,
+            "problemCategory": null,
+            "defaultLanguage": "cpp",
+            "starterCode": null,
+            "sampleInput": null,
+            "sampleOutput": null,
+            "testCases": [],
+            "xpReward": 15
           }
         ]
       },
       {
-        "title": "Unit 3: Percabangan dan Perulangan",
-        "description": "Mengontrol alur program menggunakan if-else dan for/while loops.",
+        "title": "Unit 3: Struktur Data Dasar & Modularitas",
+        "description": "Memahami struktur data array dan penggunaan fungsi.",
         "lessons": [
           {
-            "title": "Kondisional If-Else",
+            "title": "Pengenalan Array 1 Dimensi",
+            "duration": "20 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Pengenalan Array 1 Dimensi</h3>\n            <p>Array adalah sekumpulan variabel yang memiliki tipe data yang sama dan disimpan secara berurutan dalam memori. Array sangat berguna untuk menyimpan banyak data tanpa harus membuat banyak variabel secara manual.</p>\n            <p>Indeks array di C++ selalu dimulai dari <strong>0</strong>.</p>\n            <pre><code>// Deklarasi dan inisialisasi array\nint angka[5] = {10, 20, 30, 40, 50};\n\n// Mengakses elemen array\ncout &lt;&lt; \"Elemen pertama: \" &lt;&lt; angka[0]; // Output: 10\ncout &lt;&lt; \"Elemen ketiga: \" &lt;&lt; angka[2];  // Output: 30</code></pre>\n          ",
+            "problemTitle": null,
+            "problemDescription": null,
+            "problemCategory": null,
+            "defaultLanguage": "cpp",
+            "starterCode": null,
+            "sampleInput": null,
+            "sampleOutput": null,
+            "testCases": [],
+            "xpReward": 15
+          },
+          {
+            "title": "Pengenalan String di C++",
             "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Kondisional If-Else</h3><p>Ini adalah ringkasan materi untuk Kondisional If-Else.</p>",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Pengenalan String di C++</h3>\n            <p>String adalah kumpulan dari karakter. C++ menyediakan pustaka <code>&lt;string&gt;</code> untuk mempermudah manipulasi teks.</p>\n            <pre><code>#include &lt;string&gt;\n\nstring nama = \"ITSDojo\";\n// Menggabungkan string\nstring salam = \"Halo, \" + nama;\n// Menghitung panjang string\nint panjang = nama.length();</code></pre>\n            <p>String sangat mudah digunakan ketimbang array of char konvensional ala bahasa C.</p>\n          ",
             "problemTitle": null,
             "problemDescription": null,
             "problemCategory": null,
-            "defaultLanguage": "c",
+            "defaultLanguage": "cpp",
             "starterCode": null,
             "sampleInput": null,
             "sampleOutput": null,
-            "testCases": []
+            "testCases": [],
+            "xpReward": 15
           },
           {
-            "title": "Perulangan For",
-            "duration": "12 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Perulangan For</h3><p>Ini adalah ringkasan materi untuk Perulangan For.</p>",
+            "title": "Konsep Dasar Fungsi (Void & Return)",
+            "duration": "25 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Konsep Dasar Fungsi (Void & Return)</h3>\n            <p>Fungsi adalah blok kode yang dapat dipanggil kembali dari bagian program lain. Fungsi membantu membuat kode lebih modular dan mudah dibaca.</p>\n            <p><strong>Fungsi dengan Nilai Kembalian (Return):</strong></p>\n            <pre><code>int tambah(int a, int b) {\n    return a + b;\n}</code></pre>\n            <p><strong>Fungsi Tanpa Nilai Kembalian (Void):</strong></p>\n            <pre><code>void sapa() {\n    cout &lt;&lt; \"Selamat Datang!\";\n}</code></pre>\n          ",
             "problemTitle": null,
             "problemDescription": null,
             "problemCategory": null,
-            "defaultLanguage": "c",
+            "defaultLanguage": "cpp",
             "starterCode": null,
             "sampleInput": null,
             "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "Perulangan While",
-            "duration": "12 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Perulangan While</h3><p>Ini adalah ringkasan materi untuk Perulangan While.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
+            "testCases": [],
+            "xpReward": 15
           }
         ]
       }
@@ -195,7 +189,7 @@
             "videoUrl": "https://www.youtube.com/embed/KJgsSFOSQv0",
             "summaryContent": "<h3>Imputasi Sederhana</h3><p>Terkadang data memiliki nilai negatif yang tidak masuk akal (misalnya umur -5). Kita harus mengubahnya menjadi 0.</p>",
             "problemTitle": "Ubah Negatif Jadi Nol",
-            "problemDescription": "Diberikan satu buah angka. Jika angka tersebut kurang dari 0, cetak 0. Jika tidak, cetak angka tersebut apa adanya.",
+            "problemDescription": "<p>Diberikan satu buah angka. Jika angka tersebut kurang dari 0, cetak 0. Jika tidak, cetak angka tersebut apa adanya.</p>",
             "defaultLanguage": "python",
             "starterCode": "angka = int(input())\n\n# Tambahkan if-else di bawah ini",
             "sampleInput": "-5",
@@ -219,7 +213,7 @@
             "videoUrl": "https://www.youtube.com/embed/9ast9_4Nglw",
             "summaryContent": "<h3>Max Value</h3><p>Dalam Min-Max Scaling, kita harus bisa mencari nilai terbesar dalam sekumpulan data.</p>",
             "problemTitle": "Nilai Maksimum",
-            "problemDescription": "Diberikan 3 buah angka di baris yang berbeda. Cetak angka mana yang paling besar.",
+            "problemDescription": "<p>Diberikan 3 buah angka di baris yang berbeda. Cetak angka mana yang paling besar.</p>",
             "defaultLanguage": "python",
             "starterCode": "a = int(input())\nb = int(input())\nc = int(input())\n\n# Cetak nilai terbesarnya",
             "sampleInput": "10\n50\n20",
@@ -243,7 +237,7 @@
             "videoUrl": "https://www.youtube.com/embed/KJgsSFOSQv0",
             "summaryContent": "<h3>Label Encoding</h3><p>Merubah nilai huruf menjadi nilai angka agar bisa diolah mesin.</p>",
             "problemTitle": "Konversi Kategori",
-            "problemDescription": "Diberikan satu karakter. Jika karakter tersebut adalah \"A\", cetak 1. Jika \"B\", cetak 2. Selain itu cetak 0.",
+            "problemDescription": "<p>Diberikan satu karakter. Jika karakter tersebut adalah \"A\", cetak 1. Jika \"B\", cetak 2. Selain itu cetak 0.</p>",
             "defaultLanguage": "python",
             "starterCode": "kat = input()\n\n# Cek apakah A, B, atau lainnya",
             "sampleInput": "A",
@@ -278,7 +272,7 @@
             "videoUrl": "https://www.youtube.com/embed/4HKqjENq9OU",
             "summaryContent": "<h3>Jarak Mutlak (Absolute)</h3><p>Jarak antar dua titik pada garis lurus tidak pernah negatif, sehingga menggunakan nilai mutlak (Absolute).</p>",
             "problemTitle": "Jarak Absolut",
-            "problemDescription": "Diberikan titik A dan titik B. Hitung jaraknya dengan rumus nilai mutlak |A - B| (bisa menggunakan fungsi abs()).",
+            "problemDescription": "<p>Diberikan titik A dan titik B. Hitung jaraknya dengan rumus nilai mutlak |A - B| (bisa menggunakan fungsi abs()).</p>",
             "defaultLanguage": "python",
             "starterCode": "a = int(input())\nb = int(input())\n\nprint(abs(a - b))",
             "sampleInput": "10\n4",
@@ -302,7 +296,7 @@
             "videoUrl": "https://www.youtube.com/embed/UqYde-LJWls",
             "summaryContent": "<h3>Nearest Neighbor</h3><p>Menentukan titik mana yang memiliki jarak terkecil ke sebuah titik tujuan.</p>",
             "problemTitle": "Siapa Lebih Dekat?",
-            "problemDescription": "Diberikan titik Tujuan (T), lalu titik A dan B. Cetak \"A\" jika A lebih dekat ke T. Cetak \"B\" jika B lebih dekat ke T.",
+            "problemDescription": "<p>Diberikan titik Tujuan (T), lalu titik A dan B. Cetak \"A\" jika A lebih dekat ke T. Cetak \"B\" jika B lebih dekat ke T.</p>",
             "defaultLanguage": "python",
             "starterCode": "t = int(input())\na = int(input())\nb = int(input())\n\n# Hitung jarak dan bandingkan",
             "sampleInput": "10\n8\n15",
@@ -326,7 +320,7 @@
             "videoUrl": "https://www.youtube.com/embed/KJgsSFOSQv0",
             "summaryContent": "<h3>Voting</h3><p>Algoritma akan memilih label dengan jumlah terbanyak (mayoritas).</p>",
             "problemTitle": "Mayoritas 3 Pemilih",
-            "problemDescription": "Diberikan 3 buah suara di baris berbeda, masing-masing bernilai \"A\" atau \"B\". Cetak huruf apa yang menang (paling banyak muncul).",
+            "problemDescription": "<p>Diberikan 3 buah suara di baris berbeda, masing-masing bernilai \"A\" atau \"B\". Cetak huruf apa yang menang (paling banyak muncul).</p>",
             "defaultLanguage": "python",
             "starterCode": "v1 = input()\nv2 = input()\nv3 = input()\n\n# Hitung siapa yang mayoritas",
             "sampleInput": "A\nA\nB",
@@ -356,7 +350,7 @@
             "videoUrl": "https://www.youtube.com/embed/4b5d3muPQmA",
             "summaryContent": "<h3>Centroid</h3><p>Titik pusat sebuah kelompok didapat dengan mencari nilai rata-rata dari seluruh anggotanya.</p>",
             "problemTitle": "Rata-Rata Dua Titik",
-            "problemDescription": "Diberikan titik A dan titik B. Cetak titik tengahnya (rata-ratanya), lakukan pembagian bulat (menggunakan //).",
+            "problemDescription": "<p>Diberikan titik A dan titik B. Cetak titik tengahnya (rata-ratanya), lakukan pembagian bulat (menggunakan //).</p>",
             "defaultLanguage": "python",
             "starterCode": "a = int(input())\nb = int(input())\n\nprint((a + b) // 2)",
             "sampleInput": "10\n20",
@@ -380,7 +374,7 @@
             "videoUrl": "https://www.youtube.com/embed/KJgsSFOSQv0",
             "summaryContent": "<h3>Assignment</h3><p>Tugas kita adalah memasukkan sebuah data ke kelompok dengan Centroid terdekat.</p>",
             "problemTitle": "Pilih Kelompok",
-            "problemDescription": "Kelompok 1 (C1) selalu ada di titik 0. Kelompok 2 (C2) selalu ada di titik 100. Diberikan titik data X, cetak \"1\" jika X lebih dekat ke 0, cetak \"2\" jika lebih dekat ke 100.",
+            "problemDescription": "<p>Kelompok 1 (C1) selalu ada di titik 0. Kelompok 2 (C2) selalu ada di titik 100. Diberikan titik data X, cetak \"1\" jika X lebih dekat ke 0, cetak \"2\" jika lebih dekat ke 100.</p>",
             "defaultLanguage": "python",
             "starterCode": "x = int(input())\n\n# Apakah X lebih dekat ke 0 atau 100?",
             "sampleInput": "30",
@@ -409,7 +403,7 @@
             "videoUrl": "https://www.youtube.com/embed/AWbM-kS3bC4",
             "summaryContent": "<h3>Total Error</h3><p>Kita mengevaluasi bagus tidaknya cluster dengan menjumlahkan seluruh jarak titik ke pusatnya.</p>",
             "problemTitle": "Total Jarak Absolute",
-            "problemDescription": "Diberikan titik pusat C, dan dua titik data X serta Y. Hitung total jarak absolutnya: |X-C| + |Y-C|.",
+            "problemDescription": "<p>Diberikan titik pusat C, dan dua titik data X serta Y. Hitung total jarak absolutnya: |X-C| + |Y-C|.</p>",
             "defaultLanguage": "python",
             "starterCode": "c = int(input())\nx = int(input())\ny = int(input())\n\ntotal = abs(x - c) + abs(y - c)\nprint(total)",
             "sampleInput": "10\n8\n15",
@@ -450,7 +444,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>HTML Dasar</h3><p>HTML (HyperText Markup Language) adalah bahasa standar untuk membuat website. Setiap dokumen diawali dengan <code>&lt;!DOCTYPE html&gt;</code> dan dibungkus di dalam tag <code>&lt;html&gt;</code>.</p>",
             "problemTitle": "Hello World HTML",
-            "problemDescription": "Buat kode HTML dasar yang mencetak tulisan 'Hello World!' menggunakan tag h1.",
+            "problemDescription": "<p>Buat kode HTML dasar yang mencetak tulisan 'Hello World!' menggunakan tag h1.</p>",
             "problemCategory": "HTML Basics",
             "defaultLanguage": "javascript",
             "starterCode": "<!-- Buat tag h1 di sini -->",
@@ -470,7 +464,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Elemen Teks</h3><p>Gunakan tag <code>&lt;h1&gt;</code> sampai <code>&lt;h6&gt;</code> untuk judul penting, tag <code>&lt;p&gt;</code> untuk paragraf, dan tag <code>&lt;ol&gt;</code>/<code>&lt;ul&gt;</code> untuk daftar list.</p>",
             "problemTitle": "Membuat List Belanja",
-            "problemDescription": "Buat daftar belanja tidak terurut (ul) berisi 3 item: Apel, Mangga, Pisang.",
+            "problemDescription": "<p>Buat daftar belanja tidak terurut (ul) berisi 3 item: Apel, Mangga, Pisang.</p>",
             "problemCategory": "HTML Basics",
             "defaultLanguage": "javascript",
             "starterCode": "<ul>\n  <!-- tambahkan list item (li) di sini -->\n</ul>",
@@ -490,7 +484,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>Tag Gambar</h3><p>Gunakan tag <code>&lt;img&gt;</code> dengan atribut wajib <code>src</code> untuk path gambar dan <code>alt</code> untuk deskripsi alternatif jika gambar gagal dimuat.</p>",
             "problemTitle": "Atribut Alt Gambar",
-            "problemDescription": "Buat elemen gambar (img) yang memuat gambar 'logo.png' dengan alt 'Logo ITS'.",
+            "problemDescription": "<p>Buat elemen gambar (img) yang memuat gambar 'logo.png' dengan alt 'Logo ITS'.</p>",
             "problemCategory": "HTML Media",
             "defaultLanguage": "javascript",
             "starterCode": "<img src=\"logo.png\" />",
@@ -510,7 +504,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Anchor Tag</h3><p>Tag <code>&lt;a href=\"url\"&gt;</code> digunakan untuk membuat hyperlink. Tambahkan <code>target=\"_blank\"</code> jika ingin membuka link di tab baru.</p>",
             "problemTitle": "Hyperlink Dasar",
-            "problemDescription": "Buat link (anchor) menuju 'https://its.ac.id' dengan teks 'Website ITS'.",
+            "problemDescription": "<p>Buat link (anchor) menuju 'https://its.ac.id' dengan teks 'Website ITS'.</p>",
             "problemCategory": "HTML Navigation",
             "defaultLanguage": "javascript",
             "starterCode": "<a href=\"\"></a>",
@@ -530,7 +524,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>HTML5 Semantik</h3><p>Tag semantik memberikan makna langsung pada struktur halaman web Anda bagi browser maupun mesin pencari (SEO). Elemen penting meliputi <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;section&gt;</code>, dan <code>&lt;footer&gt;</code>.</p>",
             "problemTitle": "Kerangka Semantik",
-            "problemDescription": "Buatlah kerangka artikel semantik yang memuat tag <article> dan berisi tag <header> di dalamnya.",
+            "problemDescription": "<p>Buatlah kerangka artikel semantik yang memuat tag <article> dan berisi tag <header> di dalamnya.</p>",
             "problemCategory": "HTML Semantics",
             "defaultLanguage": "javascript",
             "starterCode": "<!-- Tulis di sini -->",
@@ -556,7 +550,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>CSS Selektor</h3><p>Selektor digunakan untuk mencari elemen HTML yang ingin dihias. <code>.class-name</code> untuk class, <code>#id-name</code> untuk id, dan langsung nama tag untuk menghias seluruh elemen sejenis.</p>",
             "problemTitle": "Styling Warna Teks",
-            "problemDescription": "Buat aturan CSS sederhana untuk mengubah warna teks kelas '.title' menjadi biru (blue).",
+            "problemDescription": "<p>Buat aturan CSS sederhana untuk mengubah warna teks kelas '.title' menjadi biru (blue).</p>",
             "problemCategory": "CSS Selectors",
             "defaultLanguage": "javascript",
             "starterCode": ".title {\n  /* Tulis properti di sini */\n}",
@@ -576,7 +570,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>Box Model</h3><p>Setiap elemen HTML dianggap sebagai kotak. Lapisan terdalam adalah <b>content</b>, diikuti oleh <b>padding</b> (jarak dalam), <b>border</b> (bingkai), dan <b>margin</b> (jarak luar).</p>",
             "problemTitle": "Reset Margin & Padding",
-            "problemDescription": "Buat aturan CSS universal (*) yang mengatur margin dan padding menjadi 0.",
+            "problemDescription": "<p>Buat aturan CSS universal (*) yang mengatur margin dan padding menjadi 0.</p>",
             "problemCategory": "CSS Box Model",
             "defaultLanguage": "javascript",
             "starterCode": "* {\n  /* Tulis di sini */\n}",
@@ -596,7 +590,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Flexbox</h3><p>Display flex mengubah elemen menjadi kontainer fleksibel. Gunakan <code>justify-content</code> untuk mengatur posisi sumbu utama (main axis) dan <code>align-items</code> untuk sumbu silang (cross axis).</p>",
             "problemTitle": "Tengah Sempurna",
-            "problemDescription": "Gunakan flexbox pada kontainer '.container' untuk membuat isi di dalamnya tepat berada di tengah secara horizontal.",
+            "problemDescription": "<p>Gunakan flexbox pada kontainer '.container' untuk membuat isi di dalamnya tepat berada di tengah secara horizontal.</p>",
             "problemCategory": "CSS Layout",
             "defaultLanguage": "javascript",
             "starterCode": ".container {\n  display: flex;\n  /* tambahkan properti di bawah */\n}",
@@ -616,7 +610,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>CSS Grid</h3><p>Berbeda dengan Flexbox yang fokus 1 dimensi, CSS Grid didesain untuk tata letak 2 dimensi (baris dan kolom sekaligus). Gunakan properti <code>grid-template-columns</code>.</p>",
             "problemTitle": "Membuat 3 Kolom",
-            "problemDescription": "Buat layout grid dengan 3 kolom berukuran sama (1fr) pada kelas '.grid-container'.",
+            "problemDescription": "<p>Buat layout grid dengan 3 kolom berukuran sama (1fr) pada kelas '.grid-container'.</p>",
             "problemCategory": "CSS Layout",
             "defaultLanguage": "javascript",
             "starterCode": ".grid-container {\n  display: grid;\n  /* tulis di sini */\n}",
@@ -636,7 +630,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Pseudo-class</h3><p>Pseudo-class digunakan untuk mendefinisikan keadaan khusus suatu elemen. Contoh populer adalah <code>:hover</code> (saat kursor di atas elemen) dan <code>:active</code> (saat elemen diklik).</p>",
             "problemTitle": "Hover Button",
-            "problemDescription": "Ubah warna latar belakang '.btn:hover' menjadi merah (red).",
+            "problemDescription": "<p>Ubah warna latar belakang '.btn:hover' menjadi merah (red).</p>",
             "problemCategory": "CSS Interactive",
             "defaultLanguage": "javascript",
             "starterCode": ".btn:hover {\n  /* tulis di sini */\n}",
@@ -662,7 +656,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>Media Queries</h3><p>Gunakan <code>@media (max-width: 768px)</code> untuk menerapkan gaya khusus hanya pada layar ukuran tablet ke bawah.</p>",
             "problemTitle": "Mobile Styling",
-            "problemDescription": "Buat media query untuk layar maksimal lebar 600px yang mengubah warna body menjadi hitam.",
+            "problemDescription": "<p>Buat media query untuk layar maksimal lebar 600px yang mengubah warna body menjadi hitam.</p>",
             "problemCategory": "CSS Responsive",
             "defaultLanguage": "javascript",
             "starterCode": "/* Tulis media query di bawah */",
@@ -682,7 +676,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Transitions</h3><p>Gunakan properti <code>transition: all 0.3s ease;</code> agar perubahan state (seperti hover) tidak patah-patah.</p>",
             "problemTitle": "Transisi Warna",
-            "problemDescription": "Tambahkan efek transisi pada kelas '.box' untuk seluruh properti selama 0.5 detik.",
+            "problemDescription": "<p>Tambahkan efek transisi pada kelas '.box' untuk seluruh properti selama 0.5 detik.</p>",
             "problemCategory": "CSS Animation",
             "defaultLanguage": "javascript",
             "starterCode": ".box {\n  /* tulis di sini */\n}",
@@ -702,7 +696,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>CSS Transform</h3><p>Properti <code>transform</code> memungkinkan Anda mengubah bentuk elemen. Contoh: <code>transform: rotate(45deg);</code>.</p>",
             "problemTitle": "Membesarkan Elemen",
-            "problemDescription": "Gunakan transform untuk memperbesar kelas '.zoom' menjadi 2 kali lipat.",
+            "problemDescription": "<p>Gunakan transform untuk memperbesar kelas '.zoom' menjadi 2 kali lipat.</p>",
             "problemCategory": "CSS Transform",
             "defaultLanguage": "javascript",
             "starterCode": ".zoom {\n  /* tulis di sini */\n}",
@@ -722,7 +716,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>@keyframes</h3><p>Keyframes mendefinisikan langkah-langkah animasi dari 0% (mulai) hingga 100% (selesai). Jalankan menggunakan properti <code>animation</code>.</p>",
             "problemTitle": "Animasi Fade In",
-            "problemDescription": "Buat aturan keyframes bernama 'fade' yang mengubah opacity dari 0 ke 1.",
+            "problemDescription": "<p>Buat aturan keyframes bernama 'fade' yang mengubah opacity dari 0 ke 1.</p>",
             "problemCategory": "CSS Animation",
             "defaultLanguage": "javascript",
             "starterCode": "@keyframes fade {\n  /* tulis langkah di sini */\n}",
@@ -742,7 +736,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>CSS Variables</h3><p>Deklarasikan variabel dengan tanda strip ganda <code>--primary-color: #3b82f6;</code> dan panggil menggunakan fungsi <code>var(--primary-color)</code>.</p>",
             "problemTitle": "Memanggil Variabel",
-            "problemDescription": "Gunakan variabel '--bg-color' sebagai warna latar belakang pada body.",
+            "problemDescription": "<p>Gunakan variabel '--bg-color' sebagai warna latar belakang pada body.</p>",
             "problemCategory": "CSS Variables",
             "defaultLanguage": "javascript",
             "starterCode": "body {\n  background-color: /* panggil variabel di sini */;\n}",
@@ -768,7 +762,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>JavaScript Variables</h3><p><code>const</code> digunakan untuk variabel konstan yang nilainya tidak akan berubah, sedangkan <code>let</code> digunakan jika nilainya dapat diubah di kemudian waktu.</p>",
             "problemTitle": "Membuat Variabel",
-            "problemDescription": "Buat variabel const bernama 'ipk' yang berisi nilai angka desimal 4.0.",
+            "problemDescription": "<p>Buat variabel const bernama 'ipk' yang berisi nilai angka desimal 4.0.</p>",
             "problemCategory": "JS Basics",
             "defaultLanguage": "javascript",
             "starterCode": "// Tulis variabel di sini",
@@ -788,7 +782,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>Logic Condition</h3><p>Gunakan struktur <code>if (kondisi) { ... } else { ... }</code> untuk menjalankan blok kode tertentu ketika suatu kondisi terpenuhi.</p>",
             "problemTitle": "Cek Kelulusan",
-            "problemDescription": "Buat fungsi logic sederhana dalam JavaScript yang mengembalikan string 'LULUS' jika nilai >= 75.",
+            "problemDescription": "<p>Buat fungsi logic sederhana dalam JavaScript yang mengembalikan string 'LULUS' jika nilai >= 75.</p>",
             "problemCategory": "JS Conditionals",
             "defaultLanguage": "javascript",
             "starterCode": "function cekNilai(skor) {\n  // tulis di sini\n}",
@@ -808,7 +802,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Array & Loops</h3><p>Array dibungkus menggunakan tanda kurung siku <code>[item1, item2]</code>. Untuk memutar data di dalamnya, kita bisa memakai method bawaan <code>forEach</code> atau standard <code>for</code> loop.</p>",
             "problemTitle": "Array Angka",
-            "problemDescription": "Deklarasikan array bernama 'nomor' yang menampung angka 1, 2, 3.",
+            "problemDescription": "<p>Deklarasikan array bernama 'nomor' yang menampung angka 1, 2, 3.</p>",
             "problemCategory": "JS Arrays",
             "defaultLanguage": "javascript",
             "starterCode": "// deklarasikan array di sini",
@@ -828,7 +822,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>JavaScript Functions</h3><p>ES6 memperkenalkan sintaks fungsi yang lebih ringkas menggunakan simbol panah (arrow function): <code>const namaFungsi = () => { ... }</code>.</p>",
             "problemTitle": "Fungsi Tambah Satu",
-            "problemDescription": "Buat arrow function bernama 'tambahSatu' yang menerima parameter x dan mengembalikan x + 1.",
+            "problemDescription": "<p>Buat arrow function bernama 'tambahSatu' yang menerima parameter x dan mengembalikan x + 1.</p>",
             "problemCategory": "JS Functions",
             "defaultLanguage": "javascript",
             "starterCode": "const tambahSatu = (x) => {\n  // tulis di sini\n}",
@@ -848,7 +842,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Map & Filter</h3><p><code>map()</code> menghasilkan array baru dengan memodifikasi setiap item, sedangkan <code>filter()</code> menyaring item berdasarkan kondisi boolean.</p>",
             "problemTitle": "Menyaring Angka Genap",
-            "problemDescription": "Gunakan filter() untuk menyaring angka genap saja dari array nomor.",
+            "problemDescription": "<p>Gunakan filter() untuk menyaring angka genap saja dari array nomor.</p>",
             "problemCategory": "JS Arrays",
             "defaultLanguage": "javascript",
             "starterCode": "const genap = angka.filter(n => /* tulis kondisi */);",
@@ -874,7 +868,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>DOM Selectors</h3><p>DOM (Document Object Model) menghubungkan halaman web ke skrip pemrograman. Gunakan <code>document.querySelector('#id')</code> untuk mengambil elemen tunggal.</p>",
             "problemTitle": "Mengambil Judul",
-            "problemDescription": "Gunakan querySelector untuk mengambil elemen h1 dengan kelas '.header' dan simpan ke konstanta bernama 'judul'.",
+            "problemDescription": "<p>Gunakan querySelector untuk mengambil elemen h1 dengan kelas '.header' dan simpan ke konstanta bernama 'judul'.</p>",
             "problemCategory": "JS DOM",
             "defaultLanguage": "javascript",
             "starterCode": "const judul = /* tulis selector di sini */;",
@@ -894,7 +888,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Ubah Konten DOM</h3><p>Gunakan properti <code>textContent</code> untuk mengubah teks biasa, atau <code>innerHTML</code> jika ingin menyisipkan elemen tag HTML baru ke dalam elemen tujuan.</p>",
             "problemTitle": "Ubah Teks Paragraf",
-            "problemDescription": "Ubah properti textContent elemen 'p' menjadi string 'Berhasil!'.",
+            "problemDescription": "<p>Ubah properti textContent elemen 'p' menjadi string 'Berhasil!'.</p>",
             "problemCategory": "JS DOM",
             "defaultLanguage": "javascript",
             "starterCode": "const p = document.querySelector('p');\n// tulis di bawah",
@@ -914,7 +908,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>Event Listeners</h3><p>Sintaks penulisan Event Listener adalah <code>element.addEventListener('click', () => { ... })</code> untuk menangani interaksi pengguna secara real-time.</p>",
             "problemTitle": "Klik Alert",
-            "problemDescription": "Tambahkan event listener 'click' pada tombol 'btn' yang memanggil fungsi log.",
+            "problemDescription": "<p>Tambahkan event listener 'click' pada tombol 'btn' yang memanggil fungsi log.</p>",
             "problemCategory": "JS Events",
             "defaultLanguage": "javascript",
             "starterCode": "btn.addEventListener('click', () => {\n  /* tulis di sini */\n});",
@@ -934,7 +928,7 @@
             "videoUrl": "https://www.youtube.com/embed/1Rs2ND1ryYc",
             "summaryContent": "<h3>Fetch API</h3><p>Fetch digunakan untuk request HTTP. Gunakan <code>async/await</code> agar kode asinkronus terlihat rapi seperti kode sinkronus.</p>",
             "problemTitle": "Fungsi Fetch Sederhana",
-            "problemDescription": "Lakukan request fetch() ke endpoint '/api/data' dan konversi hasilnya ke JSON.",
+            "problemDescription": "<p>Lakukan request fetch() ke endpoint '/api/data' dan konversi hasilnya ke JSON.</p>",
             "problemCategory": "JS Fetch",
             "defaultLanguage": "javascript",
             "starterCode": "async function getData() {\n  const res = await fetch('/api/data');\n  // tulis di bawah\n}",
@@ -954,7 +948,7 @@
             "videoUrl": "https://www.youtube.com/embed/okpCxGp2tBI",
             "summaryContent": "<h3>Mini Proyek DOM</h3><p>Dengan menggabungkan seluruh konsep manipulasi DOM, Anda dapat membangun aplikasi web modern yang kaya akan interaksi pengguna tanpa bantuan framework!</p>",
             "problemTitle": "Menambah Item List",
-            "problemDescription": "Buat kode yang membuat elemen list baru 'li' menggunakan createElement dan menambahkannya ke list utama.",
+            "problemDescription": "<p>Buat kode yang membuat elemen list baru 'li' menggunakan createElement dan menambahkannya ke list utama.</p>",
             "problemCategory": "JS Project",
             "defaultLanguage": "javascript",
             "starterCode": "const li = /* buat element */;",
@@ -991,7 +985,7 @@
             "videoUrl": null,
             "summaryContent": "<h3>Menghitung Posisi</h3><p>Ini adalah ringkasan materi untuk Menghitung Posisi.</p>",
             "problemTitle": "Simulasi Gerak",
-            "problemDescription": "Diberikan input `posisiAwal`, `kecepatan`, `waktu`. Hitung posisi akhir. Input di baris terpisah.",
+            "problemDescription": "<p>Diberikan input `posisiAwal`, `kecepatan`, `waktu`. Hitung posisi akhir. Input di baris terpisah.</p>",
             "problemCategory": null,
             "defaultLanguage": "python",
             "starterCode": "pos = int(input())\nvel = int(input())\ntime = int(input())\n\n# hitung hasil\nhasil = pos + (vel * time)\nprint(hasil)",
@@ -1028,7 +1022,7 @@
             "videoUrl": null,
             "summaryContent": "<h3>Pembuatan Index</h3><p>Ini adalah ringkasan materi untuk Pembuatan Index.</p>",
             "problemTitle": "Kuis Indexing (Simulasi)",
-            "problemDescription": "Cetak \"CREATE INDEX idx_name ON users(name);\" ke layar.",
+            "problemDescription": "<p>Cetak \"CREATE INDEX idx_name ON users(name);\" ke layar.</p>",
             "problemCategory": null,
             "defaultLanguage": "sql",
             "starterCode": null,
@@ -1065,7 +1059,7 @@
             "videoUrl": null,
             "summaryContent": "<h3>Logika State</h3><p>Ini adalah ringkasan materi untuk Logika State.</p>",
             "problemTitle": "Counter Logic",
-            "problemDescription": "Buat fungsi JS bernama `increment(val)` yang mengembalikan `val + 1`.",
+            "problemDescription": "<p>Buat fungsi JS bernama `increment(val)` yang mengembalikan `val + 1`.</p>",
             "problemCategory": null,
             "defaultLanguage": "javascript",
             "starterCode": "function increment(val) {\n  \n}\n\n// Tester (Jangan diubah)\nconst fs = require('fs');\nconst input = Number(fs.readFileSync('/dev/stdin').toString().trim());\nconsole.log(increment(input));",
@@ -1107,7 +1101,7 @@
             "videoUrl": null,
             "summaryContent": "<h3>Menghitung Rata-rata</h3><p>Ini adalah ringkasan materi untuk Menghitung Rata-rata.</p>",
             "problemTitle": "Kalkulator Mean",
-            "problemDescription": "Diberikan 3 angka baris per baris. Cetak rata-ratanya (integer / dibulatkan ke bawah).",
+            "problemDescription": "<p>Diberikan 3 angka baris per baris. Cetak rata-ratanya (integer / dibulatkan ke bawah).</p>",
             "problemCategory": null,
             "defaultLanguage": "python",
             "starterCode": "a = int(input())\nb = int(input())\nc = int(input())\nprint((a+b+c)//3)",
@@ -1120,147 +1114,6 @@
                 "hidden": false
               }
             ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "sistem-basis-data",
-    "title": "Sistem Basis Data",
-    "description": "Desain skema database relasional dan kuasai bahasa query SQL.",
-    "requiredSemester": 1,
-    "color": "bg-gradient-to-r from-cyan-500 to-blue-600",
-    "difficulty": "Intermediate",
-    "xpReward": 100,
-    "units": [
-      {
-        "title": "Unit 1: Konsep Basis Data Relasional",
-        "description": "Memahami tabel, primary key, dan foreign key.",
-        "lessons": [
-          {
-            "title": "Apa itu Basis Data?",
-            "duration": "10 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Apa itu Basis Data?</h3><p>Ini adalah ringkasan materi untuk Apa itu Basis Data?.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "Model Relasional",
-            "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>Model Relasional</h3><p>Ini adalah ringkasan materi untuk Model Relasional.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "ERD (Entity Relationship Diagram)",
-            "duration": "20 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>ERD (Entity Relationship Diagram)</h3><p>Ini adalah ringkasan materi untuk ERD (Entity Relationship Diagram).</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          }
-        ]
-      },
-      {
-        "title": "Unit 2: SQL Dasar (DQL & DML)",
-        "description": "Query data dasar menggunakan SELECT, INSERT, UPDATE, DELETE.",
-        "lessons": [
-          {
-            "title": "SELECT dan WHERE",
-            "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>SELECT dan WHERE</h3><p>Ini adalah ringkasan materi untuk SELECT dan WHERE.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "INSERT, UPDATE, DELETE",
-            "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>INSERT, UPDATE, DELETE</h3><p>Ini adalah ringkasan materi untuk INSERT, UPDATE, DELETE.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "ORDER BY dan LIMIT",
-            "duration": "10 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>ORDER BY dan LIMIT</h3><p>Ini adalah ringkasan materi untuk ORDER BY dan LIMIT.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          }
-        ]
-      },
-      {
-        "title": "Unit 3: Relasi dan JOIN",
-        "description": "Menggabungkan beberapa tabel.",
-        "lessons": [
-          {
-            "title": "INNER JOIN",
-            "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>INNER JOIN</h3><p>Ini adalah ringkasan materi untuk INNER JOIN.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
-          },
-          {
-            "title": "LEFT/RIGHT JOIN",
-            "duration": "15 menit",
-            "videoUrl": null,
-            "summaryContent": "<h3>LEFT/RIGHT JOIN</h3><p>Ini adalah ringkasan materi untuk LEFT/RIGHT JOIN.</p>",
-            "problemTitle": null,
-            "problemDescription": null,
-            "problemCategory": null,
-            "defaultLanguage": "c",
-            "starterCode": null,
-            "sampleInput": null,
-            "sampleOutput": null,
-            "testCases": []
           }
         ]
       }
@@ -1415,7 +1268,7 @@
             "problemDescription": null,
             "problemCategory": null,
             "defaultLanguage": "c",
-            "starterCode": null,
+            "starterCode": "#include <iostream>\nusing namespace std;\nvoid swap(int* a, int* b) {\n    int temp = *a;\n    *a = *b;\n    *b = temp;\n}\nint main() {\n    int x, y;\n    if (cin >> x >> y) {\n        swap(&x, &y);\n        cout << x << \" \" << y << endl;\n    }\n    return 0;\n}",
             "sampleInput": null,
             "sampleOutput": null,
             "testCases": []
@@ -1543,6 +1396,250 @@
             "sampleInput": null,
             "sampleOutput": null,
             "testCases": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "struktur-data",
+    "title": "Struktur Data",
+    "description": "Pelajari manajemen memori, pointer, dan struktur data tingkat lanjut di C++.",
+    "requiredSemester": 2,
+    "color": "bg-gradient-to-r from-purple-500 to-indigo-600",
+    "difficulty": "Intermediate",
+    "xpReward": 150,
+    "units": [
+      {
+        "title": "Unit 1: Memori & Tipe Data Bentukan",
+        "description": "Memahami pointer dan struct di C++.",
+        "lessons": [
+          {
+            "title": "Review Array & Pengenalan Pointer",
+            "duration": "20 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Review Array & Pengenalan Pointer</h3>\n            <p>Pointer adalah variabel yang menyimpan <strong>alamat memori</strong> dari variabel lain, bukan menyimpan nilai datanya secara langsung.</p>\n            <ul>\n              <li><strong>Operator & (Address-of):</strong> Mengambil alamat memori dari suatu variabel.</li>\n              <li><strong>Operator * (Dereference):</strong> Mengambil nilai yang disimpan pada alamat memori yang ditunjuk oleh pointer.</li>\n            </ul>\n            <p>Contoh penggunaan pointer:</p>\n            <pre><code>int angka = 10;\nint *ptr = &angka;\ncout &lt;&lt; \"Nilai angka: \" &lt;&lt; *ptr; // Output: 10\ncout &lt;&lt; \"Alamat memori: \" &lt;&lt; ptr; // Output: 0x...</code></pre>\n          ",
+            "problemTitle": "Tukar Angka (Swap by Reference)",
+            "problemDescription": "<p>Diberikan dua buah angka. Buatlah sebuah fungsi <code>swapAngka(int *a, int *b)</code> yang menukar nilai kedua angka tersebut menggunakan pointer, lalu cetak nilai terbarunya dari fungsi main.</p>",
+            "problemCategory": "Pointers",
+            "defaultLanguage": "cpp",
+            "starterCode": "#include <iostream>\nusing namespace std;\nvoid swap(int* a, int* b) {\n    int temp = *a;\n    *a = *b;\n    *b = temp;\n}\nint main() {\n    int x, y;\n    if (cin >> x >> y) {\n        swap(&x, &y);\n        cout << x << \" \" << y << endl;\n    }\n    return 0;\n}",
+            "sampleInput": "5 10",
+            "sampleOutput": "10 5",
+            "xpReward": 50,
+            "testCases": [
+              {
+                "stdin": "5 10",
+                "expected": "10 5",
+                "hidden": false,
+                "order": 1
+              },
+              {
+                "stdin": "99 1",
+                "expected": "1 99",
+                "hidden": false,
+                "order": 2
+              },
+              {
+                "stdin": "-5 20",
+                "expected": "20 -5",
+                "hidden": true,
+                "order": 3
+              }
+            ]
+          },
+          {
+            "title": "Struct (Record)",
+            "duration": "20 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Struct (Record)</h3>\n            <p><strong>Struct</strong> adalah kumpulan dari satu atau beberapa variabel (bisa berbeda tipe data) yang dikelompokkan di bawah satu nama yang sama. Ini berguna untuk merepresentasikan sebuah entitas dunia nyata, misalnya Mahasiswa.</p>\n            <pre><code>struct Mahasiswa {\n    string nama;\n    int umur;\n};\n\nint main() {\n    Mahasiswa mhs1;\n    mhs1.nama = \"Andi\";\n    mhs1.umur = 20;\n    cout &lt;&lt; mhs1.nama &lt;&lt; \" berumur \" &lt;&lt; mhs1.umur;\n    return 0;\n}</code></pre>\n          ",
+            "problemTitle": "Data Mahasiswa",
+            "problemDescription": "<p>Buatlah struct bernama <strong>Mahasiswa</strong> yang memiliki atribut <code>nama</code> (string) dan <code>umur</code> (int). Program akan menerima input satu kata nama dan satu angka umur, lalu cetak format: <code>Nama: [nama], Umur: [umur]</code>.</p>",
+            "problemCategory": "Struct",
+            "defaultLanguage": "cpp",
+            "starterCode": "#include <iostream>\n#include <string>\nusing namespace std;\n\n// Buat struct Mahasiswa di sini\n\nint main() {\n    // Tulis kodemu di sini\n    \n    return 0;\n}",
+            "sampleInput": "Daryl 21",
+            "sampleOutput": "Nama: Daryl, Umur: 21",
+            "xpReward": 50,
+            "testCases": [
+              {
+                "stdin": "Daryl 21",
+                "expected": "Nama: Daryl, Umur: 21",
+                "hidden": false,
+                "order": 1
+              },
+              {
+                "stdin": "Siti 19",
+                "expected": "Nama: Siti, Umur: 19",
+                "hidden": false,
+                "order": 2
+              },
+              {
+                "stdin": "Budi 25",
+                "expected": "Nama: Budi, Umur: 25",
+                "hidden": true,
+                "order": 3
+              }
+            ]
+          },
+          {
+            "title": "Dynamic Memory Allocation",
+            "duration": "15 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Dynamic Memory Allocation</h3>\n            <p>Dalam C++, kita bisa memesan memori secara dinamis saat program berjalan (*runtime*) menggunakan operator <strong>new</strong>, dan kita WAJIB membebaskannya menggunakan <strong>delete</strong> untuk mencegah <em>memory leak</em>.</p>\n            <pre><code>// Memesan memori\nint* ptr = new int;\n*ptr = 100;\n\n// Menghapus memori (PENTING!)\ndelete ptr;</code></pre>\n            <p>Untuk array dinamis, gunakan <code>new int[ukuran]</code> dan <code>delete[] ptr</code>.</p>\n          ",
+            "problemTitle": null,
+            "problemDescription": null,
+            "problemCategory": null,
+            "defaultLanguage": "cpp",
+            "starterCode": null,
+            "sampleInput": null,
+            "sampleOutput": null,
+            "testCases": [],
+            "xpReward": 20
+          }
+        ]
+      },
+      {
+        "title": "Unit 2: Linked List",
+        "description": "Belajar membuat struktur data dinamis.",
+        "lessons": [
+          {
+            "title": "Konsep Dasar Singly Linked List",
+            "duration": "15 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Konsep Dasar Singly Linked List</h3>\n            <p><strong>Linked List</strong> adalah struktur data linier di mana elemen-elemennya tidak disimpan secara berurutan dalam memori fisik (berbeda dengan Array).</p>\n            <p>Setiap elemen disebut <strong>Node</strong>. Anatomi sebuah Node dalam Singly Linked List terdiri dari 2 bagian:</p>\n            <ul>\n              <li><strong>Data:</strong> Nilai aktual yang disimpan.</li>\n              <li><strong>Next Pointer:</strong> Pointer yang menyimpan alamat memori dari Node berikutnya.</li>\n            </ul>\n            <p>Node terakhir akan memiliki next pointer bernilai <code>NULL</code> atau <code>nullptr</code>.</p>\n          ",
+            "problemTitle": null,
+            "problemDescription": null,
+            "problemCategory": null,
+            "defaultLanguage": "cpp",
+            "starterCode": null,
+            "sampleInput": null,
+            "sampleOutput": null,
+            "testCases": [],
+            "xpReward": 20
+          },
+          {
+            "title": "Implementasi Linked List",
+            "duration": "30 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Implementasi Linked List</h3>\n            <p>Operasi dasar pada Linked List meliputi <strong>Insertion</strong> (menambah data) dan <strong>Traversal</strong> (menelusuri dan mencetak isi list).</p>\n            <p>Contoh definisi Node:</p>\n            <pre><code>struct Node {\n    int data;\n    Node* next;\n};</code></pre>\n            <p>Untuk mencetak isi Linked List (Traversal):</p>\n            <pre><code>Node* temp = head;\nwhile (temp != nullptr) {\n    cout &lt;&lt; temp->data &lt;&lt; \" \";\n    temp = temp->next;\n}</code></pre>\n          ",
+            "problemTitle": "Cetak Isi Linked List",
+            "problemDescription": "<p>Diberikan fungsi <code>insertEnd</code> yang sudah dituliskan untuk Anda. Tugas Anda adalah melengkapi fungsi <code>printList</code> untuk menelusuri dari <code>head</code> dan mencetak setiap angka yang ada di dalam list, dipisahkan oleh spasi. Angka yang dimasukkan ada 3.</p>",
+            "problemCategory": "Linked List",
+            "defaultLanguage": "cpp",
+            "starterCode": "#include <iostream>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n};\n\nvoid insertEnd(Node** head, int newData) {\n    Node* newNode = new Node();\n    newNode->data = newData;\n    newNode->next = nullptr;\n    if (*head == nullptr) {\n        *head = newNode;\n        return;\n    }\n    Node* last = *head;\n    while (last->next != nullptr) {\n        last = last->next;\n    }\n    last->next = newNode;\n}\n\nvoid printList(Node* node) {\n    // Tulis kodemu di sini untuk mencetak list\n    \n}\n\nint main() {\n    Node* head = nullptr;\n    int a, b, c;\n    if (cin >> a >> b >> c) {\n        insertEnd(&head, a);\n        insertEnd(&head, b);\n        insertEnd(&head, c);\n        printList(head);\n    }\n    return 0;\n}",
+            "sampleInput": "1 2 3",
+            "sampleOutput": "1 2 3 ",
+            "xpReward": 50,
+            "testCases": [
+              {
+                "stdin": "1 2 3",
+                "expected": "1 2 3 ",
+                "hidden": false,
+                "order": 1
+              },
+              {
+                "stdin": "10 20 30",
+                "expected": "10 20 30 ",
+                "hidden": false,
+                "order": 2
+              },
+              {
+                "stdin": "99 0 -5",
+                "expected": "99 0 -5 ",
+                "hidden": true,
+                "order": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Unit 3: Stack & Queue",
+        "description": "Implementasi antrean dan tumpukan.",
+        "lessons": [
+          {
+            "title": "Konsep Stack (LIFO)",
+            "duration": "20 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Konsep Stack (LIFO)</h3>\n            <p><strong>Stack</strong> (Tumpukan) adalah struktur data yang mengikuti prinsip <strong>LIFO (Last In, First Out)</strong>. Artinya, elemen yang terakhir kali masuk akan menjadi elemen yang pertama kali keluar.</p>\n            <p>Operasi utama pada Stack:</p>\n            <ul>\n              <li><strong>Push:</strong> Menambah elemen ke atas tumpukan.</li>\n              <li><strong>Pop:</strong> Menghapus elemen teratas dari tumpukan.</li>\n              <li><strong>Top / Peek:</strong> Melihat elemen teratas tanpa menghapusnya.</li>\n            </ul>\n            <p>Bayangkan seperti tumpukan piring di restoran; piring yang ditaruh paling atas akan diambil paling awal.</p>\n          ",
+            "problemTitle": "Balik String Menggunakan Stack",
+            "problemDescription": "<p>Diberikan sebuah string (satu kata) dari input. Cetak karakter penyusun kata tersebut secara terbalik menggunakan pendekatan Stack (Anda dapat menggunakan perulangan array dari belakang, yang secara prinsip mengadopsi LIFO).</p>",
+            "problemCategory": "Stack",
+            "defaultLanguage": "cpp",
+            "starterCode": "#include <iostream>\n#include <string>\nusing namespace std;\n\nint main() {\n    string kata;\n    if (cin >> kata) {\n        // Tulis kodemu di sini\n        \n    }\n    return 0;\n}",
+            "sampleInput": "dojo",
+            "sampleOutput": "ojod",
+            "xpReward": 50,
+            "testCases": [
+              {
+                "stdin": "dojo",
+                "expected": "ojod",
+                "hidden": false,
+                "order": 1
+              },
+              {
+                "stdin": "hello",
+                "expected": "olleh",
+                "hidden": false,
+                "order": 2
+              },
+              {
+                "stdin": "strukturdata",
+                "expected": "atadrutkurts",
+                "hidden": true,
+                "order": 3
+              }
+            ]
+          },
+          {
+            "title": "Konsep Queue (FIFO)",
+            "duration": "15 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Konsep Queue (FIFO)</h3>\n            <p><strong>Queue</strong> (Antrean) adalah struktur data linier yang mengikuti prinsip <strong>FIFO (First In, First Out)</strong>. Elemen yang pertama masuk adalah yang pertama kali dilayani dan keluar.</p>\n            <p>Operasi utama pada Queue:</p>\n            <ul>\n              <li><strong>Enqueue:</strong> Menambah elemen di belakang (Rear) antrean.</li>\n              <li><strong>Dequeue:</strong> Menghapus elemen dari depan (Front) antrean.</li>\n            </ul>\n            <p>Contoh di dunia nyata adalah antrean di kasir supermarket.</p>\n          ",
+            "problemTitle": null,
+            "problemDescription": null,
+            "problemCategory": null,
+            "defaultLanguage": "cpp",
+            "starterCode": null,
+            "sampleInput": null,
+            "sampleOutput": null,
+            "testCases": [],
+            "xpReward": 20
+          },
+          {
+            "title": "Implementasi Queue",
+            "duration": "25 menit",
+            "videoUrl": "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            "summaryContent": "\n            <h3>Implementasi Queue</h3>\n            <p>Saat mengimplementasikan Queue dengan array statis, kita sering menghadapi masalah pemborosan memori (ruang kosong di depan setelah dequeue). Solusinya adalah <strong>Circular Queue</strong>, di mana pointer <code>rear</code> dapat melingkar kembali ke indeks 0 jika masih ada ruang kosong.</p>\n            <p>Untuk pembelajaran praktis, kita sering mensimulasikan antrean secara sekuensial terlebih dahulu sebelum masuk ke circular.</p>\n          ",
+            "problemTitle": "Simulasi Antrean",
+            "problemDescription": "<p>Diberikan sebuah angka <code>N</code> (jumlah orang yang masuk). Cetak <code>Masuk: X</code> untuk setiap orang yang masuk (X dari 1 sampai N). Setelah semua masuk, cetak <code>Keluar: X</code> untuk semua orang sesuai aturan FIFO.</p>",
+            "problemCategory": "Queue",
+            "defaultLanguage": "cpp",
+            "starterCode": "#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    if (cin >> n) {\n        // Tulis kodemu di sini\n        \n    }\n    return 0;\n}",
+            "sampleInput": "2",
+            "sampleOutput": "Masuk: 1\nMasuk: 2\nKeluar: 1\nKeluar: 2",
+            "xpReward": 50,
+            "testCases": [
+              {
+                "stdin": "2",
+                "expected": "Masuk: 1\nMasuk: 2\nKeluar: 1\nKeluar: 2",
+                "hidden": false,
+                "order": 1
+              },
+              {
+                "stdin": "3",
+                "expected": "Masuk: 1\nMasuk: 2\nMasuk: 3\nKeluar: 1\nKeluar: 2\nKeluar: 3",
+                "hidden": false,
+                "order": 2
+              },
+              {
+                "stdin": "5",
+                "expected": "Masuk: 1\nMasuk: 2\nMasuk: 3\nMasuk: 4\nMasuk: 5\nKeluar: 1\nKeluar: 2\nKeluar: 3\nKeluar: 4\nKeluar: 5",
+                "hidden": true,
+                "order": 3
+              }
+            ]
           }
         ]
       }

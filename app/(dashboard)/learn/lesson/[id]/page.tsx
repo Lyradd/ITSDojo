@@ -547,7 +547,7 @@ export default function LessonIDEPage() {
                 {!isVideo && (
                   <div className="ql-snow mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
                     {lesson.summaryContent ? (
-                      <div className="ql-editor p-0 text-zinc-600 dark:text-zinc-400" dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
+                      <div className="prose prose-zinc dark:prose-invert max-w-none ql-editor p-0 text-zinc-600 dark:text-zinc-400 [&_pre]:bg-gray-800 [&_pre]:text-gray-100 [&_code]:bg-transparent [&_code]:text-blue-300 [&_pre_*]:!bg-transparent [&_pre_*]:!text-gray-200" dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
                     ) : (
                       <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center">
                         <p>Rangkuman belum tersedia untuk materi ini.</p>
@@ -743,7 +743,12 @@ export default function LessonIDEPage() {
           {/* Content Area — Dynamic dari problem data */}
           <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
             <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-6">{lesson.problemTitle || lesson.title || 'Problem'}</h1>
-            <p className="mb-6">{lesson.problemDescription}</p>
+            {lesson.problemDescription && (
+              <div 
+                className="mb-6 prose prose-zinc dark:prose-invert max-w-none [&_pre]:bg-gray-800 [&_pre]:text-gray-100 [&_code]:bg-transparent [&_code]:text-blue-300 [&_pre_*]:!bg-transparent [&_pre_*]:!text-gray-200" 
+                dangerouslySetInnerHTML={{ __html: lesson.problemDescription }} 
+              />
+            )}
 
             <h2 className="text-xl font-bold text-zinc-800 dark:text-white mb-3">Sample</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

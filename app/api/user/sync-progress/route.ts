@@ -71,6 +71,61 @@ export async function POST(req: Request) {
          if (changed) hasGamificationUpdate = true;
       }
 
+      // ============================================
+      // SERVER-SIDE MEMORY-FIRST CATCH-UP LOGIC
+      // ============================================
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+      if (gData.lastActiveDate && gData.lastActiveDate !== today) {
+        const [year, month, day] = gData.lastActiveDate.split('-').map(Number);
+        const lastActiveDateObj = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+        
+        const [tyear, tmonth, tday] = today.split('-').map(Number);
+        const todayDateObj = new Date(Date.UTC(tyear, tmonth - 1, tday, 0, 0, 0, 0));
+        
+        const diffMs = todayDateObj.getTime() - lastActiveDateObj.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        const missedDays = diffDays - 1;
+
+        if (missedDays > 0 && existingUser.streak > 0) {
+          let memoryFreeze = gData.streakFreezeCount || 0;
+          let memoryStreak = existingUser.streak;
+          let isReset = false;
+          let history = gData.activityHistory || [];
+          
+          // Simulasi di memori (Memory-First Calculation)
+          for (let i = 1; i <= missedDays; i++) {
+             if (memoryFreeze > 0) {
+                memoryFreeze--;
+                const missedDate = new Date(lastActiveDateObj.getTime() + i * 24 * 60 * 60 * 1000);
+                const missedDateStr = missedDate.toISOString().split('T')[0];
+                
+                const existingIndex = history.findIndex((h: any) => h.date === missedDateStr);
+                if (existingIndex === -1) {
+                  history.push({ date: missedDateStr, count: 0, xpEarned: 0, freezeUsed: true });
+                }
+             } else {
+                memoryStreak = 0;
+                isReset = true;
+                break; // Hentikan iterasi, streak hangus
+             }
+          }
+          
+          if (memoryStreak !== existingUser.streak || memoryFreeze !== (gData.streakFreezeCount || 0)) {
+             hasGamificationUpdate = true;
+             updateData.streak = memoryStreak; // Bisa 0 jika hangus
+             gData.streakFreezeCount = memoryFreeze;
+             gData.activityHistory = history;
+             
+             // Jika streak di-reset (hangus), ubah lastActiveDate ke H-1 (Kemarin)
+             // agar logika besoknya (atau saat login lagi) dapat menghitung hari ini dengan benar
+             if (isReset) {
+                 const yesterday = new Date(todayDateObj.getTime() - 24 * 60 * 60 * 1000);
+                 gData.lastActiveDate = yesterday.toISOString().split('T')[0];
+             }
+          }
+        }
+      }
+
 
       if (hasGamificationUpdate) {
         gData.lastUpdated = Date.now();

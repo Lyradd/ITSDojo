@@ -11,8 +11,16 @@ interface StreakDisplayProps {
 }
 
 export function StreakDisplay({ variant, hoverContent }: StreakDisplayProps) {
-  const { streak, streakFreezeCount } = useUserStore();
-  const isFrozen = streakFreezeCount > 0;
+  const { streak, streakFreezeCount, lastActiveDate } = useUserStore();
+  
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+  const hasLearnedToday = lastActiveDate === todayStr;
+  
+  // Ikon Beku HANYA muncul jika punya item DAN belum mengerjakan soal hari ini (melewati hari sebelumnya)
+  const isFrozen = streakFreezeCount > 0 && !hasLearnedToday;
+  
+  // Indikator perlindungan (Tameng) muncul jika punya item TAPI hari ini sudah belajar (Api tetap merah)
+  const isProtected = streakFreezeCount > 0 && hasLearnedToday;
 
   if (variant === "navbar") {
     return (
@@ -27,10 +35,12 @@ export function StreakDisplay({ variant, hoverContent }: StreakDisplayProps) {
         {isFrozen ? (
           <div className="relative">
             <Snowflake className="h-4 w-4 text-cyan-500 fill-current animate-pulse" />
-            <Shield className="h-2 w-2 absolute -bottom-1 -right-1 text-blue-500 fill-current" />
           </div>
         ) : (
-          <Flame className="h-4 w-4 fill-current text-orange-500" />
+          <div className="relative">
+            <Flame className="h-4 w-4 fill-current text-orange-500" />
+            {isProtected && <Shield className="h-2 w-2 absolute -bottom-1 -right-1 text-cyan-500 fill-current" />}
+          </div>
         )}
         <span>{streak}</span>
       </div>
@@ -62,7 +72,10 @@ export function StreakDisplay({ variant, hoverContent }: StreakDisplayProps) {
         {isFrozen ? (
            <Snowflake className="w-5 h-5 animate-pulse text-cyan-500" />
         ) : (
-           <Flame className="w-5 h-5 fill-current text-orange-500" />
+          <div className="relative">
+            <Flame className="w-5 h-5 fill-current text-orange-500" />
+            {isProtected && <Shield className="h-2.5 w-2.5 absolute -bottom-1 -right-1 text-cyan-500 fill-current" />}
+          </div>
         )}
         <span>{streak} Hari Streak</span>
       </div>
@@ -72,7 +85,12 @@ export function StreakDisplay({ variant, hoverContent }: StreakDisplayProps) {
   if (variant === "goals-simple") {
     return (
       <div className={`flex items-center gap-1 font-bold ${isFrozen ? 'text-cyan-500' : 'text-orange-500'}`}>
-        {isFrozen ? <Snowflake className="w-5 h-5 animate-pulse text-cyan-500" /> : <Flame className="w-5 h-5 fill-current text-orange-500" />} {streak}
+        {isFrozen ? <Snowflake className="w-5 h-5 animate-pulse text-cyan-500" /> : (
+          <div className="relative">
+            <Flame className="w-5 h-5 fill-current text-orange-500" />
+            {isProtected && <Shield className="h-2.5 w-2.5 absolute -bottom-1 -right-1 text-cyan-500 fill-current" />}
+          </div>
+        )} {streak}
       </div>
     );
   }
@@ -100,8 +118,9 @@ export function StreakDisplay({ variant, hoverContent }: StreakDisplayProps) {
       } else {
         return (
           <div className="relative flex items-center p-3 sm:p-4 bg-[#FFC800] border-2 border-[#FFC800] rounded-2xl gap-3 sm:gap-4 overflow-hidden">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 text-[#FF9600]">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 text-[#FF9600]">
               <Flame className="w-full h-full" fill="currentColor" strokeWidth={1} />
+              {isProtected && <Shield className="w-4 h-4 sm:w-5 sm:h-5 absolute -bottom-1 -right-1 text-cyan-500 fill-current" />}
             </div>
             <div className="flex flex-col z-10">
               <span className="text-lg sm:text-xl font-bold text-white leading-none mb-1">{streak}</span>

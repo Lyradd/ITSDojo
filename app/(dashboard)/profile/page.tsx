@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
@@ -33,10 +33,12 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { StatWidget } from "@/components/shared/stat-widget";
-import { ActivityHeatmap } from "@/components/profile/activity-heatmap";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+const ActivityHeatmap = dynamic(() => import("@/components/profile/activity-heatmap").then(m => m.ActivityHeatmap), { ssr: false });
+import { StreakDisplay } from "@/components/shared/streak-display";
 import { getAchievementsData } from "@/lib/profile-data";
 import { Diamond, Target } from "lucide-react"; // Ikon tambahan
-import { StreakDisplay } from "@/components/shared/streak-display";
 
 const ProfileStatCard = ({
   icon: Icon,
@@ -136,6 +138,20 @@ export default function ProfilePage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Data Pencapaian (Achievements)
+  const achievements = useMemo(() => getAchievementsData({
+    streak,
+    xp,
+    completedLessonIds,
+    nocturnalCount,
+    earlyBirdCount,
+    unlockedAchievements,
+    earnedBadgesCount: earnedBadges?.length || 0,
+    perfectWeeksCount,
+    totalPerfectLessons,
+    top3Finishes
+  }), [streak, xp, completedLessonIds, nocturnalCount, earlyBirdCount, unlockedAchievements, earnedBadges, perfectWeeksCount, totalPerfectLessons, top3Finishes]);
+
   // If not mounted or not logged in, render nothing during redirect/hydration
   if (!isMounted || !isLoggedIn) return null;
 
@@ -171,19 +187,7 @@ export default function ProfilePage() {
     ? new Date(createdAt).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
     : 'Baru Bergabung';
 
-  // Data Pencapaian (Achievements)
-  const achievements = getAchievementsData({
-    streak,
-    xp,
-    completedLessonIds,
-    nocturnalCount,
-    earlyBirdCount,
-    unlockedAchievements,
-    earnedBadgesCount: earnedBadges?.length || 0,
-    perfectWeeksCount,
-    totalPerfectLessons,
-    top3Finishes
-  });
+
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
@@ -196,14 +200,15 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 pb-8 border-b">
             {/* Avatar Besar */}
             <div className="relative group">
-              <div className="w-32 h-32 rounded-full bg-blue-600 border-4 border-blue-100 dark:border-blue-900 flex items-center justify-center text-5xl font-bold text-white shadow-xl overflow-hidden">
+              <div className="w-32 h-32 rounded-full bg-blue-600 border-4 border-blue-100 dark:border-blue-900 flex items-center justify-center text-5xl font-bold text-white shadow-xl relative overflow-hidden">
                 {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.startsWith('data:')) ? (
-                  <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                  <Image src={avatarUrl} alt={name} fill priority sizes="(max-width: 768px) 128px, 128px" className="object-cover" />
                 ) : (
                   name.charAt(0).toUpperCase()
                 )}
               </div>
               <button
+                aria-label="Ubah Foto Profil"
                 onClick={() => setIsAvatarModalOpen(true)}
                 className="absolute bottom-0 right-0 p-2 bg-white dark:bg-zinc-800 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-700 hover:scale-110 transition-transform text-blue-500"
               >
@@ -241,16 +246,16 @@ export default function ProfilePage() {
                 <>
                   <div className="flex items-center justify-center md:justify-start gap-3">
                     <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white">{name}</h1>
-                    <button onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 transition-colors">
+                    <button aria-label="Edit Profil" onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 dark:text-zinc-400 transition-colors">
                       <Edit3 className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-zinc-400 font-medium">@{username}</p>
+                  <p className="text-zinc-500 dark:text-zinc-400 font-medium">@{username}</p>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400 italic">"{bio}"</p>
                 </>
               )}
 
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-zinc-500 mt-2">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400 mt-2">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" /> Bergabung {joinDate}
                 </div>
@@ -265,14 +270,14 @@ export default function ProfilePage() {
 
             {/* Tombol Aksi (Edit/Share) */}
             <div className="flex gap-2">
-              <Button onClick={handleShare} variant="outline" size="icon" className="rounded-xl border-2 hover:bg-zinc-100 hover:border-zinc-300">
-                <Share2 className="w-5 h-5 text-zinc-400" />
+              <Button aria-label="Bagikan Profil" onClick={handleShare} variant="outline" size="icon" className="rounded-xl border-2 hover:bg-zinc-100 hover:border-zinc-300">
+                <Share2 className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
               </Button>
-              <Link href="/settings">
-                <Button variant="outline" size="icon" className="rounded-xl border-2 hover:bg-zinc-100 hover:border-zinc-300">
-                  <Settings className="w-5 h-5 text-zinc-400" />
-                </Button>
-              </Link>
+              <Button asChild aria-label="Pengaturan" variant="outline" size="icon" className="rounded-xl border-2 hover:bg-zinc-100 hover:border-zinc-300">
+                <Link href="/settings">
+                  <Settings className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
+                </Link>
+              </Button>
             </div>
           </div>
 
@@ -436,11 +441,9 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-            <Link href="/courses">
-              <Button variant="ghost" className="w-full mt-2 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:text-blue-400">
-                Lihat Semua
-              </Button>
-            </Link>
+            <Button asChild variant="ghost" className="w-full mt-2 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:text-blue-400">
+              <Link href="/courses">Lihat Semua</Link>
+            </Button>
           </Card>
 
           {/* Teman Belajar (Dynamic DB) */}
@@ -500,6 +503,7 @@ export default function ProfilePage() {
                 <p className="text-sm text-zinc-500 mt-1">Koleksi seluruh pencapaian dan rekor pribadi Anda.</p>
               </div>
               <button
+                aria-label="Tutup"
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
               >
@@ -602,7 +606,7 @@ export default function ProfilePage() {
           >
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <h3 className="text-xl font-bold">Pilih Avatar</h3>
-              <button onClick={() => setIsAvatarModalOpen(false)} className="text-zinc-500 hover:text-zinc-700"><X className="w-6 h-6" /></button>
+              <button aria-label="Tutup" onClick={() => setIsAvatarModalOpen(false)} className="text-zinc-500 hover:text-zinc-700"><X className="w-6 h-6" /></button>
             </div>
             <div className="p-6 grid grid-cols-4 gap-4">
               {AVATARS.map((url, i) => (
@@ -615,6 +619,7 @@ export default function ProfilePage() {
                 </button>
               ))}
               <button
+                aria-label="Hapus Avatar"
                 onClick={() => { updateProfile({ avatarUrl: null }); setIsAvatarModalOpen(false); }}
                 className={`w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-4 transition-all hover:scale-110 ${!avatarUrl ? 'border-blue-500 shadow-lg' : 'border-transparent'}`}
               >

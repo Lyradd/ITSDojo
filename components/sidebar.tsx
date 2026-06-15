@@ -54,7 +54,6 @@ const dosenMenuItems = [
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
   { icon: Database, label: "Bank Soal", href: "/dosen/question-bank" },
   { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
-  { icon: BarChart3, label: "Analitik", href: "/dosen/analytics" },
 ];
 
 
@@ -65,7 +64,6 @@ const superAdminMenuItems = [
   { icon: Users, label: "Kelola Pengguna", href: "/admin/users" },
   { icon: ClipboardCheck, label: "Evaluasi", href: "/admin/evaluations" },
   { icon: Swords, label: "Soal Duel", href: "/admin/duel-questions" },
-  { icon: BarChart3, label: "Analitik", href: "/admin/analytics" },
 ];
 
 export function Sidebar({ onToggle }: { onToggle?: () => void }) {

@@ -285,18 +285,13 @@ function AdminEvaluationCard({
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-5 line-clamp-2">{evaluation.description}</p>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <ClipboardCheck className="w-5 h-5 mx-auto mb-1 text-emerald-500 dark:text-emerald-400" />
             <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
               {Array.isArray(evaluation.questions) ? evaluation.questions.length : 0}
             </div>
             <div className="text-[10px] uppercase font-bold text-zinc-500">Soal</div>
-          </div>
-          <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
-            <Clock className="w-5 h-5 mx-auto mb-1 text-blue-500 dark:text-blue-400" />
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{evaluation.duration}m</div>
-            <div className="text-[10px] uppercase font-bold text-zinc-500">Waktu</div>
           </div>
           <div className="bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl p-3 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-orange-500 dark:text-orange-400" />

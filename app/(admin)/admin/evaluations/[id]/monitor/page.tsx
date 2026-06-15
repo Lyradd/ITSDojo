@@ -338,14 +338,14 @@ export default function MonitorEvaluationPage() {
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Evaluations
+            Kembali ke Daftar Evaluasi
           </Button>
 
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
-                  {evaluation.isActive ? "Live Monitoring" : "Final Results"}: {evaluation.title}
+                  {evaluation.isActive ? "Pantauan Langsung" : "Hasil Akhir"}: {evaluation.title}
                 </h1>
                 {!evaluation.isActive && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
@@ -355,8 +355,8 @@ export default function MonitorEvaluationPage() {
               </div>
               <p className="text-zinc-600 dark:text-zinc-400">
                 {evaluation.isActive 
-                  ? "Real-time student progress and analytics"
-                  : "View final results and performance summary"
+                  ? "Progres mahasiswa secara langsung"
+                  : "Lihat hasil akhir dan ringkasan performa"
                 }
               </p>
             </div>
@@ -386,7 +386,7 @@ export default function MonitorEvaluationPage() {
                     </Button>
                   )}
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Last update: {lastUpdate.toLocaleTimeString()}
+                    Pembaruan terakhir: {lastUpdate.toLocaleTimeString()}
                   </div>
                   <Button
                     variant="outline"
@@ -397,7 +397,7 @@ export default function MonitorEvaluationPage() {
                     )}
                   >
                     <RefreshCw className={cn("w-4 h-4 mr-2", autoRefresh && "animate-spin")} />
-                    {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
+                    {autoRefresh ? "Refresh Otomatis ON" : "Refresh Otomatis OFF"}
                   </Button>
                 </>
               )}
@@ -409,7 +409,7 @@ export default function MonitorEvaluationPage() {
                 className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
-                Download CSV
+                Unduh CSV
               </Button>
               <Button
                 variant="outline"
@@ -518,7 +518,7 @@ export default function MonitorEvaluationPage() {
                   {liveStudents.length}
                 </div>
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {evaluation.isActive ? "Total Students" : "Total Submissions"}
+                  {evaluation.isActive ? "Total Mahasiswa" : "Total Pengumpulan"}
                 </div>
               </div>
             </div>
@@ -538,7 +538,7 @@ export default function MonitorEvaluationPage() {
                   {evaluation.isActive ? activeStudents : completedStudents}
                 </div>
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {evaluation.isActive ? "Active Now" : "Completed"}
+                  {evaluation.isActive ? "Sedang Aktif" : "Selesai"}
                 </div>
               </div>
             </div>
@@ -558,7 +558,7 @@ export default function MonitorEvaluationPage() {
                   {evaluation.isActive ? completedStudents : `${evaluation.totalPoints}`}
                 </div>
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {evaluation.isActive ? "Completed" : "Total Points"}
+                  {evaluation.isActive ? "Selesai" : "Total Poin"}
                 </div>
               </div>
             </div>
@@ -574,7 +574,7 @@ export default function MonitorEvaluationPage() {
                   {avgAccuracy}%
                 </div>
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {evaluation.isActive ? "Current Avg Accuracy" : "Final Avg Accuracy"}
+                  {evaluation.isActive ? "Rata-rata Akurasi Saat Ini" : "Rata-rata Akurasi Akhir"}
                 </div>
               </div>
             </div>
@@ -587,7 +587,7 @@ export default function MonitorEvaluationPage() {
           <div className="lg:col-span-2">
             <Card className="p-6 bg-white dark:bg-zinc-800 border-2">
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-6">
-                {evaluation.isActive ? "Live Student Progress" : "Student Results"}
+                {evaluation.isActive ? "Progres Langsung Mahasiswa" : "Hasil Mahasiswa"}
               </h2>
 
               <div className="space-y-4">
@@ -604,7 +604,7 @@ export default function MonitorEvaluationPage() {
               <div className="flex items-center gap-2 mb-6">
                 <Trophy className="w-5 h-5 text-yellow-600" />
                 <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
-                  {evaluation.isActive ? "Live Leaderboard" : "Final Rankings"}
+                  {evaluation.isActive ? "Papan Peringkat" : "Peringkat Akhir"}
                 </h2>
               </div>
 
@@ -634,7 +634,7 @@ export default function MonitorEvaluationPage() {
                         {student.name}
                       </div>
                       <div className="text-xs text-zinc-500">
-                        {student.currentQuestion}/{student.totalQuestions} questions
+                        {student.currentQuestion}/{student.totalQuestions} soal
                       </div>
                     </div>
 
@@ -643,7 +643,7 @@ export default function MonitorEvaluationPage() {
                         {student.totalQuestions > 0 ? Math.round((student.score / (student.totalQuestions * 10)) * 100) : 0}%
                       </div>
                       <div className="text-xs text-zinc-500">
-                        {student.score} Pts
+                        {student.score} Poin
                       </div>
                     </div>
                   </div>
@@ -651,50 +651,7 @@ export default function MonitorEvaluationPage() {
               </div>
             </Card>
 
-            {/* Analytics Summary */}
-            <Card className="p-6 bg-white dark:bg-zinc-800 border-2 mt-6">
-              <h3 className="font-bold text-zinc-900 dark:text-white mb-4">
-                Analytics
-              </h3>
 
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Avg Progress
-                    </span>
-                    <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                      {avgProgress}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                      style={{ width: `${avgProgress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Completion Rate
-                    </span>
-                    <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                      {Math.round((completedStudents / liveStudents.length) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-600 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${(completedStudents / liveStudents.length) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
           </div>
         </div>
       </div>
@@ -788,19 +745,19 @@ function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDe
     active: {
       color: "text-green-600 dark:text-green-400",
       bg: "bg-green-100 dark:bg-green-950",
-      label: "Active",
+      label: "Sedang Mengerjakan",
       icon: Activity,
     },
     completed: {
       color: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-100 dark:bg-blue-950",
-      label: "Completed",
+      label: "Selesai",
       icon: CheckCircle,
     },
     stuck: {
       color: "text-orange-600 dark:text-orange-400",
       bg: "bg-orange-100 dark:bg-orange-950",
-      label: "Stuck",
+      label: "Terkendala",
       icon: XCircle,
     },
     waiting: {
@@ -860,7 +817,7 @@ function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDe
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
-          <div className="text-xs text-zinc-500">{student.score} Pts</div>
+          <div className="text-xs text-zinc-500">{student.score} Poin</div>
         </div>
       </div>
 
@@ -868,7 +825,7 @@ function StudentProgressCard({ student, onDelete }: { student: LiveStudent, onDe
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Question {student.currentQuestion} of {student.totalQuestions}
+            Soal {student.currentQuestion} dari {student.totalQuestions}
           </span>
           <span className="text-sm font-bold text-zinc-900 dark:text-white">
             {Math.round(progressPercentage)}%

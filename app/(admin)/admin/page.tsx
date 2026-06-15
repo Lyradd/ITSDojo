@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {role === 'admin' && (
             <Link href={`/${role}/users`}>
               <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
@@ -163,20 +163,6 @@ export default function AdminDashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/admin/analytics">
-            <Card className="p-6 rounded-2xl border-2 hover:border-green-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-linear-to-br from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Lihat Analytics</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Reports & insights</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-              </div>
-            </Card>
-          </Link>
         </div>
 
         {/* Main Content Grid */}
@@ -287,26 +273,6 @@ export default function AdminDashboardPage() {
               </div>
             </Card>
 
-            {/* Quick Stats */}
-            <Card className="p-6 rounded-2xl border-2 bg-linear-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
-              <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-4">
-                Quick Stats
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">Completion Rate</span>
-                  <span className="font-bold text-blue-600">{MOCK_ANALYTICS.completionRate}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">Total Submissions</span>
-                  <span className="font-bold text-purple-600">{MOCK_ANALYTICS.totalSubmissions}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">Avg Score</span>
-                  <span className="font-bold text-green-600">{MOCK_ANALYTICS.averageScore}%</span>
-                </div>
-              </div>
-            </Card>
           </div>
         </div>
       </div>

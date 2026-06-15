@@ -178,59 +178,71 @@ export default function EvaluationResultsPage() {
               Kamu berhasil menyelesaikan evaluasi dengan baik
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
-                <Target className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">{score}</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Poin Papan Peringkat</div>
+            {/* Main Highlighted Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Poin Papan Peringkat */}
+              <div className="bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-600 dark:to-blue-800 p-6 rounded-xl text-white shadow-lg relative overflow-hidden flex items-center gap-4">
+                <div className="p-4 bg-white/20 rounded-full">
+                  <Zap className="w-8 h-8 text-white" fill="currentColor" />
+                </div>
+                <div>
+                  <div className="text-4xl font-black mb-1">{score}</div>
+                  <div className="text-blue-100 font-medium text-sm">Total Poin</div>
+                </div>
               </div>
 
+              {/* XP Gamifikasi */}
+              <div className="bg-gradient-to-br from-amber-400 to-orange-500 dark:from-amber-600 dark:to-orange-700 p-6 rounded-xl text-white shadow-lg relative overflow-hidden flex items-center gap-4">
+                <div className="p-4 bg-white/20 rounded-full">
+                  <Target className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <div className="text-4xl font-black mb-1">+{hasStoreData ? sessionXp : score}</div>
+                  <div className="text-orange-100 font-medium text-sm">XP yang Didapatkan</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Secondary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
                 <TrendingUp className="w-6 h-6 text-green-500 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">{accuracy}%</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Akurasi</div>
+                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 text-center">{accuracy}%</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Akurasi</div>
               </div>
 
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
                 <Trophy className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 text-center">
                   {hasStoreData ? `#${userRank}` : '—'}
                 </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Peringkat</div>
-              </div>
-
-              <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
-                <Zap className="w-6 h-6 text-yellow-500 mx-auto mb-2" fill="currentColor" />
-                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
-                  +{hasStoreData ? sessionXp : score}
-                </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">XP Gamifikasi</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Peringkat</div>
               </div>
 
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2 flex flex-col justify-center">
                 <div className="text-2xl mb-1 text-center">💎</div>
-                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 text-center">
                   +{hasStoreData ? sessionGems : '—'}
                 </div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Gems Diterima</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Gems Diterima</div>
               </div>
 
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border-2">
                 {dbResult && !hasStoreData ? (
                   <>
                     <Clock className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+                    <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 text-center">
                       {Math.floor(dbResult.timeSpent / 60)}m {dbResult.timeSpent % 60}s
                     </div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">Waktu Pengerjaan</div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Waktu</div>
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+                    <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 text-center">
                       {answeredQuestions}/{totalQuestions}
                     </div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">Soal Terjawab</div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Terjawab</div>
                   </>
                 )}
               </div>

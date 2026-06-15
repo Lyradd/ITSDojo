@@ -414,7 +414,8 @@ export const useEvaluationStore = create<EvaluationState>()(
           if (answer.isCorrect) correctCount++;
         });
         
-        return Math.round((correctCount / state.userAnswers.size) * 100);
+        const totalQuestions = state.currentEvaluation?.questions.length || state.userAnswers.size;
+        return Math.round((correctCount / totalQuestions) * 100);
       },
     }),
     {

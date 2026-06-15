@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     while (retries > 0) {
       const existingUser = await db.query.users.findFirst({
         where: eq(users.id, userId),
-        columns: { role: true, gamificationData: true }
+        columns: { role: true, gamificationData: true, streak: true }
       });
 
       if (!existingUser) break;

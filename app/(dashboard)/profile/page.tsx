@@ -202,7 +202,7 @@ export default function ProfilePage() {
             <div className="relative group">
               <div className="w-32 h-32 rounded-full bg-blue-600 border-4 border-blue-100 dark:border-blue-900 flex items-center justify-center text-5xl font-bold text-white shadow-xl relative overflow-hidden">
                 {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.startsWith('data:')) ? (
-                  <Image src={avatarUrl} alt={name} fill priority sizes="(max-width: 768px) 128px, 128px" className="object-cover" />
+                  <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                 ) : (
                   name.charAt(0).toUpperCase()
                 )}
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 </>
               )}
 
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400 mt-2">
+              {/* <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400 mt-2">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" /> Bergabung {joinDate}
                 </div>
@@ -265,7 +265,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> {followersCount} Pengikut
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Tombol Aksi (Edit/Share) */}
@@ -447,7 +447,7 @@ export default function ProfilePage() {
           </Card>
 
           {/* Teman Belajar (Dynamic DB) */}
-          <Card className="p-4 rounded-2xl border-2">
+          {/* <Card className="p-4 rounded-2xl border-2">
             <h3 className="font-bold text-lg mb-4 text-zinc-700 dark:text-zinc-200">Teman Belajar</h3>
             <div className="space-y-4">
               {fetchedPeers.length > 0 ? (
@@ -478,7 +478,7 @@ export default function ProfilePage() {
             <Button variant="ghost" className="w-full mt-4 text-blue-500 font-bold uppercase text-xs hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
               Cari Teman
             </Button>
-          </Card>
+          </Card> */}
 
         </div>
       </div>

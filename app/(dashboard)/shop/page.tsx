@@ -163,22 +163,22 @@ export default function ShopPage() {
 
           {/* Saldo Gems - Clickable for Cheat in Dev/Testing */}
           <div 
-            onClick={process.env.NODE_ENV === 'development' ? () => {
-              addGems(500);
-              triggerConfetti();
-            } : undefined}
-            className={`relative z-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg transition-colors group ${process.env.NODE_ENV === 'development' ? 'cursor-pointer hover:bg-white/30' : ''}`}
-            title={process.env.NODE_ENV === 'development' ? "Klik untuk Cheat +500 Gems (Testing)" : undefined}
+            // onClick={process.env.NODE_ENV === 'development' ? () => {
+            //   addGems(500);
+            //   triggerConfetti();
+            // } : undefined}
+            className={`relative z-10 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg transition-colors group`}
+            // title={process.env.NODE_ENV === 'development' ? "Klik untuk Cheat +500 Gems (Testing)" : undefined}
           >
-             <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+             <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-inner transition-transform">
                 <Gem className="w-7 h-7 text-cyan-200 fill-current animate-pulse" />
              </div>
              <div>
                 <div className="text-3xl font-black tracking-tight flex items-center gap-2">
                   <AnimatedNumber value={gems} />
-                  {process.env.NODE_ENV === 'development' && (
+                  {/* {process.env.NODE_ENV === 'development' && (
                     <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">TEST +500</span>
-                  )}
+                  )} */}
                   {hasGemMiner && (
                     <span className="text-[10px] font-extrabold uppercase bg-amber-500 text-amber-950 px-2 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1 border border-amber-400">
                       <Crown className="w-3 h-3 fill-current" /> 2x

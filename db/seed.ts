@@ -188,6 +188,16 @@ async function seed() {
     } catch(e) {}
   }
 
+  console.log("Seeding enrollments untuk akun testing Mahasiswa...");
+  try {
+    await db.insert(schema.enrollments).values([
+      { studentId: 'mahasiswa-1', courseId: 'dasar-pemrograman', status: 'accepted' },
+      { studentId: 'mahasiswa-1', courseId: 'struktur-data', status: 'accepted' }
+    ]).onConflictDoNothing();
+  } catch(e) {
+    console.error("Gagal menanam data enrollment:", e);
+  }
+
   console.log("Semua data berhasil di-seed dari file terpisah yang rapi!");
   process.exit(0);
 }

@@ -698,7 +698,7 @@ export default function LessonIDEPage() {
       {/* TOP HEADER BREADCRUMB */}
       <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b-2 border-zinc-200 dark:border-zinc-800 shrink-0 z-10 shadow-sm">
         <div className="flex items-center gap-4 text-sm font-bold">
-          <Button variant="secondary" size="sm" onClick={() => setStep('summary')} className="gap-2 font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+          <Button variant="secondary" size="sm" onClick={() => setStep('summary')} className="gap-2 font-bold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 dark:hover:text-zinc-100 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Kembali Rangkuman
           </Button>
           <div className="hidden sm:flex items-center gap-2 text-zinc-400">
@@ -723,22 +723,6 @@ export default function LessonIDEPage() {
         {/* ================= LEFT PANE (Problem Description) ================= */}
         {!isFullScreen && (
           <ResizablePanel defaultSize={40} minSize={25} className="flex flex-col bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
-
-          {/* Horizontal Tabs */}
-          <div className="flex items-center p-4 gap-2 bg-zinc-50 dark:bg-zinc-800/50 border-b-2 border-zinc-200 dark:border-zinc-800 shrink-0">
-            {['problem', 'submissions', 'leaderboard'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-full text-xs font-bold capitalize transition-all ${activeTab === tab
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
-                  }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
 
           {/* Content Area — Dynamic dari problem data */}
           <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">

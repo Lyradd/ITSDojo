@@ -344,7 +344,7 @@ export default function LearnPage() {
                 <p className="text-white/90 text-xs sm:text-sm max-w-md line-clamp-3 break-words mt-1.5">{activeCourse.description}</p>
               </div>
               <div className="flex gap-2">
-                <Button
+                {/* <Button
                   variant="outline"
                   onClick={async () => {
                     if (confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
@@ -360,7 +360,7 @@ export default function LearnPage() {
                   title="Reset Pembelajaran (Testing)"
                 >
                   <RotateCcw className="w-4 h-4" />
-                </Button>
+                </Button> */}
                 <Button asChild variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${theme.text}`}>
                   <Link href="/courses">
                     Ganti Kursus
@@ -578,7 +578,7 @@ export default function LearnPage() {
             </Suspense>
           )}
 
-          {role === 'mahasiswa' && (
+          {/* role === 'mahasiswa' && (
             <Card className="hidden lg:block p-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
               <h3 className="font-bold text-sm text-zinc-500 mb-3">🔧 Debug / Testing</h3>
               <div className="flex flex-col gap-2">
@@ -587,7 +587,7 @@ export default function LearnPage() {
                 </Button>
               </div>
             </Card>
-          )}
+          ) */}
 
           {role === 'mahasiswa' && (
             <Suspense fallback={<div className="h-64 w-full animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-2xl" />}>

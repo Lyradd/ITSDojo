@@ -101,7 +101,7 @@ export function StreakReminder() {
       </AnimatePresence>
 
       {/* 2. NOTIFICATION PERMISSION TOGGLE (Widget kecil di pojok) */}
-      {!notificationsEnabled && (
+      {/* {!notificationsEnabled && (
         <div className="fixed bottom-24 right-6 md:bottom-6 md:right-6 z-40">
           <button 
             onClick={requestNotificationPermission}
@@ -114,7 +114,7 @@ export function StreakReminder() {
             </span>
           </button>
         </div>
-      )}
+      )} */}
     </>
   );
 }

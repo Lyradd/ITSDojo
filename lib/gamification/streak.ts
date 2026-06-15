@@ -8,6 +8,7 @@ export interface StreakEvaluationResult {
   freezeCount: number;
   freezeUsed: number;
   isReset: boolean;
+  frozenDates: string[];
 }
 
 /**
@@ -74,6 +75,7 @@ export function evaluateStreak(
   let newFreezeCount = freezeCount;
   let freezeUsed = 0;
   let isReset = false;
+  const frozenDates: string[] = [];
 
   if (diffDays === 1) {
     newStreak += 1;
@@ -81,21 +83,27 @@ export function evaluateStreak(
     // Pengguna bolong / absen!
     let missedDays = diffDays - 1;
 
-    // Konsumsi freeze
-    if (newFreezeCount > 0) {
-      const freezeToConsume = Math.min(newFreezeCount, missedDays);
-      newFreezeCount -= freezeToConsume;
-      missedDays -= freezeToConsume;
-      freezeUsed = freezeToConsume;
+    // Evaluasi dari hari bolong pertama hingga kemarin secara berurutan
+    for (let i = 1; i <= missedDays; i++) {
+      const missedDate = new Date(lastActiveMidnight.getTime() + i * 24 * 60 * 60 * 1000);
+      const missedDateStr = missedDate.toLocaleDateString('en-CA', { timeZone: 'UTC' }); // Since it's from UTC midnight
+
+      if (newFreezeCount > 0) {
+        newFreezeCount -= 1;
+        freezeUsed += 1;
+        frozenDates.push(missedDateStr);
+      } else {
+        // Freeze habis!
+        newStreak = 0;
+        isReset = true;
+        break; // Stop evaluating, streak is broken
+      }
     }
 
-    if (missedDays > 0) {
-      // Freeze tidak cukup, streak hangus
-      newStreak = 1;
-      isReset = true;
+    if (isReset) {
+      newStreak = 1; // Mulai streak baru hari ini
     } else {
-      // Freeze berhasil menutupi bolong, streak dipertahankan dan ditambah hari ini
-      newStreak += 1;
+      newStreak += 1; // Pertahankan streak sebelumnya dan tambah untuk hari ini
     }
   } else {
      // Time travel (tanggal mundur) fallback
@@ -107,7 +115,8 @@ export function evaluateStreak(
     lastActiveDate: todayStr,
     freezeCount: newFreezeCount,
     freezeUsed,
-    isReset
+    isReset,
+    frozenDates
   };
 }
 
@@ -157,13 +166,22 @@ export async function updateUserGameFinished(
       if (todayIndex !== -1) {
         history[todayIndex].count += 1;
         history[todayIndex].xpEarned = (history[todayIndex].xpEarned || 0) + xpToReport;
-        if (streakResult.freezeUsed > 0) history[todayIndex].freezeUsed = true;
       } else {
         history.push({
           date: today,
           count: 1,
-          xpEarned: xpToReport,
-          freezeUsed: streakResult.freezeUsed > 0,
+          xpEarned: xpToReport
+        });
+      }
+
+      if (streakResult.frozenDates && streakResult.frozenDates.length > 0) {
+        streakResult.frozenDates.forEach((fDate: string) => {
+          const existingIndex = history.findIndex((h: any) => h.date === fDate);
+          if (existingIndex !== -1) {
+            history[existingIndex].freezeUsed = true;
+          } else {
+            history.push({ date: fDate, count: 0, xpEarned: 0, freezeUsed: true });
+          }
         });
       }
 

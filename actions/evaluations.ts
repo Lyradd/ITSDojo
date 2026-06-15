@@ -378,9 +378,19 @@ export async function submitEvaluationResult(data: {
           if (todayIndex !== -1) {
             history[todayIndex].count += 1;
             history[todayIndex].xpEarned = (history[todayIndex].xpEarned || 0) + profileXpAdded;
-            if (streakResult.freezeUsed > 0) history[todayIndex].freezeUsed = true;
           } else {
-            history.push({ date: today, count: 1, xpEarned: profileXpAdded, freezeUsed: streakResult.freezeUsed > 0 });
+            history.push({ date: today, count: 1, xpEarned: profileXpAdded });
+          }
+          
+          if (streakResult.frozenDates && streakResult.frozenDates.length > 0) {
+            streakResult.frozenDates.forEach((fDate: string) => {
+              const existingIndex = history.findIndex((h: any) => h.date === fDate);
+              if (existingIndex !== -1) {
+                history[existingIndex].freezeUsed = true;
+              } else {
+                history.push({ date: fDate, count: 0, xpEarned: 0, freezeUsed: true });
+              }
+            });
           }
           
           // Update mostXpInDay

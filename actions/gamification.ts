@@ -170,12 +170,16 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
       let newLastActiveDate = streakResult.lastActiveDate;
       gData.streakFreezeCount = streakResult.freezeCount;
 
-      if (streakResult.freezeUsed > 0) {
-        // Tandai di history bahwa freeze dipakai hari ini
-        const tIndex = history.findIndex((h: any) => h.date === today);
-        if (tIndex !== -1) {
-          history[tIndex].freezeUsed = true;
-        }
+      if (streakResult.frozenDates && streakResult.frozenDates.length > 0) {
+        // Catat semua hari bolong yang berhasil dilindungi sebagai FROZEN di history
+        streakResult.frozenDates.forEach((fDate: string) => {
+          const existingIndex = history.findIndex((h: any) => h.date === fDate);
+          if (existingIndex !== -1) {
+            history[existingIndex].freezeUsed = true;
+          } else {
+            history.push({ date: fDate, count: 0, xpEarned: 0, freezeUsed: true });
+          }
+        });
       }
 
       // --- DAILY GOALS EVALUATION (Moved after streak to allow streak trigger) ---

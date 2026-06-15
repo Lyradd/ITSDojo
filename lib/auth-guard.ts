@@ -32,6 +32,17 @@ export async function requireAdmin(req: Request): Promise<NextResponse | null> {
 }
 
 /**
+ * Helper spesifik untuk mengecek admin atau dosen di route handler.
+ */
+export async function requireAdminOrDosen(req: Request): Promise<NextResponse | null> {
+  const result = await requireRole(['admin', 'dosen']);
+  if (result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+  return null;
+}
+
+/**
  * Helper untuk mendapatkan userId dari session cookie.
  */
 export async function getAuthUserId(): Promise<string | null> {

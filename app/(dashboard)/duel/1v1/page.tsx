@@ -334,10 +334,10 @@ export default function DuelPage() {
                       onMouseEnter={() => setHoveredTopic(topic.id)}
                       onMouseLeave={() => setHoveredTopic(null)}
                       disabled={creatingLobby}
-                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer ${
+                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? "bg-blue-600 hover:bg-blue-700 text-white"
-                          : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                          ? "bg-blue-600 hover:bg-blue-700 text-white border-transparent"
+                          : "hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-700 dark:hover:text-blue-300"
                       }`}
                     >
                       <span className="truncate">

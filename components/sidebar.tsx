@@ -54,6 +54,7 @@ const dosenMenuItems = [
   { icon: ClipboardCheck, label: "Evaluasi", href: "/dosen/evaluations" },
   { icon: Database, label: "Bank Soal", href: "/dosen/question-bank" },
   { icon: Trophy, label: "Papan Peringkat", href: "/dosen/leaderboard" },
+  { icon: Swords, label: "Soal Duel", href: "/dosen/duel-questions" },
 ];
 
 

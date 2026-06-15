@@ -8,10 +8,10 @@ import { getActiveEvaluations, finishEvaluationSession, getEvaluationStats } fro
 import { getAllCourses } from '@/actions/courses';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  ClipboardCheck, 
-  Clock, 
-  Target, 
+import {
+  ClipboardCheck,
+  Clock,
+  Target,
   Users,
   Eye,
   CheckCircle2,
@@ -51,7 +51,7 @@ export default function DosenEvaluationsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (role !== 'dosen' && role !== '') {
+    if (role !== 'dosen' && (role as string) !== '') {
       if (role === 'admin') router.push('/admin');
       else router.push('/learn');
       return;
@@ -69,7 +69,7 @@ export default function DosenEvaluationsPage() {
     : evaluationsList.filter(e => e.courseId === selectedCourse);
 
   const getCourseName = (courseId: string) => coursesList.find(c => c.id === courseId)?.title || 'Kelas Tidak Ditemukan';
-  
+
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-purple-50 to-orange-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-8">
@@ -85,7 +85,7 @@ export default function DosenEvaluationsPage() {
                 <p className="text-zinc-600 dark:text-zinc-400">Atur evaluasi dan pantau pertandingan mahasiswa</p>
               </div>
             </div>
-            <Button 
+            <Button
               onClick={() => router.push('/admin/evaluations/create')}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/25 px-6"
             >
@@ -145,20 +145,20 @@ export default function DosenEvaluationsPage() {
         {/* Course Filter */}
         <div className="mb-6 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
-              onClick={() => setSelectedCourse('all')} 
+              onClick={() => setSelectedCourse('all')}
               className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800 whitespace-nowrap", selectedCourse === 'all' && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
             >
               Semua Kelas
             </Button>
             {coursesList.map(course => (
-              <Button 
-                key={course.id} 
-                size="sm" 
+              <Button
+                key={course.id}
+                size="sm"
                 variant="outline"
-                onClick={() => setSelectedCourse(course.id)} 
+                onClick={() => setSelectedCourse(course.id)}
                 className={cn("font-bold rounded-xl border-zinc-200 dark:border-zinc-800 whitespace-nowrap", selectedCourse === course.id && "bg-white dark:bg-zinc-900 shadow-sm border-zinc-300 dark:border-zinc-700")}
               >
                 {course.title}
@@ -223,8 +223,8 @@ function AdminEvaluationCard({ evaluation, getCourseName, participantCount, onCl
   return (
     <Card className={cn(
       "rounded-3xl border-2 shadow-xl overflow-hidden flex flex-col transition-all hover:-translate-y-1",
-      isActive 
-        ? "border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-950" 
+      isActive
+        ? "border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-slate-950"
         : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50"
     )}>
       {/* Top bar */}
@@ -234,8 +234,8 @@ function AdminEvaluationCard({ evaluation, getCourseName, participantCount, onCl
       )}>
         <span className={cn(
           "px-3 py-1 rounded-full text-xs font-bold border",
-          isActive 
-            ? "border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30" 
+          isActive
+            ? "border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
             : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-800"
         )}>
           {getCourseName(evaluation.courseId)}

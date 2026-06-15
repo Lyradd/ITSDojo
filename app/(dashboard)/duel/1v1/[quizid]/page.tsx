@@ -510,20 +510,8 @@ export default function QuizPage() {
       setDelayedSessionStatus(null);
       return;
     }
-
-    if (
-      (duelSession.status === "awaiting_topic_choice" || duelSession.status === "finished") &&
-      isFinalQuestion &&
-      isSubmitted
-    ) {
-      const timer = setTimeout(() => {
-        setDelayedSessionStatus(duelSession.status);
-      }, 3000); // 3-second delay to show final question feedback before screen transition
-      return () => clearTimeout(timer);
-    } else {
-      setDelayedSessionStatus(duelSession.status);
-    }
-  }, [duelSession?.status, isFinalQuestion, isSubmitted]);
+    setDelayedSessionStatus(duelSession.status);
+  }, [duelSession?.status]);
 
   const leaveLobby = async () => {
     if (!roomId || !currentPlayerId || !room) {

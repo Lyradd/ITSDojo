@@ -22,7 +22,8 @@ import {
   Zap,
   Target,
   Award,
-  LayoutDashboard
+  LayoutDashboard,
+  Swords
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -142,7 +143,7 @@ export default function DosenDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Link href="/dosen/courses">
             <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
@@ -173,7 +174,6 @@ export default function DosenDashboardPage() {
             </Card>
           </Link>
 
-
           <Link href="/dosen/leaderboard">
             <Card className="p-6 rounded-2xl border-2 hover:border-yellow-400 transition-all cursor-pointer group h-full">
               <div className="flex items-center gap-4">
@@ -185,6 +185,21 @@ export default function DosenDashboardPage() {
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">Peringkat</div>
                 </div>
                 <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-yellow-600 transition-all" />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/dosen/duel-questions">
+            <Card className="p-6 rounded-2xl border-2 hover:border-cyan-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-linear-to-br from-cyan-100 to-blue-200 dark:from-cyan-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
+                  <Swords className="w-6 h-6 text-cyan-600 dark:text-cyan-300" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Soal Duel</div>
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Tambah soal dan jawaban duel</div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-cyan-600 group-hover:translate-x-1 transition-all" />
               </div>
             </Card>
           </Link>

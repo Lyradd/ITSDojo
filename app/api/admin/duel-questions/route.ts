@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelQuestions, duelSubject } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { requireAdmin } from "@/lib/auth-guard";
+import { requireAdminOrDosen } from "@/lib/auth-guard";
 
 type DuelQuestionType = "multiple_choice" | "true_false" | "short_answer" | "slider";
 
@@ -27,7 +27,7 @@ function toNumber(value: unknown) {
 }
 
 export async function GET(req: Request) {
-  const authError = await requireAdmin(req);
+  const authError = await requireAdminOrDosen(req);
   if (authError) return authError;
 
   try {
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const authError = await requireAdmin(req);
+  const authError = await requireAdminOrDosen(req);
   if (authError) return authError;
 
   try {

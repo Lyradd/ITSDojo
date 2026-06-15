@@ -254,26 +254,14 @@ function ArenaQuizContent() {
     return () => clearTimeout(timer);
   }, [currentIndex, arenaSession?.currentQuestionIndex, questions]);
 
-  // Final question delay before transition
+  // Sync session status
   useEffect(() => {
     if (!arenaSession) {
       setDelayedSessionStatus(null);
       return;
     }
-
-    if (
-      (arenaSession.status === "awaiting_topic_choice" || arenaSession.status === "finished") &&
-      isFinalQuestion &&
-      isSubmitted
-    ) {
-      const timer = setTimeout(() => {
-        setDelayedSessionStatus(arenaSession.status);
-      }, 3000); // 3 seconds delay before showing round results
-      return () => clearTimeout(timer);
-    } else {
-      setDelayedSessionStatus(arenaSession.status);
-    }
-  }, [arenaSession?.status, isFinalQuestion, isSubmitted]);
+    setDelayedSessionStatus(arenaSession.status);
+  }, [arenaSession?.status]);
 
   // Trigger confetti if game finished and player is in top rank
   const isWinner = useMemo(() => {

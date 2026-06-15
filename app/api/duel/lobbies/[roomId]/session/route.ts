@@ -252,10 +252,28 @@ export async function GET(
   const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
 
   if (!lobby) {
+    const session = getDuelSession(requestedRoomId);
+    if (session) {
+      return NextResponse.json({
+        session,
+        hostId: session.roomKey,
+        guestId: "",
+      });
+    }
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
 
   if (lobby.status !== "started") {
+    if (lobby.endedAt) {
+      const session = getDuelSession(lobby.inviteCode);
+      if (session) {
+        return NextResponse.json({
+          session,
+          hostId: lobby.hostId,
+          guestId: lobby.guestId,
+        });
+      }
+    }
     return NextResponse.json({ error: "Duel has not started" }, { status: 409 });
   }
 
@@ -320,6 +338,10 @@ export async function POST(
   const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
 
   if (!lobby) {
+    const session = getDuelSession(requestedRoomId);
+    if (session) {
+      return NextResponse.json({ session });
+    }
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
 

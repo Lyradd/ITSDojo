@@ -28,15 +28,23 @@ export async function POST(
     const players = (lobby.players || []) as Array<{ id: string; name: string; email: string; avatar: string }>;
     const updatedPlayers = players.filter((p) => p.id !== playerId);
 
-    await db
-      .update(arenaRooms)
-      .set({
-        players: updatedPlayers,
-        updatedAt: new Date(),
-      })
-      .where(eq(arenaRooms.id, lobby.id));
+    const isHost = playerId === lobby.hostId;
+    const isEnded = lobby.status === "ended";
 
-    return NextResponse.json({ status: "left", players: updatedPlayers });
+    if (isHost || isEnded || updatedPlayers.length === 0) {
+      await db.delete(arenaRooms).where(eq(arenaRooms.id, lobby.id));
+      return NextResponse.json({ status: "deleted", players: [] });
+    } else {
+      await db
+        .update(arenaRooms)
+        .set({
+          players: updatedPlayers,
+          updatedAt: new Date(),
+        })
+        .where(eq(arenaRooms.id, lobby.id));
+
+      return NextResponse.json({ status: "left", players: updatedPlayers });
+    }
   } catch (error) {
     console.error("[arena/lobbies/[roomId]/leave] POST failed:", error);
     return NextResponse.json({ error: "Failed to leave arena lobby" }, { status: 500 });

@@ -20,13 +20,7 @@ export async function POST(
   }
 
   const result = await db
-    .update(duelRooms)
-    .set({
-      status: "cancelled",
-      guestId: null,
-      endedAt: new Date(),
-      updatedAt: new Date(),
-    })
+    .delete(duelRooms)
     .where(eq(duelRooms.id, lobby.id as any));
 
   if (result.rowCount === 0) {

@@ -3,9 +3,10 @@
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
-import { Swords, ArrowLeft, Copy } from "lucide-react";
+import { Swords, ArrowLeft, Copy, Users, Play } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Topic = {
   id: string;
@@ -40,7 +41,7 @@ async function readJsonError(response: Response) {
 
 export default function DuelPage() {
   const router = useRouter();
-  const { isLoggedIn, name, email, role } = useUserStore();
+  const { isLoggedIn, name, email, role, avatarUrl, id } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -263,164 +264,226 @@ export default function DuelPage() {
     setError(null);
   };
 
+  const selectedTopicData = topics.find((topic) => topic.id === selectedTopic);
+
+  const playersList: Array<{ id: string; name: string; email: string; avatar?: string | null; isHost: boolean }> = [];
+  if (room) {
+    if (room.host) {
+      playersList.push({ ...room.host, isHost: true });
+    }
+    if (room.guest) {
+      playersList.push({ ...room.guest, isHost: false });
+    }
+  } else if (inviteLink) {
+    playersList.push({
+      id: id || email,
+      name: name || "",
+      email: email || "",
+      avatar: avatarUrl || "bg-blue-200 text-blue-700",
+      isHost: true
+    });
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Swords className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
-            Pilih Topik Duel
-          </h1>
+      {/* Header */}
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <Swords className="w-8 h-8 text-blue-600 animate-pulse" />
+            <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
+              Multiplayer Duel 1v1
+            </h1>
+          </div>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Pilih topik, undang temanmu, dan buktikan siapa yang memiliki pengetahuan paling tajam secara real-time.
+          </p>
         </div>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Pilih topik untuk membuat link undangan duel 1v1.
-        </p>
+        <Button variant="ghost" size="sm" onClick={() => router.push("/duel")} className="flex items-center gap-2 cursor-pointer">
+          <ArrowLeft className="w-5 h-5" />
+          <span>Kembali</span>
+        </Button>
       </div>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.push("/duel")}
-        className="mb-4 flex items-center gap-2 cursor-pointer">
-        <ArrowLeft className="w-5 h-5" />
-        <span>Kembali</span>
-      </Button>
-
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
+        {/* Left column: Topic list */}
         <section>
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Topik Tersedia</h2>
+          <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+                Pilih Topik Duel
+              </h2>
+              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium px-2.5 py-0.5 rounded-full">
+                Host Control
+              </span>
+            </div>
 
             {loadingTopics ? (
-              <div>Loading topik...</div>
+              <div className="py-8 text-center text-zinc-500">Memuat daftar topik...</div>
             ) : topics.length === 0 ? (
-              <div className="text-sm text-zinc-500">
-                Tidak ada topik tersedia saat ini.
-              </div>
+              <div className="py-8 text-center text-zinc-500">Tidak ada topik tersedia.</div>
             ) : (
               <div className="grid gap-3">
-                {topics.map((topic) => (
-                  <Button
-                    key={topic.id}
-                    variant={selectedTopic === topic.id ? "default" : "outline"}
-                    onClick={() => handleTopicSelect(topic.id)}
-                    onMouseEnter={() => setHoveredTopic(topic.id)}
-                    onMouseLeave={() => setHoveredTopic(null)}
-                    disabled={creatingLobby}
-                    className="w-full cursor-pointer"
-                  >
-                    {creatingLobby && selectedTopic === topic.id ? "Membuat lobby..." : topic.subjectname}
-                  </Button>
-                ))}
+                {topics.map((topic) => {
+                  const isSelected = selectedTopic === topic.id;
+                  return (
+                    <Button
+                      key={topic.id}
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={() => handleTopicSelect(topic.id)}
+                      onMouseEnter={() => setHoveredTopic(topic.id)}
+                      onMouseLeave={() => setHoveredTopic(null)}
+                      disabled={creatingLobby}
+                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer ${
+                        isSelected
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                      }`}
+                    >
+                      <span className="truncate">
+                        {creatingLobby && selectedTopic === topic.id ? "Membuat lobby..." : topic.subjectname}
+                      </span>
+                    </Button>
+                  );
+                })}
               </div>
             )}
 
-            {inviteLink ? (
-              <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-blue-800 bg-zinc-50 dark:bg-blue-950 p-4">
-                <h3 className="text-lg font-semibold mb-3">Undang Temanmu</h3>
-                <p className="mb-3 text-sm">
-                  Bagikan link undangan ini agar temanmu bisa masuk ke lobby ini.
-                </p>
-
-                <input
-                  readOnly
-                  value={inviteLink}
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm "
-                />
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button onClick={handleCopyLink} className="flex items-center gap-2 cursor-pointer">
-                    <Copy className="w-4 h-4" />
-                    {copied ? "Tersalin!" : "Salin Link"}
-                  </Button>
-                  <Button variant="outline" className="cursor-pointer" onClick={handleCancelLobby}>
-                    Batalkan
-                  </Button>
-                </div>
-
-                <div className="mt-4 rounded-2xl bg-blue-50 dark:bg-blue-900 p-4 text-sm text-blue-900 dark:text-blue-100">
-                  <p className="font-semibold">
-                    {LOBBY_STATUS_TEXT[lobbyStatus]}
-                  </p>
-                  {room?.guest ? (
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 ${room.guest.avatar && (room.guest.avatar.startsWith('http') || room.guest.avatar.startsWith('/') || room.guest.avatar.startsWith('data:')) ? '' : (room.guest.avatar ?? 'bg-blue-200 text-blue-700')}`}>
-                        {room.guest.avatar && (room.guest.avatar.startsWith('http') || room.guest.avatar.startsWith('/') || room.guest.avatar.startsWith('data:')) ? (
-                          // Image avatar
-                          <img src={room.guest.avatar} alt={room.guest.name} className="w-full h-full object-cover" />
-                        ) : (
-                          // Colored initials avatar
-                          <span className="font-bold text-sm">
-                            {room.guest.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <p className="text-sm">Lawanmu</p>
-                        <p className="font-semibold">{room.guest.name}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p>Belum ada pemain kedua di room ini.</p>
-                  )}
-                </div>
-
-                {lobbyStatus === "joined" && (
-                  <Button className="mt-4 cursor-pointer" onClick={handleStartDuel}>
-                    Mulai Duel
-                  </Button>
-                )}
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-900 p-4 text-sm text-red-700 dark:text-red-400">
                 {error}
               </div>
-            ) : null}
+            )}
           </Card>
         </section>
 
-        <aside>
-          <Card className="p-6 bg-linear-to-br from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-zinc-100">
-            <h2 className="text-xl font-semibold text-zinc-100 mb-4">Detail Topik</h2>
+        {/* Right column: Room and player state */}
+        <aside className="space-y-6">
+          {inviteLink && (
+            <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
+              <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-2">Undang Temanmu</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+                Bagikan link ini agar temanmu dapat bergabung dalam lobby ini.
+              </p>
 
-            <div className="overflow-hidden rounded-2xl">
-              <div
-                className={`transition-all duration-300 ease-out overflow-hidden ${
-                  activeTopicData
-                    ? "max-h-0 opacity-0"
-                    : "max-h-40 opacity-100 delay-100"
-                }`}
-              >
-                <p className="text-sm text-zinc-100">
-                  Arahkan kursor ke topik untuk melihat detail.
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={inviteLink}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-xs font-mono outline-none"
+                />
+                <Button onClick={handleCopyLink} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer shrink-0">
+                  <Copy className="w-4 h-4 mr-1" />
+                  {copied ? "Tersalin" : "Salin"}
+                </Button>
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <Button variant="outline" size="sm" className="rounded-xl cursor-pointer text-xs" onClick={handleCancelLobby}>
+                  Batalkan Lobby
+                </Button>
+              </div>
+
+              <div className="mt-4 p-3 bg-zinc-100 dark:bg-zinc-900 rounded-xl">
+                <p className="text-xs text-zinc-500">Topik Terpilih:</p>
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                  {selectedTopicData ? selectedTopicData.subjectname : "Belum memilih topik"}
                 </p>
               </div>
+            </Card>
+          )}
 
-              <div
-                className={`transition-all duration-300 ease-out overflow-hidden text-zinc-100 py-1 ${
-                  activeTopicData
-                    ? "max-h-96 opacity-100"
-                    : "max-h-0 opacity-0 delay-100"
-                }`}
-              >
-                {activeTopicData ? (
-                  <>
-                    <h3 className="text-2xl font-bold mb-3">
-                      {activeTopicData.subjectname}
-                    </h3>
-                    <p className="text-zinc-100">
-                      {activeTopicData.description?.trim()
-                        ? activeTopicData.description
-                        : "Deskripsi tidak tersedia untuk topik ini."}
-                    </p>
-                  </>
-                ) : null}
+          {inviteLink && (
+            <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl flex-1">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">
+                  Pemain Bergabung ({playersList.length}/2)
+                </h3>
               </div>
-            </div>
-          </Card>
+
+              <div className="space-y-3">
+                {playersList.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0 ${p.avatar && (p.avatar.startsWith('http') || p.avatar.startsWith('/') || p.avatar.startsWith('data:')) ? '' : (p.avatar ?? 'bg-blue-200 text-blue-700')}`}>
+                        {p.avatar && (p.avatar.startsWith('http') || p.avatar.startsWith('/') || p.avatar.startsWith('data:')) ? (
+                          <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="font-bold text-xs uppercase">
+                            {p.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                          {p.name}
+                          {p.isHost && (
+                            <span className="text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 rounded">
+                              Host
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-zinc-500 truncate max-w-[150px]">{p.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {playersList.length < 2 && (
+                  <p className="text-xs text-zinc-500 text-center py-4 italic">Menunggu pemain kedua bergabung...</p>
+                )}
+              </div>
+
+              {lobbyStatus === "joined" && (
+                <Button
+                  onClick={handleStartDuel}
+                  className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  Mulai Duel 1v1
+                </Button>
+              )}
+            </Card>
+          )}
+
+          <AnimatePresence mode="wait">
+            {activeTopicData ? (
+              <motion.div
+                key={activeTopicData.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-xl">
+                  <h4 className="font-bold text-lg mb-2">{activeTopicData.subjectname}</h4>
+                  <p className="text-xs text-blue-100 leading-relaxed">
+                    {activeTopicData.description || "Tidak ada deskripsi untuk topik ini."}
+                  </p>
+                </Card>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
+                  <h4 className="font-bold text-lg mb-2 text-zinc-800 dark:text-zinc-100">Silakan Pilih Topik Duel</h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    Arahkan kursor atau pilih salah satu topik di sebelah kiri untuk melihat deskripsi.
+                  </p>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </aside>
       </div>
     </div>

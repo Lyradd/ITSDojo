@@ -45,27 +45,44 @@ export async function POST(
   const nextStatus = isFinished ? lobby.status : (isHost || lobby.status === "started" ? "cancelled" : "waiting");
   const now = new Date();
 
-  const result = await db
-    .update(duelRooms)
-    .set({
-      guestId: isGuest ? null : lobby.guestId,
-      status: nextStatus,
-      endedAt: isFinished ? lobby.endedAt : (nextStatus === "cancelled" ? now : null),
-      updatedAt: now,
-    })
-    .where(eq(duelRooms.id, lobby.id as any));
+  let result;
+  if (nextStatus === "cancelled" || isFinished) {
+    result = await db
+      .delete(duelRooms)
+      .where(eq(duelRooms.id, lobby.id as any));
+  } else {
+    result = await db
+      .update(duelRooms)
+      .set({
+        guestId: isGuest ? null : lobby.guestId,
+        status: nextStatus,
+        endedAt: null,
+        updatedAt: now,
+      })
+      .where(eq(duelRooms.id, lobby.id as any));
+  }
 
   if (result.rowCount === 0) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
   }
 
-  upsertLobbyState({
-    ...lobby,
-    guestId: isGuest ? null : lobby.guestId,
-    status: nextStatus,
-    endedAt: isFinished ? lobby.endedAt : (nextStatus === "cancelled" ? now : null),
-    updatedAt: now,
-  });
+  if (nextStatus === "cancelled" || isFinished) {
+    upsertLobbyState({
+      ...lobby,
+      guestId: isGuest ? null : lobby.guestId,
+      status: "cancelled",
+      endedAt: now,
+      updatedAt: now,
+    });
+  } else {
+    upsertLobbyState({
+      ...lobby,
+      guestId: isGuest ? null : lobby.guestId,
+      status: nextStatus,
+      endedAt: null,
+      updatedAt: now,
+    });
+  }
 
   if (nextStatus === "cancelled" || isFinished) {
     deleteDuelSession(lobby.inviteCode);

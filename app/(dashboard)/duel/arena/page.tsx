@@ -6,6 +6,7 @@ import { useUserStore } from "@/lib/store";
 import { Swords, ArrowLeft, Copy, Users, Globe, Play, X, User } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Topic = {
   id: string;
@@ -487,14 +488,39 @@ function ArenaContent() {
           </Card>
 
           {/* Topic description details */}
-          {activeTopicData && (
-            <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-xl">
-              <h4 className="font-bold text-lg mb-2">{activeTopicData.subjectname}</h4>
-              <p className="text-xs text-blue-100 leading-relaxed">
-                {activeTopicData.description || "Tidak ada deskripsi untuk topik ini."}
-              </p>
-            </Card>
-          )}
+          <AnimatePresence mode="wait">
+            {activeTopicData ? (
+              <motion.div
+                key={activeTopicData.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-xl">
+                  <h4 className="font-bold text-lg mb-2">{activeTopicData.subjectname}</h4>
+                  <p className="text-xs text-blue-100 leading-relaxed">
+                    {activeTopicData.description || "Tidak ada deskripsi untuk topik ini."}
+                  </p>
+                </Card>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
+                  <h4 className="font-bold text-lg mb-2 text-zinc-800 dark:text-zinc-100">Silakan Pilih Topik Duel</h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    Arahkan kursor atau pilih salah satu topik di sebelah kiri untuk melihat deskripsi.
+                  </p>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </aside>
       </div>
     </div>

@@ -222,6 +222,13 @@ export async function GET(
     const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
 
     if (!lobby) {
+      const session = getArenaSession(requestedRoomId);
+      if (session && session.status === "finished") {
+        return NextResponse.json({
+          session,
+          players: [],
+        });
+      }
       return NextResponse.json({ error: "Arena lobby not found" }, { status: 404 });
     }
 
@@ -300,6 +307,10 @@ export async function POST(
     const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
 
     if (!lobby) {
+      const session = getArenaSession(requestedRoomId);
+      if (session && session.status === "finished") {
+        return NextResponse.json({ session });
+      }
       return NextResponse.json({ error: "Arena lobby not found" }, { status: 404 });
     }
 

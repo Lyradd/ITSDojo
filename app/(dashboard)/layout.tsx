@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth-guard";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import ClientLayout from "./client-layout";
 
 export default async function DashboardServerLayout({
@@ -15,7 +16,19 @@ export default async function DashboardServerLayout({
     // Jika bukan mahasiswa, redirect ke dashboard mereka masing-masing
     // atau redirect ke login jika belum login
     if (authError.status === 401) {
-      redirect('/login');
+      const headersList = await headers();
+      const xUrl = headersList.get('x-url') || '';
+      let relativePath = '';
+      try {
+        if (xUrl) {
+          const parsed = new URL(xUrl);
+          relativePath = parsed.pathname + parsed.search;
+        }
+      } catch {
+        relativePath = xUrl;
+      }
+      const redirectTo = relativePath ? `?redirectTo=${encodeURIComponent(relativePath)}` : '';
+      redirect(`/login${redirectTo}`);
     } else {
       // Karena kita tidak tahu role sebenarnya jika forbidden, redirect ke home sementara
       redirect('/dosen');

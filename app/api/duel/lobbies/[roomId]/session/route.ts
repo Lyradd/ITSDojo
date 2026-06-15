@@ -8,6 +8,7 @@ import {
   setDuelSession,
   upsertDuelSession,
 } from "@/lib/duel-session-store";
+import { updateUserGameFinished } from "@/lib/gamification/streak-helper";
 
 const MIN_DUEL_ROUNDS = 3;
 
@@ -172,25 +173,21 @@ async function finalizeRoundSession(
       guestGemsAdded += 5;
     }
 
+    const streakEarnedPlayers: string[] = [];
+
     try {
       if (hostId) {
-        await db
-          .update(users)
-          .set({
-            xp: sql`${users.xp} + ${hostXpAdded}`,
-            gems: sql`${users.gems} + ${hostGemsAdded}`,
-          })
-          .where(eq(users.id, hostId));
+        const res = await updateUserGameFinished(hostId, hostXpAdded, hostProfileXpAdded, hostGemsAdded);
+        if (res.success && res.streakEarnedNow) {
+          streakEarnedPlayers.push(hostId);
+        }
       }
 
       if (guestId) {
-        await db
-          .update(users)
-          .set({
-            xp: sql`${users.xp} + ${guestXpAdded}`,
-            gems: sql`${users.gems} + ${guestGemsAdded}`,
-          })
-          .where(eq(users.id, guestId));
+        const res = await updateUserGameFinished(guestId, guestXpAdded, guestProfileXpAdded, guestGemsAdded);
+        if (res.success && res.streakEarnedNow) {
+          streakEarnedPlayers.push(guestId);
+        }
       }
     } catch (dbErr) {
       console.error("Failed to update user rewards on duel end:", dbErr);
@@ -223,6 +220,7 @@ async function finalizeRoundSession(
       console.warn("Leaderboard broadcast failed (non-fatal):", err);
     }
 
+    finishedSession.streakEarnedPlayers = streakEarnedPlayers;
     setDuelSession(roomKey, finishedSession);
     return finishedSession;
   }
@@ -333,12 +331,32 @@ export async function POST(
     return NextResponse.json({ error: "Player is not in this duel" }, { status: 403 });
   }
 
+  const roomKey = lobby.inviteCode;
+
+  if (lobby.endedAt) {
+    const session = getDuelSession(roomKey) ?? {
+      roomKey,
+      minRounds: MIN_DUEL_ROUNDS,
+      currentRound: MIN_DUEL_ROUNDS,
+      currentTopicId: String(lobby.topicId),
+      currentQuestionIndex: 0,
+      status: "finished" as const,
+      chooserId: null,
+      pendingScores: {},
+      questionSubmissions: {},
+      scores: {},
+      roundResults: [],
+      winnerId: null,
+      updatedAt: new Date().toISOString(),
+    };
+    return NextResponse.json({ session });
+  }
+
   const topics = await db
     .select({ id: duelSubject.id })
     .from(duelSubject);
   const topicIds = topics.map((topic) => String(topic.id));
 
-  const roomKey = lobby.inviteCode;
   const existing = normalizeSession(getDuelSession(roomKey) ?? createInitialSession(roomKey, String(lobby.topicId)));
 
   if (!Number.isNaN(questionIndex)) {

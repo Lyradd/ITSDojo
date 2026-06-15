@@ -20,6 +20,7 @@ export type ArenaSessionState = {
   scores: Record<string, number>; // Player ID -> Cumulative score
   roundResults: ArenaRoundResult[];
   winnerId: string | null;
+  streakEarnedPlayers?: string[];
   updatedAt: string;
 };
 

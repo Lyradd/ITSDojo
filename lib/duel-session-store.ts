@@ -21,6 +21,7 @@ export type DuelSessionState = {
   scores: Record<string, number>;
   roundResults: DuelRoundResult[];
   winnerId: string | null;
+  streakEarnedPlayers?: string[];
   updatedAt: string;
 };
 

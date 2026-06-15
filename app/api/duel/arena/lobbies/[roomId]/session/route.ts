@@ -9,6 +9,7 @@ import {
   upsertArenaSession,
 } from "@/lib/arena-session-store";
 import { recordHeartbeat, cleanupInactivePlayers } from "@/lib/arena-heartbeat";
+import { updateUserGameFinished } from "@/lib/gamification/streak-helper";
 
 const MIN_ARENA_ROUNDS = 3;
 
@@ -134,6 +135,8 @@ async function finalizeRoundSession(
     // Award rewards to players based on their ranks
     const uniqueScores = Array.from(new Set(Object.values(cumulativeTotals))).sort((a, b) => b - a);
 
+    const streakEarnedPlayers: string[] = [];
+
     for (const playerId of playerIds) {
       const total = cumulativeTotals[playerId] || 0;
       const rankIndex = uniqueScores.indexOf(total); // 0 = 1st, 1 = 2nd, 2 = 3rd, etc.
@@ -153,13 +156,10 @@ async function finalizeRoundSession(
       }
 
       try {
-        await db
-          .update(users)
-          .set({
-            xp: sql`${users.xp} + ${xpAdded}`,
-            gems: sql`${users.gems} + ${gemsAdded}`,
-          })
-          .where(eq(users.id, playerId));
+        const res = await updateUserGameFinished(playerId, xpAdded, 0, gemsAdded);
+        if (res.success && res.streakEarnedNow) {
+          streakEarnedPlayers.push(playerId);
+        }
       } catch (dbErr) {
         console.error(`Failed to update arena reward for user ${playerId}:`, dbErr);
       }
@@ -188,6 +188,7 @@ async function finalizeRoundSession(
       console.warn("Leaderboard broadcast failed (non-fatal):", err);
     }
 
+    finishedSession.streakEarnedPlayers = streakEarnedPlayers;
     setArenaSession(roomKey, finishedSession);
     return finishedSession;
   }
@@ -310,6 +311,25 @@ export async function POST(
     }
 
     const roomKey = lobby.inviteCode;
+
+    if (lobby.status === "ended" || lobby.endedAt) {
+      const session = getArenaSession(roomKey) ?? {
+        roomKey,
+        minRounds: MIN_ARENA_ROUNDS,
+        currentRound: MIN_ARENA_ROUNDS,
+        currentTopicId: String(lobby.topicId),
+        currentQuestionIndex: 0,
+        status: "finished" as const,
+        chooserId: null,
+        pendingScores: {},
+        questionSubmissions: {},
+        scores: {},
+        roundResults: [],
+        winnerId: null,
+        updatedAt: new Date().toISOString(),
+      };
+      return NextResponse.json({ session });
+    }
     const existing = normalizeSession(
       getArenaSession(roomKey) ?? createInitialSession(roomKey, String(lobby.topicId), playerIds)
     );

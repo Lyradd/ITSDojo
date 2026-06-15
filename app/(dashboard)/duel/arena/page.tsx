@@ -185,10 +185,13 @@ function ArenaContent() {
         setError(null);
 
         const isHost = data.hostId === id;
-        if (data.topicId && !selectedTopic) {
-          // If we are a guest, always sync selected topic. If host, only sync if explicitly selected.
-          if (!isHost || hasUserSelectedTopic) {
-            setSelectedTopic(String(data.topicId));
+        if (data.topicId) {
+          const currentTopicStr = String(data.topicId);
+          if (selectedTopic !== currentTopicStr) {
+            // If we are a guest, always sync selected topic. If host, only sync if explicitly selected.
+            if (!isHost || hasUserSelectedTopic) {
+              setSelectedTopic(currentTopicStr);
+            }
           }
         }
 
@@ -304,6 +307,7 @@ function ArenaContent() {
   const isHost = room ? room.hostId === id : true;
   const activeTopicId = hoveredTopic ?? selectedTopic;
   const activeTopicData = topics.find((topic) => topic.id === activeTopicId);
+  const selectedTopicData = topics.find((topic) => topic.id === selectedTopic);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
@@ -407,7 +411,7 @@ function ArenaContent() {
               <div className="mt-4 p-3 bg-zinc-100 dark:bg-zinc-900 rounded-xl">
                 <p className="text-xs text-zinc-500">Topik Terpilih:</p>
                 <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                  {selectedTopic && room?.subject ? room.subject.subjectname : "Belum memilih topik"}
+                  {selectedTopicData ? selectedTopicData.subjectname : "Belum memilih topik"}
                 </p>
               </div>
             </Card>

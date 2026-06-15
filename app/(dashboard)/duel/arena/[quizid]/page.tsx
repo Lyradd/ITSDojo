@@ -6,7 +6,7 @@ import { QuizQuestionCard } from "@/components/quiz/quiz-question-card";
 import type { Question } from "@/lib/quiz-mock-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, LogOut, Swords, Zap, Gem, Trophy, Award, Timer, Users, HelpCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, LogOut, Swords, Zap, Gem, Trophy, Award, Timer, Users, HelpCircle, Loader2, Flame } from "lucide-react";
 import { useUserStore } from "@/lib/store";
 import { triggerConfetti } from "@/lib/confetti";
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,6 +43,7 @@ type ArenaSession = {
   scores?: Record<string, number>;
   roundResults: ArenaRoundResult[];
   winnerId: string | null;
+  streakEarnedPlayers?: string[];
   updatedAt: string;
 };
 
@@ -79,7 +80,7 @@ function ArenaQuizContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { id, email, name, isLoggedIn, syncFromServer } = useUserStore();
+  const { id, email, name, isLoggedIn, streak, syncFromServer } = useUserStore();
 
   const roomId = searchParams.get("room");
   const routeTopicId = typeof params.quizid === "string" ? params.quizid : undefined;
@@ -641,9 +642,19 @@ function ArenaQuizContent() {
         <Card className="p-8 border border-zinc-200 dark:border-blue-900 bg-card/70 backdrop-blur-md shadow-2xl rounded-3xl w-full text-center">
           <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
           <h2 className="text-3xl font-extrabold text-zinc-800 dark:text-zinc-100 mb-2">Arena Selesai!</h2>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-8 text-sm">
+          <p className="text-zinc-600 dark:text-zinc-400 mb-6 text-sm">
             Semua ronde telah berakhir. Berikut adalah hasil final dari para pemain.
           </p>
+
+          {Boolean(currentPlayerId && arenaSession?.streakEarnedPlayers?.includes(currentPlayerId)) && (
+            <div className="mx-auto max-w-sm mb-8 p-4 rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50 shadow-sm flex items-center justify-center gap-3 transition-all duration-200 hover:scale-[1.02]">
+              <Flame className="w-8 h-8 text-orange-500 animate-pulse" fill="currentColor" />
+              <div className="text-left">
+                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 block">Streak Kamu</span>
+                <span className="text-xl font-black text-orange-600 dark:text-orange-400">{streak} Hari 🔥</span>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4 mb-8">
             {sortedPlayersByScore.map((p, index) => {

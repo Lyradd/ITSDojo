@@ -6,7 +6,7 @@ import { QuizQuestionCard } from "@/components/quiz/quiz-question-card";
 import type { Question } from "@/lib/quiz-mock-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, LogOut, Swords, Zap, Gem } from "lucide-react";
+import { CheckCircle2, LogOut, Swords, Zap, Gem, Flame } from "lucide-react";
 import { useUserStore } from "@/lib/store";
 import { triggerConfetti } from "@/lib/confetti";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,6 +46,7 @@ type DuelSession = {
   scores?: Record<string, number>;
   roundResults: RoundSummary[];
   winnerId: string | null;
+  streakEarnedPlayers?: string[];
   updatedAt: string;
 };
 
@@ -85,7 +86,7 @@ export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { id, email, name, role, isLoggedIn, syncFromServer } = useUserStore();
+  const { id, email, name, role, isLoggedIn, streak, syncFromServer } = useUserStore();
   const roomId = searchParams.get("room");
   const routeTopicId = typeof params.quizid === "string" ? params.quizid : undefined;
   const [isMounted, setIsMounted] = useState(false);
@@ -1038,9 +1039,10 @@ export default function QuizPage() {
                 const isDraw = winnerId === null;
                 const bonusXp = isWinner ? 50 : isDraw ? 25 : 10;
                 const gemsGained = isWinner ? 10 : isDraw ? 5 : 2;
+                const showStreakCard = Boolean(currentPlayerId && duelSession?.streakEarnedPlayers?.includes(currentPlayerId));
 
                 return (
-                  <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className={`grid gap-4 mb-6 ${showStreakCard ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"}`}>
                     <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/50 shadow-sm transition-all duration-200 hover:scale-[1.02]">
                       <Zap className="w-8 h-8 text-yellow-500 mb-1" fill="currentColor" />
                       <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">XP Diperoleh</span>
@@ -1053,6 +1055,14 @@ export default function QuizPage() {
                       <span className="text-2xl font-black text-blue-600 dark:text-blue-400">+{gemsGained} Gems</span>
                       <span className="text-[10px] text-zinc-400">({isWinner ? "Bonus Menang" : isDraw ? "Bonus Seri" : "Bonus Kalah"})</span>
                     </div>
+                    {showStreakCard && (
+                      <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50 shadow-sm transition-all duration-200 hover:scale-[1.02]">
+                        <Flame className="w-8 h-8 text-orange-500 mb-1 animate-pulse" fill="currentColor" />
+                        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Streak Kamu</span>
+                        <span className="text-2xl font-black text-orange-600 dark:text-orange-400">{streak} Hari</span>
+                        <span className="text-[10px] text-zinc-400">Kobarkan terus apimu! 🔥</span>
+                      </div>
+                    )}
                   </div>
                 );
               })()}

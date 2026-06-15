@@ -347,13 +347,11 @@ export default function MonitorEvaluationPage() {
                 <h1 className="text-3xl font-bold text-blue-700 dark:text-white">
                   {evaluation.isActive ? "Live Monitoring" : "Final Results"}: {evaluation.title}
                 </h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  evaluation.isActive 
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                }`}>
-                  {evaluation.isActive ? '🟢 ACTIVE' : '⚫ CLOSED'}
-                </span>
+                {!evaluation.isActive && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    ⚫ CLOSED
+                  </span>
+                )}
               </div>
               <p className="text-zinc-600 dark:text-zinc-400">
                 {evaluation.isActive 
@@ -407,7 +405,8 @@ export default function MonitorEvaluationPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleDownloadCSV}
-                className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                disabled={sessionStatus === 'active' || isStarting}
+                className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4 mr-2 text-zinc-600 dark:text-zinc-400" />
                 Download CSV
@@ -416,7 +415,8 @@ export default function MonitorEvaluationPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleEditSoalClick}
-                className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                disabled={sessionStatus === 'active' || isStarting}
+                className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Soal

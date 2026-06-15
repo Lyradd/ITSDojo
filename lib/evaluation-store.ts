@@ -289,10 +289,10 @@ export const useEvaluationStore = create<EvaluationState>()(
                       userSequence.every((val, index) => val === correctSequence[index]);
         }
         
-        // Skenario B Logic: Base XP + Streak Multiplier
-        const basePoints = isCorrect ? question.points : 0; // Untuk Leaderboard murni
-        const streakBonus = isCorrect ? (state.currentStreak * 2) : 0; // 2 XP per current streak
-        const totalXpEarned = basePoints + streakBonus;
+        // Skenario Baru: Base Points buat Profil XP (konsisten), Bonus Streak masuk ke Skor Leaderboard
+        const basePoints = isCorrect ? question.points : 0; // XP Murni
+        const streakBonus = isCorrect ? (state.currentStreak * 2) : 0; // Bonus Streak
+        const leaderboardScoreEarned = basePoints + streakBonus; // Skor buat ngadu di Leaderboard
         const gemsEarned = isCorrect ? 2 : 0; // 2 Gems per correct question
         
         const answerObj: Answer = {
@@ -300,8 +300,8 @@ export const useEvaluationStore = create<EvaluationState>()(
           answer,
           isCorrect,
           timestamp: Date.now(),
-          pointsEarned: basePoints,
-          xpEarned: totalXpEarned,
+          pointsEarned: leaderboardScoreEarned, // Poin ini yang ditampilin pas review jawaban
+          xpEarned: basePoints, // Poin konsisten buat profil
           gemsEarned: gemsEarned,
         };
         
@@ -313,8 +313,8 @@ export const useEvaluationStore = create<EvaluationState>()(
         
         set({
           userAnswers: newAnswers,
-          score: state.score + basePoints,
-          sessionXp: state.sessionXp + totalXpEarned,
+          score: state.score + leaderboardScoreEarned,
+          sessionXp: state.sessionXp + basePoints,
           sessionGems: state.sessionGems + gemsEarned,
           currentStreak: newStreak,
         });

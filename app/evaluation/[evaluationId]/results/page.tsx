@@ -138,7 +138,7 @@ export default function EvaluationResultsPage() {
     ? Array.from(userAnswers.values()).filter((a) => a.isCorrect).length
     : Math.round((accuracy / 100) * totalQuestions);
   const answeredQuestions = hasStoreData ? userAnswers.size : totalQuestions;
-  const wrongAnswers = answeredQuestions - correctAnswers;
+  const wrongAnswers = totalQuestions - correctAnswers;
 
   const getPerformanceMessage = () => {
     if (accuracy >= 90) return { text: 'Luar Biasa! 🎉', color: 'text-green-600' };

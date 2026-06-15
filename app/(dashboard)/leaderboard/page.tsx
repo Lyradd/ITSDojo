@@ -34,6 +34,8 @@ export default function LeaderboardPage() {
   const [subScope, setSubScope] = useState<string>(getAngkatanFromSemester(6).toString());
   const [isConnected, setIsConnected] = useState(false);
   const [coursesList, setCoursesList] = useState<{ id: string; title: string }[]>([]);
+  const [evaluationsList, setEvaluationsList] = useState<any[]>([]);
+  const [evaluationScope, setEvaluationScope] = useState<string>('all');
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -43,10 +45,11 @@ export default function LeaderboardPage() {
     }
   }, [isLoggedIn, router, isMounted]);
 
-  // Load daftar kelas dari DB sekali untuk dropdown filter
+  // Load daftar kelas & evaluasi dari DB sekali untuk dropdown filter
   useEffect(() => {
     if (!isMounted) return;
     getAllCourses().then((data) => setCoursesList(data));
+    import('@/actions/evaluations').then(m => m.getAllEvaluations().then(data => setEvaluationsList(data)));
   }, [isMounted]);
 
   // Fetch real data from database
@@ -58,10 +61,15 @@ export default function LeaderboardPage() {
 
     const loadRealtimeData = async () => {
       try {
-        // Pakai filter courseId hanya saat scopeFilter == 'course' dan subScope berisi course id valid
-        const filter = scopeFilter === 'course' && subScope
-          ? { courseId: subScope }
-          : undefined;
+        let filter: any = undefined;
+        if (scopeFilter === 'course') {
+          if (evaluationScope !== 'all') {
+            filter = { evaluationId: evaluationScope };
+          } else if (subScope) {
+            filter = { courseId: subScope };
+          }
+        }
+        
         const dbLeaderboard = await getLeaderboardData(filter);
 
         // Inject current user stats if they exist, otherwise append
@@ -82,9 +90,12 @@ export default function LeaderboardPage() {
           coursesTaken: 0,
         };
 
-        const finalData = hasCurrentUser
-          ? dbLeaderboard.map(u => (u.name === name || u.name.includes(name)) ? { ...u, isCurrentUser: true, name: `${name} (You)` } : u)
-          : [...dbLeaderboard, currentUserEntry];
+        let finalData = dbLeaderboard;
+        if (hasCurrentUser) {
+          finalData = dbLeaderboard.map(u => (u.name === name || u.name.includes(name)) ? { ...u, isCurrentUser: true, name: `${name} (You)` } : u);
+        } else if (scopeFilter === 'angkatan' || evaluationScope === 'all') {
+          finalData = [...dbLeaderboard, currentUserEntry];
+        }
 
         // Sort and rank
         const sorted = finalData.sort((a, b) => b.score - a.score);
@@ -114,7 +125,7 @@ export default function LeaderboardPage() {
       unsubscribeStatus();
       unsubscribeUpdate();
     };
-  }, [isMounted, isLoggedIn, name, xp, scopeFilter, subScope]);
+  }, [isMounted, isLoggedIn, name, xp, scopeFilter, subScope, evaluationScope]);
 
   // Simulate filtering the leaderboard based on the chosen scope
   const filteredLeaderboard = useMemo(() => {
@@ -248,12 +259,15 @@ export default function LeaderboardPage() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-[13px] text-zinc-500 dark:text-zinc-400">Filter:</span>
               <select
-                className="flex-1 max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
+                className="flex-1 min-w-[200px] max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
                 value={subScope}
-                onChange={(e) => setSubScope(e.target.value)}
+                onChange={(e) => {
+                  setSubScope(e.target.value);
+                  setEvaluationScope('all');
+                }}
               >
                 {scopeFilter === 'angkatan' && (
                   <>
@@ -267,6 +281,21 @@ export default function LeaderboardPage() {
                   <option key={course.id} value={course.id}>{course.title}</option>
                 ))}
               </select>
+
+              {scopeFilter === 'course' && (
+                <select
+                  className="flex-1 min-w-[200px] max-w-[240px] px-3 py-1.5 text-[13px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none hover:border-zinc-400 focus:border-blue-500 transition-colors"
+                  value={evaluationScope}
+                  onChange={(e) => setEvaluationScope(e.target.value)}
+                >
+                  <option value="all">Semua Evaluasi</option>
+                  {evaluationsList
+                    .filter(ev => ev.courseId === subScope)
+                    .map(ev => (
+                      <option key={ev.id} value={ev.id}>{ev.title}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -366,24 +395,14 @@ export default function LeaderboardPage() {
             
             <div className="mb-6">
               <div className="flex justify-between text-[13px] text-zinc-600 dark:text-zinc-400 mb-2 font-medium">
-                <span>Soal Dijawab</span>
-                <span className="font-bold text-blue-900 dark:text-blue-100">
-                  {currentUserEntry?.answeredQuestions || 0}/{currentUserEntry?.totalQuestions || 0}
+                <span>Evaluasi Selesai</span>
+                <span className="font-bold text-blue-900 dark:text-blue-100 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
+                  {currentUserEntry?.answeredQuestions || 0}
                 </span>
-              </div>
-              <div className="w-full h-2 bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${((currentUserEntry?.answeredQuestions || 0) / (currentUserEntry?.totalQuestions || 1)) * 100}%` }}
-                />
               </div>
             </div>
 
             <div className="border-t-2 border-zinc-100 dark:border-zinc-800 pt-4 space-y-3">
-              <div className="flex justify-between items-center text-[14px]">
-                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Akurasi</span>
-                <span className="font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">{currentUserEntry?.accuracy || 0}%</span>
-              </div>
               <div className="flex justify-between items-center text-[14px]">
                 <span className="text-zinc-500 dark:text-zinc-400 font-medium">Total XP</span>
                 <span className="font-bold text-zinc-900 dark:text-zinc-100 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-500 px-2 py-0.5 rounded-md flex items-center gap-1">

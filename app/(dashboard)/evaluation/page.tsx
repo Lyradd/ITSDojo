@@ -434,13 +434,6 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, userId, isCo
                 <span className="text-[10px] uppercase tracking-wider text-yellow-600 dark:text-yellow-500/80">poin</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-emerald-100/80">
-              <Clock className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-              <div className="flex flex-col leading-none">
-                <span className="font-bold text-sm">30</span>
-                <span className="text-[10px] uppercase tracking-wider text-indigo-500 dark:text-indigo-400/80">menit</span>
-              </div>
-            </div>
           </div>
 
           <Link href={`/evaluation/${evaluation.id}/results`} className="block">
@@ -498,10 +491,6 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, userId, isCo
               <Target className="w-5 h-5 text-yellow-600 dark:text-yellow-500" />
               <span>{evaluation.totalPoints} poin</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-700 dark:text-indigo-100/80 text-sm font-bold">
-              <Clock className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-              <span>{evaluation.duration} menit</span>
-            </div>
           </div>
 
           {/* Participants */}
@@ -550,7 +539,7 @@ function EvaluationCard({ evaluation, getCourseName, onStart, name, userId, isCo
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
               <p>📌 Kuis ini berjalan secara <strong>real-time sinkronus</strong>. Kamu akan masuk ke ruang tunggu (lobby) sebelum Dosen memulai kuis.</p>
               <p>🔒 <strong>Akses 1x Saja:</strong> Pastikan koneksimu stabil. Setelah di-submit, kamu tidak bisa masuk kembali ke arena ini.</p>
-              <p>⏱️ Durasi: <strong>{evaluation.duration} menit</strong> — timer berjalan otomatis ketika Dosen memulai sesi.</p>
+              <p>⏱️ Timer per soal akan berjalan otomatis ketika Dosen memulai sesi.</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">

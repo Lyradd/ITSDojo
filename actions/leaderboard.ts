@@ -10,6 +10,7 @@ import { getSession } from "@/lib/session";
 
 export async function getLeaderboardData(filter?: {
   courseId?: string; // filter ke mahasiswa yang enrolled+accepted di course ini
+  evaluationId?: string; // filter ke leaderboard spesifik evaluasi
 }): Promise<LeaderboardEntry[]> {
   try {
     const session = await getSession();
@@ -28,7 +29,43 @@ export async function getLeaderboardData(filter?: {
       semester: number;
     }>;
 
-    if (filter?.courseId) {
+    if (filter?.evaluationId) {
+      // Filter: leaderboard spesifik untuk satu evaluasi berdasarkan skor dari evaluationResults
+      // PENTING: Karena ini rank evaluasi, kita akan gunakan score dari evaluasi itu, bukan XP global
+      const evalResults = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          avatar: users.avatar,
+          score: evaluationResults.score, // Use evaluation score instead of global XP
+          accuracy: evaluationResults.accuracy,
+          semester: users.semester,
+        })
+        .from(evaluationResults)
+        .innerJoin(users, eq(users.id, evaluationResults.studentId))
+        .where(eq(evaluationResults.evaluationId, filter.evaluationId))
+        .orderBy(desc(evaluationResults.score))
+        .limit(100);
+
+      // Return formatted specifically for evaluation leaderboard
+      return evalResults.map((user, index) => {
+        const angkatan = getAngkatanFromSemester(user.semester);
+        return {
+          userId: user.id,
+          name: user.name,
+          avatar: user.avatar || 'bg-blue-200 text-blue-700',
+          score: user.score,
+          totalQuestions: 1, // Dummy
+          answeredQuestions: 1,
+          accuracy: user.accuracy ?? 0,
+          rank: index + 1,
+          lastUpdate: Date.now(),
+          isCurrentUser: false,
+          batch: angkatan.toString(),
+          coursesTaken: 0,
+        };
+      });
+    } else if (filter?.courseId) {
       // Filter: hanya mahasiswa yang punya enrollment 'accepted' di course ini.
       dbUsers = await db
         .select({
@@ -68,7 +105,7 @@ export async function getLeaderboardData(filter?: {
         .limit(100);
     }
 
-    if (dbUsers.length === 0) return [];
+    if (!dbUsers || dbUsers.length === 0) return [];
 
     // Hitung stats sekunder per user dari evaluationResults: totalEvaluasi, avgAccuracy.
     const userIds = dbUsers.map((u) => u.id);

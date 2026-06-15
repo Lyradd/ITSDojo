@@ -116,12 +116,10 @@ export async function POST(req: Request) {
              gData.streakFreezeCount = memoryFreeze;
              gData.activityHistory = history;
              
-             // Jika streak di-reset (hangus), ubah lastActiveDate ke H-1 (Kemarin)
-             // agar logika besoknya (atau saat login lagi) dapat menghitung hari ini dengan benar
-             if (isReset) {
-                 const yesterday = new Date(todayDateObj.getTime() - 24 * 60 * 60 * 1000);
-                 gData.lastActiveDate = yesterday.toISOString().split('T')[0];
-             }
+             // Pindahkan lastActiveDate ke H-1 (Kemarin) untuk semua kondisi setelah evaluasi catch-up berhasil
+             // Hal ini mencegah Double Deductions jika user belajar di hari yang sama dengan evaluasi
+             const yesterday = new Date(todayDateObj.getTime() - 24 * 60 * 60 * 1000);
+             gData.lastActiveDate = yesterday.toISOString().split('T')[0];
           }
         }
       }

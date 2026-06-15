@@ -566,8 +566,12 @@ export async function claimMonthlyMilestoneAction(milestone: number, rewardGems:
 // ==========================================
 // UNIVERSAL GOAL EVALUATOR (Server Action)
 // ==========================================
-export async function updateGoalProgressAction(goalType: string, amount: number = 1, targetUserId?: string) {
+export async function updateGoalProgressAction(goalType: string, amount: number = 1, targetUserId?: string, isRealActivity: boolean = true) {
   try {
+    if (!isRealActivity) {
+      return { success: true, message: "Progress ignored due to compensated/frozen activity" };
+    }
+
     let userId = targetUserId;
     if (!userId) {
       const session = await getSession();

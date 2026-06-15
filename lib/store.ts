@@ -472,7 +472,7 @@ export const useUserStore = create<UserState>()(
         history.forEach(h => {
           const [year, month, day] = h.date.split('-').map(Number);
           const d = new Date(year, month - 1, day, 0, 0, 0, 0);
-          if (d >= monday && (h.count > 0 || h.xpEarned > 0 || h.freezeUsed)) {
+          if (d >= monday && (h.count > 0 || h.xpEarned > 0)) {
             uniqueDays.add(h.date);
           }
         });

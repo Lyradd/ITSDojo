@@ -194,6 +194,46 @@ async function finalizeRoundSession(
   }
 
   // Next round
+  const isBotChooser = chooserId && (chooserId.includes("bot") || chooserId.includes("local"));
+
+  if (isBotChooser) {
+    const subjects = await db
+      .select({ id: duelSubject.id })
+      .from(duelSubject);
+    const subjectIds = subjects.map((s) => String(s.id));
+    
+    // Auto pick next topic that hasn't been played yet
+    const playedTopicIds = roundResults.map((r) => String(r.topicId));
+    const availableTopicIds = subjectIds.filter((id) => !playedTopicIds.includes(id));
+    const nextTopic = availableTopicIds[0] ?? subjectIds[0] ?? existing.currentTopicId;
+
+    // Update in database so it matches
+    await db
+      .update(arenaRooms)
+      .set({
+        topicId: Number(nextTopic),
+        updatedAt: new Date(),
+      })
+      .where(eq(arenaRooms.id, lobby.id));
+
+    const nextRoundSession: ArenaSessionState = {
+      ...existing,
+      currentRound: existing.currentRound + 1,
+      currentTopicId: nextTopic,
+      status: "in_progress",
+      chooserId: null,
+      pendingScores: {},
+      currentQuestionIndex: 0,
+      questionSubmissions: {},
+      scores: {},
+      roundResults,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setArenaSession(roomKey, nextRoundSession);
+    return nextRoundSession;
+  }
+
   const chooseTopicSession: ArenaSessionState = {
     ...existing,
     status: "awaiting_topic_choice",
@@ -369,6 +409,8 @@ export async function POST(
         }, { status: 409 });
       }
 
+      const botPlayers = players.filter((p) => p.id.includes("bot") || p.email.includes("local"));
+
       const questionSubmissions = {
         ...existing.questionSubmissions,
         [playerId]: questionIndex,
@@ -378,6 +420,18 @@ export async function POST(
         ...existing.scores,
         [playerId]: score,
       };
+
+      botPlayers.forEach((bot) => {
+        questionSubmissions[bot.id] = questionIndex;
+        const botHasSubmittedThis = (existing.questionSubmissions[bot.id] ?? -1) >= questionIndex;
+        if (!botHasSubmittedThis) {
+          const botPrevScore = existing.scores[bot.id] ?? 0;
+          const botNewPoints = Math.random() > 0.4 ? 10 : 0;
+          scores[bot.id] = botPrevScore + botNewPoints;
+        } else {
+          scores[bot.id] = existing.scores[bot.id] ?? 0;
+        }
+      });
 
       const questionSession: ArenaSessionState = {
         ...existing,
@@ -429,10 +483,18 @@ export async function POST(
       }, { status: 409 });
     }
 
+    const botPlayers = players.filter((p) => p.id.includes("bot") || p.email.includes("local"));
+
     const pendingScores = {
       ...existing.pendingScores,
       [playerId]: score,
     };
+
+    botPlayers.forEach((bot) => {
+      if (!Object.prototype.hasOwnProperty.call(pendingScores, bot.id)) {
+        pendingScores[bot.id] = existing.scores[bot.id] ?? 0;
+      }
+    });
 
     // Check if all players submitted their final round score
     const allFinalized = playerIds.every((id) => Object.prototype.hasOwnProperty.call(pendingScores, id));

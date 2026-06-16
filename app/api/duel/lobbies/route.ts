@@ -48,6 +48,21 @@ export async function POST(req: Request) {
         .onConflictDoNothing();
     }
 
+    const botId = "bot_duel_1v1";
+    const botEmail = "bot_duel_1v1@itsdojo.local";
+    const botName = "AI Dojo Bot";
+
+    // Ensure bot user exists in users table
+    await db
+      .insert(users)
+      .values({
+        id: botId,
+        name: botName,
+        email: botEmail,
+        role: "mahasiswa",
+      })
+      .onConflictDoNothing();
+
     const inviteCode = crypto.randomUUID();
 
     const [room] = await db
@@ -55,8 +70,9 @@ export async function POST(req: Request) {
       .values({
         topicId,
         hostId,
+        guestId: botId,
         inviteCode,
-        status: "waiting",
+        status: "joined",
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -66,8 +82,8 @@ export async function POST(req: Request) {
       id: room?.id ?? null,
       topicId,
       hostId,
-      guestId: null,
-      status: room?.status ?? "waiting",
+      guestId: botId,
+      status: room?.status ?? "joined",
       inviteCode: room?.inviteCode ?? inviteCode,
       startedAt: null,
       endedAt: null,
@@ -78,7 +94,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       id: room?.id ?? null,
       inviteCode: room?.inviteCode ?? inviteCode,
-      status: room?.status ?? "waiting",
+      status: room?.status ?? "joined",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create lobby";

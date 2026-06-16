@@ -188,7 +188,7 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
           )}
         >
           <Plus className="w-4 h-4 mr-2" />
-          Multiple Choice
+          Pilihan Ganda
         </Button>
         <Button
           type="button"
@@ -202,7 +202,7 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
           )}
         >
           <Plus className="w-4 h-4 mr-2" />
-          True/False
+          Benar/Salah
         </Button>
         <Button
           type="button"
@@ -216,7 +216,7 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
           )}
         >
           <Plus className="w-4 h-4 mr-2" />
-          Short Answer
+          Isian Singkat
         </Button>
         <Button
           type="button"
@@ -257,7 +257,7 @@ export function QuestionBuilder({ questions, onChange, courseId, importUsageType
         {questions.length === 0 && (
           <div className="text-center py-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700">
             <p className="text-zinc-500 dark:text-zinc-400">
-              No questions yet. Click a button above to add your first question!
+              Belum ada pertanyaan. Klik tombol di atas untuk menambahkan pertanyaan pertama Anda!
             </p>
           </div>
         )}
@@ -290,10 +290,10 @@ function QuestionCard({
   const dragControls = useDragControls();
 
   const questionTypeLabels = {
-    multiple_choice: 'Multiple Choice',
-    true_false: 'True/False',
-    short_answer: 'Short Answer',
-    essay: 'Essay',
+    multiple_choice: 'Pilihan Ganda',
+    true_false: 'Benar/Salah',
+    short_answer: 'Isian Singkat',
+    essay: 'Esai',
     puzzle: '🧩 Puzzle',
   } as const;
 
@@ -336,7 +336,7 @@ function QuestionCard({
         {/* Question Preview */}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
-            {question.question || `Untitled ${questionTypeLabels[question.type]}`}
+            {question.question || `Tanpa Judul ${questionTypeLabels[question.type]}`}
           </div>
           <div className="text-xs text-zinc-500 flex items-center gap-2">
             <span>{questionTypeLabels[question.type]}</span>
@@ -362,20 +362,20 @@ function QuestionCard({
           {/* Question Text */}
           <div>
             <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-              Question Text *
+              Teks Pertanyaan *
             </label>
             <textarea
               value={question.question}
               onChange={(e) => onUpdate({ question: e.target.value })}
               className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               rows={3}
-              placeholder="Enter your question here..."
+              placeholder="Masukkan pertanyaan Anda di sini..."
             />
           </div>
 
           {/* Question Image */}
           <ImageUpload
-            label="Question Image (Optional)"
+            label="Gambar Pertanyaan (Opsional)"
             value={question.media?.url}
             onChange={(url) => 
               onUpdate({ 
@@ -414,11 +414,11 @@ function QuestionCard({
           )}
 
           {/* Settings Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Points */}
             <div>
               <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-                Points: <span className="text-blue-600 font-bold">{question.points}</span>
+                Poin: <span className="text-blue-600 font-bold">{question.points}</span>
               </label>
               <input
                 type="range"
@@ -436,26 +436,10 @@ function QuestionCard({
               </div>
             </div>
 
-            {/* Difficulty */}
-            <div>
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-                Difficulty
-              </label>
-              <select
-                value={question.difficulty}
-                onChange={(e) => onUpdate({ difficulty: e.target.value as DifficultyLevel })}
-                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </div>
-
             {/* Time Limit */}
             <div>
               <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-                Time Limit (sec) *
+                Batas Waktu (detik) *
               </label>
               <input
                 type="number"
@@ -479,7 +463,7 @@ function QuestionCard({
                 onClick={onDuplicate}
               >
                 <Copy className="w-4 h-4 mr-2" />
-                Duplicate
+                Duplikat
               </Button>
             </div>
 
@@ -492,7 +476,7 @@ function QuestionCard({
                 className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                Hapus
               </Button>
             </div>
           </div>
@@ -523,7 +507,7 @@ function MultipleChoiceOptions({ options, onChange }: any) {
   return (
     <div className="space-y-3">
       <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-        Options * (Select the correct answer)
+        Pilihan Jawaban * (Pilih jawaban yang benar)
       </label>
       {options.map((option: any, index: number) => (
         <div key={option.id} className="flex items-center gap-3">
@@ -549,7 +533,7 @@ function MultipleChoiceOptions({ options, onChange }: any) {
             type="text"
             value={option.text}
             onChange={(e) => updateOption(index, { text: e.target.value })}
-            placeholder={`Option ${index + 1}`}
+            placeholder={`Pilihan ${index + 1}`}
             className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
           />
           {options.length > 2 && (
@@ -567,7 +551,7 @@ function MultipleChoiceOptions({ options, onChange }: any) {
       {options.length < 6 && (
         <Button type="button" variant="outline" size="sm" onClick={addOption}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Option
+          Tambah Pilihan
         </Button>
       )}
     </div>
@@ -578,7 +562,7 @@ function TrueFalseOptions({ correctAnswer, onChange }: any) {
   return (
     <div className="space-y-3">
       <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-        Correct Answer *
+        Jawaban Benar *
       </label>
       <div className="flex gap-4">
         <button
@@ -591,7 +575,7 @@ function TrueFalseOptions({ correctAnswer, onChange }: any) {
               : "border-zinc-300 dark:border-zinc-600 hover:border-green-500"
           )}
         >
-          True
+          Benar
         </button>
         <button
           type="button"
@@ -603,7 +587,7 @@ function TrueFalseOptions({ correctAnswer, onChange }: any) {
               : "border-zinc-300 dark:border-zinc-600 hover:border-green-500"
           )}
         >
-          False
+          Salah
         </button>
       </div>
     </div>
@@ -653,7 +637,7 @@ function PuzzleOptions({ pairs, onChange }: PuzzleOptionsProps) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-          🧩 Items to Order * (Students drag to arrange in correct sequence)
+          🧩 Item untuk Diurutkan * (Mahasiswa menggeser untuk menyusun urutan yang benar)
         </label>
         <Button
           type="button"
@@ -662,7 +646,7 @@ function PuzzleOptions({ pairs, onChange }: PuzzleOptionsProps) {
           size="sm"
           className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
           <Plus className="w-4 h-4 mr-1" />
-          Add Item
+          Tambah Item
         </Button>
       </div>
 
@@ -697,7 +681,7 @@ function PuzzleOptions({ pairs, onChange }: PuzzleOptionsProps) {
               type="text"
               value={item.text}
               onChange={(e) => updateItem(item.id, e.target.value)}
-              placeholder={`Step ${index + 1} (e.g., "First, prepare the ingredients")`}
+              placeholder={`Langkah ${index + 1} (contoh: "Pertama, siapkan bahan-bahan")`}
               className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
@@ -715,13 +699,13 @@ function PuzzleOptions({ pairs, onChange }: PuzzleOptionsProps) {
 
       {pairs.length === 0 && (
         <div className="text-center py-8 text-zinc-500 dark:text-zinc-400 text-sm border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg">
-          No items yet. Click "Add Item" to create sequence items.
+          Belum ada item. Klik "Tambah Item" untuk membuat urutan item.
         </div>
       )}
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
         <span>💡</span>
-        <span>The order you create is the CORRECT order. Students will drag to arrange randomly shuffled items.</span>
+        <span>Urutan yang Anda buat adalah urutan yang BENAR. Mahasiswa akan menyusun item yang diacak secara otomatis.</span>
       </p>
     </div>
   );

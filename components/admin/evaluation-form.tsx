@@ -73,59 +73,19 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
         />
       </div>
 
-      {/* Duration and Difficulty */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Duration */}
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Durasi (menit)
-          </label>
-          <div className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-sm italic">
-            Diatur otomatis (Live Timer)
-          </div>
-        </div>
-
-        {/* Difficulty */}
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Tingkat Kesulitan
-          </label>
-          <select
-            value={metadata.difficulty}
-            onChange={(e) => updateField('difficulty', e.target.value as DifficultyLevel)}
-            className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-          >
-            <option value="easy">Mudah</option>
-            <option value="medium">Sedang</option>
-            <option value="hard">Sulit</option>
-          </select>
-        </div>
-
-        {/* Total Points (Read-only, calculated from questions) */}
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Total Poin
-          </label>
-          <div className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-white font-bold text-center">
-            {totalPointsFromQuestions} pts
-          </div>
-          <p className="text-xs text-zinc-500 mt-1">Otomatis dari soal</p>
-        </div>
-
-        {/* Bot Quota */}
-        <div>
-          <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
-            Target Peserta (Bot)
-          </label>
-          <Input
-            type="number"
-            value={metadata.botQuota || 0}
-            onChange={(e) => updateField('botQuota', parseInt(e.target.value) || 0)}
-            min={0}
-            placeholder="Misal: 25"
-          />
-          <p className="text-xs text-zinc-500 mt-1">Isi 0 jika tidak pakai bot.</p>
-        </div>
+      {/* Bot Quota */}
+      <div>
+        <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Target Peserta (Bot)
+        </label>
+        <Input
+          type="number"
+          value={metadata.botQuota || 0}
+          onChange={(e) => updateField('botQuota', parseInt(e.target.value) || 0)}
+          min={0}
+          placeholder="Misal: 25"
+        />
+        <p className="text-xs text-zinc-500 mt-1">Isi 0 jika tidak pakai bot.</p>
       </div>
     </div>
   );

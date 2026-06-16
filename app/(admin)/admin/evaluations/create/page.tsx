@@ -51,7 +51,10 @@ export default function CreateEvaluationPage() {
 
   const totalPoints = calculateTotalPoints(questions);
   
-  const canProceedToStep2 = metadata.title.trim().length > 0 && metadata.duration > 0 && !!metadata.courseId;
+  const totalDurationInSeconds = questions.reduce((acc, q) => acc + (q.timeLimit || 30), 0);
+  const calculatedDuration = Math.ceil(totalDurationInSeconds / 60);
+
+  const canProceedToStep2 = metadata.title.trim().length > 0 && !!metadata.courseId;
   const canProceedToStep3 = questions.length > 0;
   const canPublish = canProceedToStep2 && canProceedToStep3;
 
@@ -65,6 +68,7 @@ export default function CreateEvaluationPage() {
         ...metadata,
         description: finalDescription,
         totalPoints,
+        duration: calculatedDuration,
         questions,
       };
 
@@ -99,14 +103,14 @@ export default function CreateEvaluationPage() {
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            Kembali
           </Button>
           
           <h1 className="text-3xl font-bold text-blue-700 dark:text-white mb-2">
-            Create New Evaluation
+            Buat Arena Evaluasi Baru
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">
-            Build your quiz step by step. Changes are auto-saved locally.
+            Buat evaluasi Anda secara bertahap. Perubahan akan disimpan otomatis di browser.
           </p>
         </div>
 
@@ -114,9 +118,9 @@ export default function CreateEvaluationPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
             {[
-              { step: 1, label: 'Details' },
-              { step: 2, label: 'Questions' },
-              { step: 3, label: 'Preview' },
+              { step: 1, label: 'Detail' },
+              { step: 2, label: 'Pertanyaan' },
+              { step: 3, label: 'Pratinjau' },
             ].map(({ step, label }) => (
               <div key={step} className="flex items-center flex-1">
                 <button
@@ -166,7 +170,7 @@ export default function CreateEvaluationPage() {
           {currentStep === 1 && (
             <>
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-                Evaluation Details
+                Detail Evaluasi
               </h2>
               <EvaluationForm
                 metadata={metadata}
@@ -179,7 +183,7 @@ export default function CreateEvaluationPage() {
           {currentStep === 2 && (
             <>
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-                Build Questions
+                Buat Pertanyaan
               </h2>
               <QuestionBuilder 
                 questions={questions} 
@@ -193,12 +197,13 @@ export default function CreateEvaluationPage() {
           {currentStep === 3 && (
             <>
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-                Preview & Publish
+                Pratinjau & Terbitkan
               </h2>
               <PreviewSection
                 metadata={metadata}
                 questions={questions}
                 totalPoints={totalPoints}
+                totalDurationInSeconds={totalDurationInSeconds}
               />
             </>
           )}
@@ -213,24 +218,19 @@ export default function CreateEvaluationPage() {
                 onClick={() => setCurrentStep((currentStep - 1) as 1 | 2 | 3)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Previous
+                Sebelumnya
               </Button>
             )}
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => console.log('Auto-saved')}>
-              <Save className="w-4 h-4 mr-2" />
-              Auto-saved
-            </Button>
-
             {currentStep < 3 ? (
               <Button
                 onClick={() => setCurrentStep((currentStep + 1) as 1 | 2 | 3)}
                 disabled={currentStep === 1 ? !canProceedToStep2 : !canProceedToStep3}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Continue
+                Lanjutkan
                 <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
               </Button>
             ) : (
@@ -240,7 +240,7 @@ export default function CreateEvaluationPage() {
                 className="bg-green-600 hover:bg-green-700"
               >
                 <Rocket className="w-4 h-4 mr-2" />
-                Publish Evaluation
+                Terbitkan Arena
               </Button>
             )}
           </div>
@@ -254,9 +254,15 @@ interface PreviewSectionProps {
   metadata: EvaluationMetadata;
   questions: Question[];
   totalPoints: number;
+  totalDurationInSeconds: number;
 }
 
-function PreviewSection({ metadata, questions, totalPoints }: PreviewSectionProps) {
+function PreviewSection({ metadata, questions, totalPoints, totalDurationInSeconds }: PreviewSectionProps) {
+  const minutes = Math.floor(totalDurationInSeconds / 60);
+  const seconds = totalDurationInSeconds % 60;
+  const durationText = minutes > 0 
+    ? (seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes} Menit`) 
+    : `${seconds} Detik`;
 
   return (
     <div className="space-y-6">
@@ -265,22 +271,18 @@ function PreviewSection({ metadata, questions, totalPoints }: PreviewSectionProp
         <h3 className="text-xl font-bold mb-4">{metadata.title}</h3>
         <p className="text-zinc-600 dark:text-zinc-400 mb-4">{metadata.description}</p>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
           <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">{questions.length}</div>
-            <div className="text-xs text-zinc-600 dark:text-zinc-400">Questions</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-400">Pertanyaan</div>
           </div>
           <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{totalPoints}</div>
-            <div className="text-xs text-zinc-600 dark:text-zinc-400">Total Points</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-400">Total Poin</div>
           </div>
           <div className="text-center p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{metadata.duration}</div>
-            <div className="text-xs text-zinc-600 dark:text-zinc-400">Minutes</div>
-          </div>
-          <div className="text-center p-3 bg-orange-50 dark:bg-orange-950 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600 capitalize">{metadata.difficulty}</div>
-            <div className="text-xs text-zinc-600 dark:text-zinc-400">Difficulty</div>
+            <div className="text-2xl font-bold text-purple-600">{durationText}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-400">Total Waktu</div>
           </div>
         </div>
       </div>
@@ -289,7 +291,7 @@ function PreviewSection({ metadata, questions, totalPoints }: PreviewSectionProp
 
       {/* Questions Preview */}
       <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-6">
-        <h3 className="text-lg font-bold mb-4">Questions ({questions.length})</h3>
+        <h3 className="text-lg font-bold mb-4">Pertanyaan ({questions.length})</h3>
         <div className="space-y-3">
           {questions.map((q: Question, index: number) => (
             <div key={q.id} className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg">

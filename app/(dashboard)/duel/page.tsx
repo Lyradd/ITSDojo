@@ -25,9 +25,7 @@ export default function DuelPage() {
             Brain Duel
           </h1>
         </div>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          BrainDuel Description
-        </p>
+        <p className="text-zinc-600 dark:text-zinc-400">Uji wawasan dan kecepatan berpikir Anda dalam pertarungan kuis real-time.</p>
       </div>
 
       {/*content*/}

@@ -19,10 +19,10 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password').default('123456').notNull(), // Plain text, default 123456 — bisa diubah via super admin
   role: roleEnum('role').default('mahasiswa').notNull(),
-  
+
   // Academic Data
   semester: integer('semester').default(1).notNull(),
-  
+
   // Gamification Data
   level: integer('level').default(1).notNull(),
   xp: integer('xp').default(0).notNull(), // Leaderboard XP (kompetitif — dari evaluasi)
@@ -32,7 +32,7 @@ export const users = pgTable('users', {
   streak: integer('streak').default(0).notNull(),
   avatar: text('avatar').default('bg-blue-200 text-blue-700'),
   gamificationData: jsonb('gamification_data'),
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -45,7 +45,7 @@ export const courses = pgTable('courses', {
   description: text('description').notNull(),
   imageSrc: text('image_src'),
   color: text('color').default('bg-blue-500').notNull(),
-  
+
   // Metadata & Prasyarat
   difficulty: difficultyEnum('difficulty').default('Beginner').notNull(),
   xpReward: integer('xp_reward').default(100).notNull(),
@@ -162,7 +162,7 @@ export const evaluations = pgTable('evaluations', {
   // Session lifecycle: 'waiting' (default, menunggu dosen mulai) | 'active' (sedang berjalan) | 'finished'
   sessionStatus: text('session_status').default('waiting').notNull(),
   sessionStartedAt: timestamp('session_started_at'),
-  
+
   // Real-time synchronization fields
   currentQuestionIndex: integer('current_question_index').default(0).notNull(),
   questionStartedAt: timestamp('question_started_at'),

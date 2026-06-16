@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserStore } from "@/lib/store";
-import { Swords, ArrowLeft, Copy, Users, Globe, Play, X, User } from "lucide-react";
+import { Swords, ArrowLeft, Copy, Users, Globe, Play, X, User, CircleQuestionMark } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -62,6 +62,7 @@ function ArenaContent() {
   const [error, setError] = useState<string | null>(null);
   const [joinAttempted, setJoinAttempted] = useState(false);
   const [hasUserSelectedTopic, setHasUserSelectedTopic] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -327,10 +328,16 @@ function ArenaContent() {
               : "Menunggu host memulai Arena..."}
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleLeaveLobby} className="flex items-center gap-2 cursor-pointer">
-          <ArrowLeft className="w-5 h-5" />
-          <span>Keluar Arena</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowGuide(true)} className="flex items-center gap-2 cursor-pointer border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+            <CircleQuestionMark className="w-4 h-4" />
+            <span>Cara Bermain</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleLeaveLobby} className="flex items-center gap-2 cursor-pointer">
+            <ArrowLeft className="w-5 h-5" />
+            <span>Keluar Arena</span>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
@@ -364,11 +371,10 @@ function ArenaContent() {
                       onMouseEnter={() => setHoveredTopic(topic.id)}
                       onMouseLeave={() => setHoveredTopic(null)}
                       disabled={creatingLobby || !isHost}
-                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer transition-all duration-200 ${
-                        isSelected
+                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer transition-all duration-200 ${isSelected
                           ? "bg-blue-600 hover:bg-blue-700 text-white border-transparent"
                           : "hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-700 dark:hover:text-blue-300"
-                      }`}
+                        }`}
                     >
                       <span className="truncate">{topic.subjectname}</span>
                     </Button>
@@ -519,6 +525,91 @@ function ArenaContent() {
                   </p>
                 </Card>
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Guide Modal */}
+          <AnimatePresence>
+            {showGuide && (
+              <div
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+                onClick={() => setShowGuide(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800 text-zinc-850 dark:text-zinc-100"
+                >
+                  <button
+                    onClick={() => setShowGuide(false)}
+                    className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                    title="Tutup"
+                  >
+                    <X className="w-5 h-5 text-zinc-500" />
+                  </button>
+
+                  <div className="flex items-center gap-3 mb-6 border-b pb-4 border-zinc-100 dark:border-zinc-800">
+                    <Globe className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                    <h3 className="text-2xl font-black text-zinc-800 dark:text-white leading-tight">Cara Bermain Arena Duel</h3>
+                  </div>
+
+                  <div className="space-y-4 mb-6">
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Room Otomatis</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Lobby Arena otomatis dibuat untuk Anda. Anda bertindak sebagai Host yang memegang kendali penuh.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Undang Banyak Teman</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Salin link undangan dan bagikan ke teman-temanmu. Berbeda dari 1v1, Arena mendukung jumlah pemain yang lebih banyak secara bersamaan!
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Mulai Pertandingan</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Pilih topik kuis, tunggu hingga minimal ada 2 pemain bergabung, lalu klik "Mulai Arena".
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        4
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Sistem Permainan</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Semua pemain akan menjawab serangkaian soal yang sama secara real-time. Skor dihitung berdasarkan kebenaran dan kecepatan menjawab soal. Papan peringkat akhir akan memaparkan peringkat seluruh peserta.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 font-bold cursor-pointer"
+                    onClick={() => setShowGuide(false)}
+                  >
+                    Saya Mengerti
+                  </Button>
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </aside>

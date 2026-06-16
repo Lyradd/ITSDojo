@@ -349,10 +349,10 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
             <Swords className="w-10 h-10" />
           </motion.div>
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 sm:mb-6 tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-            <MaskedText>Brain Duel:</MaskedText>{" "}<MaskedText delay={0.15}>Arena Pertarungan</MaskedText>
+            <MaskedText>1v1:</MaskedText>{" "}<MaskedText delay={0.15}>Duel Otak</MaskedText>
           </h2>
           <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-xl leading-relaxed px-2 sm:px-0">
-            Tabrak lawanmu secara langsung! Jawab akurat di bawah tekanan waktu, hancurkan pertahanan mereka, dan rebut XP di depan mata.
+            Uji wawasan dan ketangkasan logika pemrograman Anda secara real-time melawan rekan mahasiswa. Jawab dengan cepat dan akurat di bawah tekanan waktu untuk merebut XP.
           </p>
         </div>
 
@@ -527,9 +527,9 @@ export default function LandingPage() {
   // --- STATE ROADMAP INTERAKTIF ---
   const [activeNode, setActiveNode] = useState<number>(1);
   const roadmapNodes = [
-    { id: 1, title: "Logika Dasar", desc: "Kuasai algoritma, variabel, perulangan, dan struktur data fundamental.", status: "completed", xp: "Selesai" },
-    { id: 2, title: "Frontend Master", desc: "Bangun antarmuka UI interaktif dengan React.js dan TailwindCSS yang responsif.", status: "active", xp: "Progres 65%" },
-    { id: 3, title: "Data Science", desc: "Pelajari analisis data, visualisasi, dan pemrosesan model dengan Python.", status: "locked", xp: "Butuh 5,000 XP" },
+    { id: 1, title: "Dasar Pemrograman", desc: "Kuasai fondasi algoritma, struktur kontrol, dan dasar bahasa C/C++.", status: "completed", xp: "Selesai" },
+    { id: 2, title: "Pemrograman Web", desc: "Bangun antarmuka UI interaktif dengan React.js dan TailwindCSS yang responsif.", status: "active", xp: "Progres 65%" },
+    { id: 3, title: "Sains Data", desc: "Pelajari analisis data, visualisasi, dan pemrosesan model dengan Python.", status: "locked", xp: "Butuh 5,000 XP" },
   ];
 
   // --- STATE GAMIFIKASI INTERAKTIF ---
@@ -729,7 +729,7 @@ export default function LandingPage() {
                 </MagneticButton>
               </Link>
               <MagneticButton onClick={() => scrollTo('roadmap')} variant="outline" size="lg" className="h-14 sm:h-16 px-8 sm:px-10 rounded-full border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-bold text-base sm:text-lg backdrop-blur-sm transition-all shadow-sm w-full sm:w-auto justify-center">
-                Lihat Pohon Skill
+                Lihat Jalur Pembelajaran
               </MagneticButton>
             </motion.div>
           </motion.div>
@@ -804,10 +804,10 @@ export default function LandingPage() {
               <Map className="w-8 h-8" />
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 tracking-tight text-white">
-              <MaskedText>Pohon Skill</MaskedText>{" "}<MaskedText delay={0.15}>Interaktif</MaskedText>
+              <MaskedText>Jalur</MaskedText>{" "}<MaskedText delay={0.15}>Pembelajaran</MaskedText>
             </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-xl leading-relaxed px-2 sm:px-0">
-              Klik setiap node untuk merancang takdirmu. Pilih spesialisasi, selesaikan modul untuk mengumpulkan XP, dan buka rahasia ilmu koding layaknya game RPG.
+              Telusuri materi secara terstruktur. Pilih spesialisasi Anda, selesaikan modul kompetensi untuk meraih XP, dan tingkatkan pemahaman pemrograman selangkah demi selangkah.
             </p>
           </div>
 
@@ -816,30 +816,83 @@ export default function LandingPage() {
             <SpotlightCard className="flex-1 w-full">
               <div className="p-8 flex flex-col items-center gap-4 py-4 w-full h-full relative z-10">
                 {/* Node 1 */}
-                <button type="button" aria-label="Roadmap Logika Dasar" onClick={() => setActiveNode(1)} className={`flex flex-col items-center cursor-pointer group transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2 ${activeNode === 1 ? 'scale-110' : 'hover:scale-105'}`}>
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg z-10 transition-colors ${activeNode === 1 ? 'bg-blue-600 text-white ring-4 ring-blue-500/40' : 'bg-blue-600/80 text-blue-100'}`}>
+                <motion.button 
+                  type="button" 
+                  aria-label="Roadmap Dasar Pemrograman" 
+                  onClick={() => setActiveNode(1)} 
+                  whileHover={{ scale: 1.1 }}
+                  animate={activeNode === 1 ? { y: [0, -10, 0] } : {}}
+                  transition={activeNode === 1 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : {}}
+                  className={`flex flex-col items-center cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2 relative z-10`}
+                >
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${activeNode === 1 ? 'bg-blue-600 text-white ring-4 ring-blue-500/40 shadow-[0_0_25px_rgba(37,99,235,0.8)]' : 'bg-blue-600/80 text-blue-100 shadow-lg'}`}>
                     <Code2 className="w-10 h-10" />
                   </div>
-                  <span className={`font-bold mt-4 ${activeNode === 1 ? 'text-white' : 'text-zinc-400'}`}>Logika Dasar</span>
-                </button>
+                  <span className={`font-bold mt-4 ${activeNode === 1 ? 'text-white' : 'text-zinc-400'}`}>Dasar Pemrograman</span>
+                </motion.button>
 
-                <div className="w-2 h-16 bg-gradient-to-b from-blue-500 to-blue-900/50 -my-4 z-0 rounded-full" />
+                {/* Animated SVG Connections (Garis Energi) */}
+                <div className="relative w-full max-w-[280px] h-16 flex justify-center items-center -my-4 z-0">
+                  <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    {/* Path to Left (Node 2) */}
+                    <path d="M50 0 C 50 50, 15 50, 15 100" fill="none" stroke="rgba(59,130,246,0.15)" strokeWidth="3" strokeLinecap="round" />
+                    <motion.path 
+                      d="M50 0 C 50 50, 15 50, 15 100" 
+                      fill="none" 
+                      stroke="rgba(59,130,246,0.8)" 
+                      strokeWidth="3" 
+                      strokeLinecap="round" 
+                      strokeDasharray="40 100"
+                      animate={{ strokeDashoffset: [140, 0] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    />
+                    
+                    {/* Path to Right (Node 3) */}
+                    <path d="M50 0 C 50 50, 85 50, 85 100" fill="none" stroke="rgba(59,130,246,0.1)" strokeWidth="3" strokeLinecap="round" />
+                    <motion.path 
+                      d="M50 0 C 50 50, 85 50, 85 100" 
+                      fill="none" 
+                      stroke="rgba(59,130,246,0.4)" 
+                      strokeWidth="3" 
+                      strokeLinecap="round" 
+                      strokeDasharray="40 100"
+                      animate={{ strokeDashoffset: [140, 0] }}
+                      transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 1 }}
+                    />
+                  </svg>
+                </div>
 
                 {/* Split Nodes */}
-                <div className="flex gap-12 md:gap-24 items-start mt-4">
-                  <button type="button" aria-label="Roadmap Frontend" onClick={() => setActiveNode(2)} className={`flex flex-col items-center cursor-pointer group transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2 ${activeNode === 2 ? 'scale-110' : 'hover:scale-105'}`}>
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 2 ? 'bg-zinc-800 border-4 border-blue-500 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-zinc-900 border-4 border-zinc-700 text-zinc-500'}`}>
+                <div className="flex gap-12 md:gap-24 items-start mt-2 relative z-10">
+                  <motion.button 
+                    type="button" 
+                    aria-label="Roadmap Pemrograman Web" 
+                    onClick={() => setActiveNode(2)} 
+                    whileHover={{ scale: 1.1 }}
+                    animate={activeNode === 2 ? { y: [0, -10, 0] } : {}}
+                    transition={activeNode === 2 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : {}}
+                    className={`flex flex-col items-center cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2`}
+                  >
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${activeNode === 2 ? 'bg-zinc-800 border-4 border-blue-500 text-blue-400 shadow-[0_0_25px_rgba(37,99,235,0.8)]' : 'bg-zinc-900 border-4 border-zinc-700 text-zinc-500'}`}>
                       <Monitor className="w-10 h-10" />
                     </div>
-                    <span className={`font-bold mt-4 ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Frontend</span>
-                  </button>
+                    <span className={`font-bold mt-4 ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Pemrograman Web</span>
+                  </motion.button>
 
-                  <button type="button" aria-label="Roadmap Data Science" onClick={() => setActiveNode(3)} className={`flex flex-col items-center cursor-pointer group transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2 ${activeNode === 3 ? 'scale-110' : 'hover:scale-105'}`}>
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center z-10 transition-colors ${activeNode === 3 ? 'bg-zinc-800 border-4 border-zinc-500 text-zinc-300 shadow-[0_0_20px_rgba(255,255,255,0.1)]' : 'bg-zinc-900 border-4 border-zinc-800 text-zinc-600'}`}>
+                  <motion.button 
+                    type="button" 
+                    aria-label="Roadmap Sains Data" 
+                    onClick={() => setActiveNode(3)} 
+                    whileHover={{ scale: 1.1, x: [-3, 3, -3, 3, 0] }}
+                    animate={activeNode === 3 ? { y: [0, -10, 0] } : {}}
+                    transition={activeNode === 3 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : { duration: 0.3 }}
+                    className={`flex flex-col items-center cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 rounded-2xl p-2`}
+                  >
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${activeNode === 3 ? 'bg-zinc-800 border-4 border-zinc-400 text-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-zinc-900 border-4 border-zinc-800 text-zinc-600'}`}>
                       <BrainCircuit className="w-10 h-10" />
                     </div>
-                    <span className={`font-bold mt-4 ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Data Science</span>
-                  </button>
+                    <span className={`font-bold mt-4 ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Sains Data</span>
+                  </motion.button>
                 </div>
               </div>
             </SpotlightCard>
@@ -848,9 +901,10 @@ export default function LandingPage() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeNode}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
                 className="w-full lg:w-96 flex flex-col"
               >
                 {(() => {
@@ -869,7 +923,14 @@ export default function LandingPage() {
                             </span>
                           </div>
                           <h3 className="text-2xl font-black text-white mb-2">{node?.title}</h3>
-                          <p className="text-zinc-400 mb-8 leading-relaxed">{node?.desc}</p>
+                          <p className="text-zinc-400 mb-6 leading-relaxed">{node?.desc}</p>
+                          
+                          <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-xl mb-6">
+                            <Code2 className="w-5 h-5 shrink-0 mt-0.5" />
+                            <span className="text-sm font-medium leading-relaxed">
+                              Materi dilengkapi dengan <strong>IDE Koding Terintegrasi</strong>. Langsung praktik di browser tanpa perlu instalasi tambahan.
+                            </span>
+                          </div>
                         </div>
 
                         <div className="mt-auto">
@@ -900,32 +961,32 @@ export default function LandingPage() {
         >
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 tracking-tight text-white">
-              <MaskedText>Didesain untuk</MaskedText>{" "}<MaskedText delay={0.15}>Cara Kerja Otak</MaskedText>
+              <MaskedText>Belajar Interaktif</MaskedText>{" "}<MaskedText delay={0.15}>Tanpa Bosan</MaskedText>
             </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-xl px-2 sm:px-0">
-              ITSDojo menggabungkan kurikulum terstruktur dan penghargaan instan untuk mendukung pembelajaran yang fokus dan adiktif.
+              Menggabungkan kurikulum akademik terstruktur dengan penghargaan instan (gamifikasi) untuk membangun konsistensi dan motivasi belajar harian Anda.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
             <ValueCard
-              icon={<Flame className="w-8 h-8" />}
-              title="Pertahankan Streak"
-              description="Jaga api tetap menyala. Login dan selesaikan misi harian untuk membangun streak dan melipatgandakan perolehan XP Anda."
+              icon={<Target className="w-10 h-10" />}
+              title="Misi & Tantangan Harian"
+              description="Tingkatkan produktivitas dengan menyelesaikan 3 misi acak harian. Raih tambahan XP dan Gems setiap kali Anda menaklukkan tantangan koding."
               highlighted={activeGamificationCard === 0}
               onClick={() => setActiveGamificationCard(0)}
             />
             <ValueCard
-              icon={<Target className="w-10 h-10" />}
-              title="Misi & Pencapaian"
-              description="Selesaikan target misi harian. Dapatkan lencana eksklusif dan pamerkan dedikasi Anda di profil publik ke seluruh kampus."
+              icon={<Trophy className="w-10 h-10" />}
+              title="Pencapaian & Lencana"
+              description="Kumpulkan XP dari setiap materi untuk naik level. Buka lencana eksklusif dan pamerkan pencapaian keahlian Anda ke seluruh kampus."
               highlighted={activeGamificationCard === 1}
               onClick={() => setActiveGamificationCard(1)}
             />
             <ValueCard
               icon={<Gem className="w-8 h-8" />}
               title="Toko Dojo (Shop)"
-              description="Tukarkan Gems hasil jerih payah Anda dengan item kosmetik profil eksklusif, power-up, dan item pelindung streak."
+              description="Tukarkan Gems hasil jerih payah Anda untuk membeli avatar eksklusif, tiket gacha, atau item power-up spesial di dalam kelas."
               highlighted={activeGamificationCard === 2}
               onClick={() => setActiveGamificationCard(2)}
             />
@@ -1015,10 +1076,10 @@ export default function LandingPage() {
               </div>
               <h3 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-white leading-[1.1]">
                 <MaskedText>Naik ke Puncak</MaskedText>{" "}
-                <MaskedText delay={0.15}>Klasemen</MaskedText>
+                <MaskedText delay={0.15}>Peringkat</MaskedText>
               </h3>
               <p className="text-zinc-400 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8">
-                Kompetisi yang sehat memicu kehebatan. Pantau progres Anda melawan teman sekelas secara real-time. Klik profil manapun untuk mengintip statistik mereka, lalu curi taktiknya!
+                Bangun motivasi melalui kompetisi yang sehat. Kumpulkan XP dari setiap materi yang Anda selesaikan, pantau progres pencapaian Anda secara real-time, dan bersainglah secara sportif dengan rekan mahasiswa lainnya.
               </p>
               <Link href="/login" className="inline-block">
                 <Button className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg w-full sm:w-auto">
@@ -1044,18 +1105,18 @@ export default function LandingPage() {
         >
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-white tracking-tight">
-              <MaskedText>Analitik Pembelajaran</MaskedText>{" "}<MaskedText delay={0.15}>Cerdas</MaskedText>
+              <MaskedText>Pantau & Pertahankan</MaskedText>{" "}<MaskedText delay={0.15}>Progresmu</MaskedText>
             </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed px-2 sm:px-0">
-              Setiap klik membangun profil karaktermu. Sistem memantau gaya belajar Anda untuk merekomendasikan tantangan terbaik agar Anda tidak pernah bosan.
+              Evaluasi pemahaman Anda melalui data akurasi dan riwayat aktivitas secara komprehensif. Gunakan wawasan statistik ini untuk mengidentifikasi kelemahan materi dan menjaga konsistensi belajar Anda.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: "Heatmap Aktivitas", desc: "Pantau intensitas belajar Anda setiap hari layaknya jejak kontribusi commit di GitHub.", icon: <Activity />, color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20" },
-              { title: "Deteksi Kelemahan", desc: "Sistem gamifikasi kami mengidentifikasi secara instan konsep koding yang sering Anda jawab salah.", icon: <ShieldAlert />, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
-              { title: "Rekomendasi Terarah", desc: "Dapatkan saran tantangan spesifik berdasarkan tingkat skill dan XP yang saat ini Anda miliki.", icon: <Monitor />, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" }
+              { title: "Heatmap Aktivitas", desc: "Pantau intensitas belajar Anda setiap hari. Sistem memvisualisasikan dedikasi Anda layaknya jejak riwayat commit di GitHub.", icon: <Activity />, color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20" },
+              { title: "Konsistensi & Streak", desc: "Lacak kedisiplinan belajar Anda secara transparan. Amankan rekor runtutan login harian Anda dari interupsi menggunakan item Streak Freeze.", icon: <Flame />, color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/20" },
+              { title: "Rapor Kompetensi", desc: "Pantau tingkat penguasaan Anda pada setiap modul. Sistem menyediakan visualisasi persentase keahlian untuk mengukur progres pemahaman secara akurat.", icon: <BrainCircuit />, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" }
             ].map((f, i) => (
               <motion.div
                 key={i}
@@ -1065,7 +1126,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="w-full"
               >
-                <SpotlightCard className="min-h-[240px] md:h-[280px] w-full" highlighted={i === 2}>
+                <SpotlightCard className="min-h-[240px] md:h-[280px] w-full" highlighted={true}>
                   <div className="p-6 md:p-8 flex flex-col justify-center h-full w-full relative z-10">
                     <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center ${f.bg} ${f.color} shadow-lg transition-transform`}>
                       {f.icon}

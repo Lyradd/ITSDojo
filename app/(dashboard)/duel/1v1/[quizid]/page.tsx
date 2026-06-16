@@ -1194,23 +1194,21 @@ export default function QuizPage() {
 
               {isSubmitted && (
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  {currentIndex < questions.length - 1 ? (
-                    <div className="flex w-full items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 sm:w-auto">
-                      {waitingForOpponentQuestion
+                  <div className="flex w-full items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 sm:w-auto">
+                    {currentIndex < questions.length - 1 ? (
+                      waitingForOpponentQuestion
                         ? `Menunggu ${opponentName} menjawab...`
                         : bothQuestionSubmitted
                           ? "Jawaban lengkap, memuat soal berikutnya..."
-                          : "Jawaban terkirim, menunggu lawan..."}
-                    </div>
-                  ) : (
-                    <Button onClick={handleNext} className="w-full sm:w-auto" disabled={submittingRoundScore || !bothQuestionSubmitted}>
-                      {submittingRoundScore
+                          : "Jawaban terkirim, menunggu lawan..."
+                    ) : (
+                      submittingRoundScore
                         ? "Mengirim skor..."
                         : bothQuestionSubmitted
-                          ? `Selesaikan Round ${currentRound}`
-                          : `Menunggu ${opponentName} menjawab...`}
-                    </Button>
-                  )}
+                          ? "Jawaban lengkap, memuat ronde berikutnya..."
+                          : `Jawaban terkirim, menunggu ${opponentName} menjawab...`
+                    )}
+                  </div>
                 </div>
               )}
             </>

@@ -21,6 +21,7 @@ export type ArenaSessionState = {
   roundResults: ArenaRoundResult[];
   winnerId: string | null;
   streakEarnedPlayers?: string[];
+  botChoiceScheduledAt?: string;
   updatedAt: string;
 };
 

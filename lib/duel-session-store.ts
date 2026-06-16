@@ -22,6 +22,7 @@ export type DuelSessionState = {
   roundResults: DuelRoundResult[];
   winnerId: string | null;
   streakEarnedPlayers?: string[];
+  botChoiceScheduledAt?: string;
   updatedAt: string;
 };
 

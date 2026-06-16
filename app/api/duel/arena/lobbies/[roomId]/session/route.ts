@@ -196,44 +196,6 @@ async function finalizeRoundSession(
   // Next round
   const isBotChooser = chooserId && (chooserId.includes("bot") || chooserId.includes("local"));
 
-  if (isBotChooser) {
-    const subjects = await db
-      .select({ id: duelSubject.id })
-      .from(duelSubject);
-    const subjectIds = subjects.map((s) => String(s.id));
-    
-    // Auto pick next topic that hasn't been played yet
-    const playedTopicIds = roundResults.map((r) => String(r.topicId));
-    const availableTopicIds = subjectIds.filter((id) => !playedTopicIds.includes(id));
-    const nextTopic = availableTopicIds[0] ?? subjectIds[0] ?? existing.currentTopicId;
-
-    // Update in database so it matches
-    await db
-      .update(arenaRooms)
-      .set({
-        topicId: Number(nextTopic),
-        updatedAt: new Date(),
-      })
-      .where(eq(arenaRooms.id, lobby.id));
-
-    const nextRoundSession: ArenaSessionState = {
-      ...existing,
-      currentRound: existing.currentRound + 1,
-      currentTopicId: nextTopic,
-      status: "in_progress",
-      chooserId: null,
-      pendingScores: {},
-      currentQuestionIndex: 0,
-      questionSubmissions: {},
-      scores: {},
-      roundResults,
-      updatedAt: new Date().toISOString(),
-    };
-
-    setArenaSession(roomKey, nextRoundSession);
-    return nextRoundSession;
-  }
-
   const chooseTopicSession: ArenaSessionState = {
     ...existing,
     status: "awaiting_topic_choice",
@@ -243,11 +205,68 @@ async function finalizeRoundSession(
     questionSubmissions: {},
     scores: {},
     roundResults,
+    botChoiceScheduledAt: isBotChooser ? new Date().toISOString() : undefined,
     updatedAt: new Date().toISOString(),
   };
 
   setArenaSession(roomKey, chooseTopicSession);
   return chooseTopicSession;
+}
+
+async function checkAndProcessBotTopicChoice(
+  session: ArenaSessionState,
+  lobby: any
+): Promise<ArenaSessionState> {
+  if (session.status !== "awaiting_topic_choice" || !session.chooserId) {
+    return session;
+  }
+
+  const isBotChooser = session.chooserId && (session.chooserId.includes("bot") || session.chooserId.includes("local"));
+  if (!isBotChooser) {
+    return session;
+  }
+
+  if (session.botChoiceScheduledAt) {
+    const scheduledAt = new Date(session.botChoiceScheduledAt).getTime();
+    const now = Date.now();
+    if (now - scheduledAt >= 5000) {
+      const subjects = await db
+        .select({ id: duelSubject.id })
+        .from(duelSubject);
+      const subjectIds = subjects.map((s) => String(s.id));
+      
+      const playedTopicIds = session.roundResults.map((r) => String(r.topicId));
+      const availableTopicIds = subjectIds.filter((id) => !playedTopicIds.includes(id));
+      const nextTopic = availableTopicIds[0] ?? subjectIds[0] ?? session.currentTopicId;
+
+      await db
+        .update(arenaRooms)
+        .set({
+          topicId: Number(nextTopic),
+          updatedAt: new Date(),
+        })
+        .where(eq(arenaRooms.id, lobby.id));
+
+      const nextRoundSession: ArenaSessionState = {
+        ...session,
+        currentRound: session.currentRound + 1,
+        currentTopicId: nextTopic,
+        status: "in_progress",
+        chooserId: null,
+        botChoiceScheduledAt: undefined,
+        pendingScores: {},
+        currentQuestionIndex: 0,
+        questionSubmissions: {},
+        scores: {},
+        updatedAt: new Date().toISOString(),
+      };
+
+      setArenaSession(session.roomKey, nextRoundSession);
+      return nextRoundSession;
+    }
+  }
+
+  return session;
 }
 
 export async function GET(
@@ -316,8 +335,10 @@ export async function GET(
       upsertArenaSession(roomKey, () => createInitialSession(roomKey, String(lobby.topicId), playerIds))
     );
 
+    const processedSession = await checkAndProcessBotTopicChoice(session, lobby);
+
     return NextResponse.json({
-      session,
+      session: processedSession,
       players: activePlayers,
     });
   } catch (error) {
@@ -381,9 +402,10 @@ export async function POST(
       };
       return NextResponse.json({ session });
     }
-    const existing = normalizeSession(
+    let existing = normalizeSession(
       getArenaSession(roomKey) ?? createInitialSession(roomKey, String(lobby.topicId), playerIds)
     );
+    existing = await checkAndProcessBotTopicChoice(existing, lobby);
 
     // If submit question progress
     if (!Number.isNaN(questionIndex)) {

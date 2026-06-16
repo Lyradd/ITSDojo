@@ -227,31 +227,6 @@ async function finalizeRoundSession(
 
   const isBotChooser = chooserId && (chooserId.includes("bot") || chooserId.includes("local"));
 
-  if (isBotChooser) {
-    const topics = await db
-      .select({ id: duelSubject.id })
-      .from(duelSubject);
-    const topicIds = topics.map((topic) => String(topic.id));
-    const nextTopic = pickNextTopic(existing.currentTopicId, topicIds);
-
-    const nextRoundSession: DuelSessionState = {
-      ...existing,
-      currentRound: existing.currentRound + 1,
-      currentTopicId: nextTopic,
-      status: "in_progress",
-      chooserId: null,
-      pendingScores: {},
-      currentQuestionIndex: 0,
-      questionSubmissions: {},
-      scores: {},
-      roundResults,
-      updatedAt: new Date().toISOString(),
-    };
-
-    setDuelSession(roomKey, nextRoundSession);
-    return nextRoundSession;
-  }
-
   const chooseTopicSession: DuelSessionState = {
     ...existing,
     status: "awaiting_topic_choice",
@@ -261,11 +236,57 @@ async function finalizeRoundSession(
     questionSubmissions: {},
     scores: {},
     roundResults,
+    botChoiceScheduledAt: isBotChooser ? new Date().toISOString() : undefined,
     updatedAt: new Date().toISOString(),
   };
 
   setDuelSession(roomKey, chooseTopicSession);
   return chooseTopicSession;
+}
+
+async function checkAndProcessBotTopicChoice(
+  session: DuelSessionState,
+  lobby: any
+): Promise<DuelSessionState> {
+  if (session.status !== "awaiting_topic_choice" || !session.chooserId) {
+    return session;
+  }
+
+  const isBotChooser = session.chooserId && (session.chooserId.includes("bot") || session.chooserId.includes("local"));
+  if (!isBotChooser) {
+    return session;
+  }
+
+  if (session.botChoiceScheduledAt) {
+    const scheduledAt = new Date(session.botChoiceScheduledAt).getTime();
+    const now = Date.now();
+    if (now - scheduledAt >= 5000) {
+      const topics = await db
+        .select({ id: duelSubject.id })
+        .from(duelSubject);
+      const topicIds = topics.map((topic) => String(topic.id));
+      const nextTopic = pickNextTopic(session.currentTopicId, topicIds);
+
+      const nextRoundSession: DuelSessionState = {
+        ...session,
+        currentRound: session.currentRound + 1,
+        currentTopicId: nextTopic,
+        status: "in_progress",
+        chooserId: null,
+        botChoiceScheduledAt: undefined,
+        pendingScores: {},
+        currentQuestionIndex: 0,
+        questionSubmissions: {},
+        scores: {},
+        updatedAt: new Date().toISOString(),
+      };
+
+      setDuelSession(session.roomKey, nextRoundSession);
+      return nextRoundSession;
+    }
+  }
+
+  return session;
 }
 
 export async function GET(
@@ -334,8 +355,10 @@ export async function GET(
 
   const session = normalizeSession(upsertDuelSession(roomKey, () => createInitialSession(roomKey, String(lobby.topicId))));
 
+  const processedSession = await checkAndProcessBotTopicChoice(session, lobby);
+
   return NextResponse.json({
-    session,
+    session: processedSession,
     hostId: lobby.hostId,
     guestId: lobby.guestId,
   });
@@ -406,7 +429,8 @@ export async function POST(
     .from(duelSubject);
   const topicIds = topics.map((topic) => String(topic.id));
 
-  const existing = normalizeSession(getDuelSession(roomKey) ?? createInitialSession(roomKey, String(lobby.topicId)));
+  let existing = normalizeSession(getDuelSession(roomKey) ?? createInitialSession(roomKey, String(lobby.topicId)));
+  existing = await checkAndProcessBotTopicChoice(existing, lobby);
 
   if (!Number.isNaN(questionIndex)) {
     if (questionIndex < 0) {

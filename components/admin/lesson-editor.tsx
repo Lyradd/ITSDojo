@@ -34,7 +34,7 @@ export const TestCaseSchema = z.object({
 });
 
 export const LessonSchema = z.object({
-  title: z.string().min(3, "Judul lesson minimal 3 karakter"),
+  title: z.string().min(3, "Judul materi minimal 3 karakter"),
   order: z.number().min(1, "Urutan harus minimal 1"),
   description: z.string().optional(),
   duration: z.string().min(1, "Durasi harus diisi"),
@@ -180,7 +180,7 @@ export default function LessonEditor({
         />
       )}
       <h4 className="text-lg font-bold mb-4">
-        {isEditing ? '✏️ Edit Lesson' : '➕ Tambah Lesson Baru'}
+        {isEditing ? '✏️ Edit Materi' : '➕ Tambah Materi Baru'}
       </h4>
       <form onSubmit={handleSubmit((data) => onSubmit(data as LessonForm, unitId))} className="space-y-4">
         {/* Section: Basic Info */}
@@ -196,7 +196,7 @@ export default function LessonEditor({
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Judul Lesson *</Label>
+                  <Label>Judul Materi *</Label>
                   <Input {...register("title")} className={`h-11 ${errors.title ? 'border-red-500' : ''}`} placeholder="Playing With Characters" />
                   {errors.title && <span className="text-xs text-red-500">{errors.title.message}</span>}
                 </div>
@@ -406,14 +406,22 @@ export default function LessonEditor({
         </AnimatePresence>
 
         {/* Submit */}
-        <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 font-bold">
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            {isEditing ? 'Update Lesson' : 'Simpan Lesson'}
-          </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Batal
-          </Button>
+        <div className="flex flex-col gap-2 pt-4">
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 font-bold">
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {isEditing ? 'Perbarui Materi' : 'Simpan Materi'}
+            </Button>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Batal
+            </Button>
+          </div>
+          {(Object.keys(errors).length > 0) && (
+            <div className="text-sm text-red-500 font-medium flex items-center gap-1 mt-1">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              Mohon periksa kembali: {errors.title ? "Judul materi belum diisi/sesuai. " : ""}{errors.duration ? "Durasi belum diisi. " : ""}{!errors.title && !errors.duration ? "Ada isian form yang belum sesuai." : ""}
+            </div>
+          )}
         </div>
       </form>
     </Card>

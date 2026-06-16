@@ -211,7 +211,7 @@ export default function CourseDetailPage() {
         return { ...u, lessons: newLessons };
       }));
 
-      toast.success(editingLessonId ? 'Lesson diperbarui!' : 'Lesson berhasil ditambahkan!');
+      toast.success(editingLessonId ? 'Materi diperbarui!' : 'Materi berhasil ditambahkan!');
       setShowAddLesson(null);
       setEditingLessonId(null);
       setLessonForm({ ...EMPTY_LESSON });
@@ -242,7 +242,7 @@ export default function CourseDetailPage() {
         method: 'DELETE',
         headers: { 'x-user-role': 'dosen' },
       });
-      toast.success('Lesson dihapus!');
+      toast.success('Materi dihapus!');
       fetchData();
     } catch (err) { 
       console.error(err); 
@@ -301,7 +301,7 @@ export default function CourseDetailPage() {
         body: JSON.stringify({ type: 'lessons', items: payload })
       });
     } catch (e) {
-      toast.error('Gagal mengurutkan lesson');
+      toast.error('Gagal mengurutkan materi');
       fetchData();
     }
   };
@@ -513,7 +513,7 @@ export default function CourseDetailPage() {
                       }}
                       className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 font-bold"
                     >
-                      <Plus className="w-4 h-4 mr-1" /> Lesson
+                      <Plus className="w-4 h-4 mr-1" /> Materi
                     </Button>
                     <Button
                       size="sm"

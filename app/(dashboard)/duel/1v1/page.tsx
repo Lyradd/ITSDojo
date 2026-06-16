@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
-import { Swords, ArrowLeft, Copy, Users, Play } from "lucide-react";
+import { Swords, ArrowLeft, Copy, Users, Play, X, CircleQuestionMark } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,6 +56,7 @@ export default function DuelPage() {
   const [lobbyStatus, setLobbyStatus] = useState<LobbyRoom["status"]>("waiting");
   const [room, setRoom] = useState<LobbyRoom | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -290,7 +291,7 @@ export default function DuelPage() {
       <div className="mb-8 flex justify-between items-start">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Swords className="w-8 h-8 text-blue-600 animate-pulse" />
+            <Swords className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">
               Multiplayer Duel 1v1
             </h1>
@@ -299,10 +300,16 @@ export default function DuelPage() {
             Pilih topik, undang temanmu, dan buktikan siapa yang memiliki pengetahuan paling tajam secara real-time.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => router.push("/duel")} className="flex items-center gap-2 cursor-pointer">
-          <ArrowLeft className="w-5 h-5" />
-          <span>Kembali</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowGuide(true)} className="flex items-center gap-2 cursor-pointer border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20">
+            <CircleQuestionMark className="w-4 h-4" />
+            <span>Cara Bermain</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/duel")} className="flex items-center gap-2 cursor-pointer">
+            <ArrowLeft className="w-5 h-5" />
+            <span>Kembali</span>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
@@ -334,11 +341,10 @@ export default function DuelPage() {
                       onMouseEnter={() => setHoveredTopic(topic.id)}
                       onMouseLeave={() => setHoveredTopic(null)}
                       disabled={creatingLobby}
-                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer transition-all duration-200 ${
-                        isSelected
-                          ? "bg-blue-600 hover:bg-blue-700 text-white border-transparent"
-                          : "hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-700 dark:hover:text-blue-300"
-                      }`}
+                      className={`w-full justify-start text-left font-medium rounded-xl py-4 h-auto cursor-pointer transition-all duration-200 ${isSelected
+                        ? "bg-blue-600 hover:bg-blue-700 text-white border-transparent"
+                        : "hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-700 dark:hover:text-blue-300"
+                        }`}
                     >
                       <span className="truncate">
                         {creatingLobby && selectedTopic === topic.id ? "Membuat lobby..." : topic.subjectname}
@@ -482,6 +488,91 @@ export default function DuelPage() {
                   </p>
                 </Card>
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Guide Modal */}
+          <AnimatePresence>
+            {showGuide && (
+              <div
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+                onClick={() => setShowGuide(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800 text-zinc-850 dark:text-zinc-100"
+                >
+                  <button
+                    onClick={() => setShowGuide(false)}
+                    className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                    title="Tutup"
+                  >
+                    <X className="w-5 h-5 text-zinc-500" />
+                  </button>
+
+                  <div className="flex items-center gap-3 mb-6 border-b pb-4 border-zinc-100 dark:border-zinc-800">
+                    <Swords className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-2xl font-black text-zinc-800 dark:text-white leading-tight">Cara Bermain Duel 1v1</h3>
+                  </div>
+
+                  <div className="space-y-4 mb-6">
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Pilih Topik</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Pilih topik kuis di sebelah kiri untuk membuat lobby room baru.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Undang Teman</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Bagikan link undangan yang muncul di kolom kanan kepada teman Anda.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Mulai Duel</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Tunggu hingga lawan bergabung ke lobby, lalu klik "Mulai Duel" untuk bertanding.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        4
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Aturan Pertandingan</h4>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Pertandingan terdiri dari minimal 3 ronde (masing-masing 3 soal). Pemain dengan jawaban benar dan tercepat mendapatkan poin tertinggi. Di akhir setiap ronde, pemain bergantian memilih topik ronde berikutnya.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 font-bold cursor-pointer"
+                    onClick={() => setShowGuide(false)}
+                  >
+                    Saya Mengerti
+                  </Button>
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </aside>

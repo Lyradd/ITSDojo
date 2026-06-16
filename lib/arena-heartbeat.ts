@@ -25,7 +25,8 @@ export async function cleanupInactivePlayers(lobby: any): Promise<Array<{ id: st
   const activePlayers = players.filter((p) => {
     // Always keep the host in the list to preserve the lobby structure
     const isHost = p.id === lobby.hostId;
-    if (isHost) return true;
+    const isBot = p.id.startsWith("bot_") || p.email.endsWith("@itsdojo.local");
+    if (isHost || isBot) return true;
 
     const key = `${lobby.id}:${p.id}`;
     const lastHeartbeat = heartbeats.get(key);

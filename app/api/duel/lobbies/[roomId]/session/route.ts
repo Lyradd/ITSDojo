@@ -225,6 +225,33 @@ async function finalizeRoundSession(
     return finishedSession;
   }
 
+  const isBotChooser = chooserId && (chooserId.includes("bot") || chooserId.includes("local"));
+
+  if (isBotChooser) {
+    const topics = await db
+      .select({ id: duelSubject.id })
+      .from(duelSubject);
+    const topicIds = topics.map((topic) => String(topic.id));
+    const nextTopic = pickNextTopic(existing.currentTopicId, topicIds);
+
+    const nextRoundSession: DuelSessionState = {
+      ...existing,
+      currentRound: existing.currentRound + 1,
+      currentTopicId: nextTopic,
+      status: "in_progress",
+      chooserId: null,
+      pendingScores: {},
+      currentQuestionIndex: 0,
+      questionSubmissions: {},
+      scores: {},
+      roundResults,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setDuelSession(roomKey, nextRoundSession);
+    return nextRoundSession;
+  }
+
   const chooseTopicSession: DuelSessionState = {
     ...existing,
     status: "awaiting_topic_choice",
@@ -404,6 +431,8 @@ export async function POST(
       }, { status: 409 });
     }
 
+    const isBotOpponent = lobby.guestId && (lobby.guestId.includes("bot") || lobby.guestId.includes("local"));
+
     const questionSubmissions = {
       ...existing.questionSubmissions,
       [playerId]: questionIndex,
@@ -413,6 +442,18 @@ export async function POST(
       ...existing.scores,
       [playerId]: score,
     };
+
+    if (isBotOpponent) {
+      questionSubmissions[lobby.guestId] = questionIndex;
+      const botHasSubmittedThis = (existing.questionSubmissions[lobby.guestId] ?? -1) >= questionIndex;
+      if (!botHasSubmittedThis) {
+        const botPrevScore = existing.scores[lobby.guestId] ?? 0;
+        const botNewPoints = Math.random() > 0.4 ? 10 : 0;
+        scores[lobby.guestId] = botPrevScore + botNewPoints;
+      } else {
+        scores[lobby.guestId] = existing.scores[lobby.guestId] ?? 0;
+      }
+    }
 
     const questionSession: DuelSessionState = {
       ...existing,
@@ -459,10 +500,16 @@ export async function POST(
     }, { status: 409 });
   }
 
+  const isBotOpponent = lobby.guestId && (lobby.guestId.includes("bot") || lobby.guestId.includes("local"));
+
   const pendingScores = {
     ...existing.pendingScores,
     [playerId]: score,
   };
+
+  if (isBotOpponent) {
+    pendingScores[lobby.guestId] = existing.scores[lobby.guestId] ?? 0;
+  }
 
   const hostSubmitted = Object.prototype.hasOwnProperty.call(pendingScores, lobby.hostId);
   const guestSubmitted = Object.prototype.hasOwnProperty.call(pendingScores, lobby.guestId);

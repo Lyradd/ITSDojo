@@ -48,21 +48,6 @@ export async function POST(req: Request) {
         .onConflictDoNothing();
     }
 
-    const botId = "bot_duel_1v1";
-    const botEmail = "bot_duel_1v1@itsdojo.local";
-    const botName = "AI Dojo Bot";
-
-    // Ensure bot user exists in users table
-    await db
-      .insert(users)
-      .values({
-        id: botId,
-        name: botName,
-        email: botEmail,
-        role: "mahasiswa",
-      })
-      .onConflictDoNothing();
-
     const inviteCode = crypto.randomUUID();
 
     const [room] = await db
@@ -70,9 +55,9 @@ export async function POST(req: Request) {
       .values({
         topicId,
         hostId,
-        guestId: botId,
+        guestId: null,
         inviteCode,
-        status: "joined",
+        status: "waiting",
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -82,8 +67,8 @@ export async function POST(req: Request) {
       id: room?.id ?? null,
       topicId,
       hostId,
-      guestId: botId,
-      status: room?.status ?? "joined",
+      guestId: null,
+      status: room?.status ?? "waiting",
       inviteCode: room?.inviteCode ?? inviteCode,
       startedAt: null,
       endedAt: null,

@@ -59,33 +59,12 @@ export async function POST(req: Request) {
       avatar: hostAvatar,
     };
 
-    const bots = [
-      {
-        id: "bot_arena_1",
-        name: "Bot Andi",
-        email: "bot_arena_1@itsdojo.local",
-        avatar: "bg-yellow-200 text-yellow-700",
-      },
-      {
-        id: "bot_arena_2",
-        name: "Bot Budi",
-        email: "bot_arena_2@itsdojo.local",
-        avatar: "bg-purple-200 text-purple-700",
-      },
-      {
-        id: "bot_arena_3",
-        name: "Bot Chika",
-        email: "bot_arena_3@itsdojo.local",
-        avatar: "bg-pink-200 text-pink-700",
-      },
-    ];
-
     const [room] = await db
       .insert(arenaRooms)
       .values({
         topicId,
         hostId,
-        players: [hostPlayer, ...bots],
+        players: [hostPlayer],
         inviteCode,
         status: "waiting",
         createdAt: new Date(),

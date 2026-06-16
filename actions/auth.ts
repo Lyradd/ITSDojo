@@ -55,7 +55,7 @@ export async function seedMockUsers() {
 
 // Validasi login: email harus terdaftar di DB, password harus match dengan users.password.
 // Default password awal "123456" (di-set saat seed). Super admin bisa ubah via /admin/users.
-export async function validateLogin(email: string, password: string) {
+export async function validateLogin(email: string, password: string, rememberMe: boolean = false) {
   try {
     const result = await db
       .select()
@@ -102,7 +102,7 @@ export async function validateLogin(email: string, password: string) {
     const completedLessonIds = progressRows.map((r) => r.lessonId.toString());
 
     // Set HTTP-only signed session cookie
-    await createSession({ userId: user.id, role: user.role });
+    await createSession({ userId: user.id, role: user.role }, rememberMe);
 
     return {
       success: true,

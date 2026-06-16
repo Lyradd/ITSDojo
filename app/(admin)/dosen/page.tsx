@@ -36,7 +36,7 @@ export default function DosenDashboardPage() {
   const [stats, setStats] = useState({
     totalStudents: 0,
     activeToday: 0,
-    averageScore: 0,
+    totalSubmissions: 0,
     activeEvaluations: 0,
   });
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
@@ -67,12 +67,12 @@ export default function DosenDashboardPage() {
           return Date.now() - last.getTime() < 24 * 60 * 60 * 1000;
         }).length;
         
-        const avgScore = students.length > 0 ? Math.round(students.reduce((acc, s) => acc + s.accuracy, 0) / students.length) : 0;
+        const totalSubs = Object.values(evalStats.perEvaluationParticipants).reduce((acc: number, val: any) => acc + val, 0) as number;
         
         setStats({
           totalStudents: students.length,
           activeToday: activeTodayCount,
-          averageScore: avgScore,
+          totalSubmissions: totalSubs,
           activeEvaluations: activeEvals.length,
         });
 
@@ -80,15 +80,13 @@ export default function DosenDashboardPage() {
         setRecentActivities(recentLogs);
         
         // Use real stats for analytics
-        const totalSubmissions = Object.values(evalStats.perEvaluationParticipants).reduce((acc: number, val: any) => acc + val, 0);
-        // We need a proxy for completionRate. Let's just estimate based on submissions vs total students.
         const evalCount = activeEvals.length || 1; // avoid div 0
         const expectedSubmissions = students.length * evalCount;
-        const completionRate = expectedSubmissions > 0 ? Math.min(100, Math.round((totalSubmissions as number / expectedSubmissions) * 100)) : 0;
+        const completionRate = expectedSubmissions > 0 ? Math.min(100, Math.round((totalSubs / expectedSubmissions) * 100)) : 0;
         
         setAnalytics({
           completionRate,
-          totalSubmissions: totalSubmissions as number,
+          totalSubmissions: totalSubs,
           averageScore: evalStats.avgAccuracy,
         });
       };
@@ -122,84 +120,98 @@ export default function DosenDashboardPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { gradient: 'from-blue-500 to-blue-600', icon: <Users className="w-6 h-6" />, value: stats.totalStudents, label: 'Total Mahasiswa', textColor: 'text-blue-100' },
-            { gradient: 'from-green-500 to-emerald-600', icon: <Activity className="w-6 h-6" />, value: stats.activeToday, label: 'Aktif Hari Ini', textColor: 'text-green-100' },
-            { gradient: 'from-purple-500 to-pink-600', icon: <Target className="w-6 h-6" />, value: `${stats.averageScore}%`, label: 'Rata-rata Akurasi', textColor: 'text-purple-100' },
-            { gradient: 'from-orange-500 to-red-600', icon: <ClipboardCheck className="w-6 h-6" />, value: stats.activeEvaluations, label: 'Evaluasi Aktif', textColor: 'text-orange-100' },
-          ].map((stat, i) => (
+            { color: 'blue', icon: <Users className="w-5 h-5" />, value: stats.totalStudents, label: 'Total Mahasiswa' },
+            { color: 'green', icon: <Activity className="w-5 h-5" />, value: stats.activeToday, label: 'Aktif Hari Ini' },
+            { color: 'purple', icon: <CheckCircle className="w-5 h-5" />, value: stats.totalSubmissions, label: 'Total Submisi' },
+            { color: 'orange', icon: <ClipboardCheck className="w-5 h-5" />, value: stats.activeEvaluations, label: 'Evaluasi Aktif' },
+          ].map((stat, i) => {
+            const colors: any = {
+              blue: 'bg-blue-500/10 text-blue-400',
+              green: 'bg-emerald-500/10 text-emerald-400',
+              purple: 'bg-purple-500/10 text-purple-400',
+              orange: 'bg-orange-500/10 text-orange-400'
+            };
+            return (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Card className={`p-6 rounded-2xl border-2 bg-linear-to-br ${stat.gradient} text-white shadow-lg`}>
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl w-fit mb-4">{stat.icon}</div>
-                <div className="text-4xl font-bold mb-1">{stat.value}</div>
-                <div className={`text-sm ${stat.textColor}`}>{stat.label}</div>
+              <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                    <div className="text-sm text-slate-400">{stat.label}</div>
+                  </div>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${colors[stat.color]}`}>
+                    {stat.icon}
+                  </div>
+                </div>
               </Card>
             </motion.div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Link href="/dosen/courses">
-            <Card className="p-6 rounded-2xl border-2 hover:border-blue-400 transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md hover:bg-slate-800/50 transition-all cursor-pointer group flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-blue-400" />
                 </div>
-                <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Kursus</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Tambah & edit materi</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 transition-all" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <div>
+                <div className="font-bold text-white mb-1">Kelola Kursus</div>
+                <div className="text-sm text-slate-400">Tambah & edit materi</div>
               </div>
             </Card>
           </Link>
 
           <Link href="/dosen/evaluations">
-            <Card className="p-6 rounded-2xl border-2 hover:border-purple-400 transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-purple-100 dark:bg-purple-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md hover:bg-slate-800/50 transition-all cursor-pointer group flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
+                  <ClipboardCheck className="w-5 h-5 text-purple-400" />
                 </div>
-                <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Buat Evaluasi</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Quiz & assessment</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-purple-600 transition-all" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <div>
+                <div className="font-bold text-white mb-1">Buat Evaluasi</div>
+                <div className="text-sm text-slate-400">Quiz & assessment</div>
               </div>
             </Card>
           </Link>
 
           <Link href="/dosen/leaderboard">
-            <Card className="p-6 rounded-2xl border-2 hover:border-yellow-400 transition-all cursor-pointer group h-full">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md hover:bg-slate-800/50 transition-all cursor-pointer group flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                  <Award className="w-5 h-5 text-yellow-400" />
                 </div>
-                <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Leaderboard</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Peringkat</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-yellow-600 transition-all" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-yellow-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <div>
+                <div className="font-bold text-white mb-1">Leaderboard</div>
+                <div className="text-sm text-slate-400">Peringkat mahasiswa</div>
               </div>
             </Card>
           </Link>
 
           <Link href="/dosen/duel-questions">
-            <Card className="p-6 rounded-2xl border-2 hover:border-cyan-400 hover:shadow-xl transition-all duration-300 cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-linear-to-br from-cyan-100 to-blue-200 dark:from-cyan-900/50 dark:to-blue-800/50 rounded-xl group-hover:scale-110 transition-transform">
-                  <Swords className="w-6 h-6 text-cyan-600 dark:text-cyan-300" />
+            <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md hover:bg-slate-800/50 transition-all cursor-pointer group flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-cyan-500/10 rounded-full flex items-center justify-center">
+                  <Swords className="w-5 h-5 text-cyan-400" />
                 </div>
-                <div className="flex-1">
-                  <div className="font-bold text-zinc-800 dark:text-zinc-100">Soal Duel</div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">Tambah soal dan jawaban duel</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-cyan-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <div>
+                <div className="font-bold text-white mb-1">Soal Duel</div>
+                <div className="text-sm text-slate-400">Soal & jawaban duel</div>
               </div>
             </Card>
           </Link>
@@ -209,14 +221,14 @@ export default function DosenDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Activity */}
           <div className="lg:col-span-2">
-            <Card className="p-6 rounded-2xl border-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+            <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-blue-600" />
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-400" />
                   Aktivitas Terbaru
                 </h3>
                 <Link href="/dosen/students">
-                  <Button variant="outline" size="sm" className="font-bold hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                  <Button variant="outline" size="sm" className="font-bold border-slate-700 hover:bg-slate-800 text-slate-300">
                     Lihat Semua
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -226,10 +238,10 @@ export default function DosenDashboardPage() {
               <div className="space-y-3">
                 {recentActivities.map((activity) => {
                   const getIcon = () => {
-                    if (activity.action === 'completed_evaluation') return <CheckCircle className="w-5 h-5 text-green-600" />;
-                    if (activity.action === 'started_course') return <Activity className="w-5 h-5 text-blue-600" />;
-                    if (activity.action === 'level_up') return <Award className="w-5 h-5 text-purple-600" />;
-                    return <Clock className="w-5 h-5 text-zinc-400" />;
+                    if (activity.action === 'completed_evaluation') return <CheckCircle className="w-5 h-5 text-emerald-400" />;
+                    if (activity.action === 'started_course') return <Activity className="w-5 h-5 text-blue-400" />;
+                    if (activity.action === 'level_up') return <Award className="w-5 h-5 text-purple-400" />;
+                    return <Clock className="w-5 h-5 text-slate-500" />;
                   };
 
                   const timeAgo = new Date(activity.timestamp).toLocaleTimeString('id-ID', { 
@@ -240,20 +252,20 @@ export default function DosenDashboardPage() {
                   return (
                     <div 
                       key={activity.id}
-                      className="flex items-start gap-4 p-4 rounded-xl bg-linear-to-r from-zinc-50 to-white dark:from-zinc-800 dark:to-zinc-900 hover:shadow-md transition-all duration-300 border border-zinc-100 dark:border-zinc-800"
+                      className="flex items-start gap-4 p-4 rounded-xl bg-slate-900/50 hover:bg-slate-800/80 transition-all duration-300 border border-slate-800/50"
                     >
-                      <div className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+                      <div className="p-2 bg-slate-800/50 rounded-lg">
                         {getIcon()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100">
+                        <div className="font-bold text-sm text-white">
                           {activity.studentName}
                         </div>
-                        <div className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+                        <div className="text-sm text-slate-400 truncate">
                           {activity.details}
                         </div>
                       </div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                      <div className="text-xs text-slate-500 whitespace-nowrap">
                         {timeAgo}
                       </div>
                     </div>
@@ -265,10 +277,10 @@ export default function DosenDashboardPage() {
 
           {/* Active Evaluations */}
           <div>
-            <Card className="p-6 rounded-2xl border-2 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm mb-6">
+            <Card className="p-6 rounded-xl border border-slate-800 bg-[#0F172A]/50 backdrop-blur-md mb-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-orange-600" fill="currentColor" />
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-orange-400" />
                   Evaluasi Aktif
                 </h3>
               </div>
@@ -278,26 +290,26 @@ export default function DosenDashboardPage() {
                   <Link 
                     key={evaluation.id}
                     href={`/evaluation/${evaluation.id}`}
-                    className="block p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-800 hover:border-orange-400 dark:hover:border-orange-600 transition-all duration-300 bg-linear-to-br from-white to-orange-50 dark:from-zinc-900 dark:to-orange-950/20 group"
+                    className="block p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-all duration-300 bg-slate-900/50 hover:bg-slate-800/80 group"
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100 group-hover:text-orange-600 transition-colors">
+                      <div className="font-bold text-sm text-white group-hover:text-blue-400 transition-colors">
                         {evaluation.title}
                       </div>
-                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                         AKTIF
                       </span>
                     </div>
-                    <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">
+                    <div className="text-xs text-slate-400 mb-3">
                       {evaluation.questions.length} soal • {evaluation.duration} menit
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
                         <Users className="w-3 h-3" />
                         <span>12 submission</span>
                       </div>
-                      <div className="text-[10px] font-bold text-orange-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="text-[10px] font-bold text-blue-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         Buka Ruang <ArrowRight className="w-3 h-3" />
                       </div>
                     </div>
@@ -305,7 +317,7 @@ export default function DosenDashboardPage() {
                 ))}
 
                 <Link href="/dosen/evaluations">
-                  <Button className="w-full bg-linear-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 font-bold shadow-lg">
+                  <Button className="w-full bg-slate-100 text-slate-900 hover:bg-slate-200 font-bold shadow-sm">
                     <Plus className="w-4 h-4 mr-2" />
                     Buat Evaluasi Baru
                   </Button>

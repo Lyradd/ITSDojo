@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { lessons, testCases } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { requireAdmin } from "@/lib/auth-guard";
+import { requireAdminOrDosen } from "@/lib/auth-guard";
 
 // POST /api/admin/lessons — Buat lesson baru (beserta test cases)
 export async function POST(req: Request) {
-  const authError = await requireAdmin(req);
+  const authError = await requireAdminOrDosen(req);
   if (authError) return authError;
 
   try {

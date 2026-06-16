@@ -476,9 +476,11 @@ function BrainDuel({ isDesktop }: { isDesktop: boolean }) {
           </motion.div>
 
           <div className="mt-16 text-center">
-            <Button className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-12 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-base sm:text-lg md:text-xl shadow-[0_0_40px_rgba(239,68,68,0.5)] transition-all flex items-center gap-3 mx-auto group w-full sm:w-auto justify-center">
-              <Rocket className="w-6 h-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> Mulai Pertarungan Baru
-            </Button>
+            <Link href="/login">
+              <Button className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-12 rounded-full bg-red-600 hover:bg-red-500 text-white font-black text-base sm:text-lg md:text-xl shadow-[0_0_40px_rgba(239,68,68,0.5)] transition-all flex items-center gap-3 mx-auto group w-full sm:w-auto justify-center">
+                <Rocket className="w-6 h-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> Mulai Duel Baru
+              </Button>
+            </Link>
           </div>
         </div>
       </motion.div>
@@ -871,9 +873,11 @@ export default function LandingPage() {
                         </div>
 
                         <div className="mt-auto">
-                          <Button className={`w-full rounded-full font-bold h-12 ${node?.status === 'locked' ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-800 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}>
-                            {node?.status === 'locked' ? 'Terkunci' : 'Mulai Modul'}
-                          </Button>
+                          <Link href="/login" className="block w-full">
+                            <Button className={`w-full rounded-full font-bold h-12 ${node?.status === 'locked' ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-800 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'}`}>
+                              {node?.status === 'locked' ? 'Terkunci' : 'Mulai Kelas'}
+                            </Button>
+                          </Link>
                         </div>
                       </div>
                     </SpotlightCard>
@@ -1016,9 +1020,11 @@ export default function LandingPage() {
               <p className="text-zinc-400 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8">
                 Kompetisi yang sehat memicu kehebatan. Pantau progres Anda melawan teman sekelas secara real-time. Klik profil manapun untuk mengintip statistik mereka, lalu curi taktiknya!
               </p>
-              <Button className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg w-full sm:w-auto">
-                Lihat Semua Peringkat
-              </Button>
+              <Link href="/login" className="inline-block">
+                <Button className="h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-white text-slate-900 hover:bg-zinc-200 font-bold shadow-lg w-full sm:w-auto">
+                  Lihat Live Leaderboard
+                </Button>
+              </Link>
             </div>
           </div>
         </motion.div>
@@ -1115,7 +1121,7 @@ export default function LandingPage() {
               <Link href="/login" className="relative z-10 inline-block">
                 <MagneticButton size="lg" className="h-16 px-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-black text-lg shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all flex items-center group relative overflow-hidden">
                   <span className="relative z-10 flex items-center">
-                    Mulai Evolusi Anda <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-2 transition-transform" />
+                    Mulai Pembelajaran Anda <ChevronRight className="w-6 h-6 ml-2 group-hover:translate-x-2 transition-transform" />
                   </span>
                   {/* Efek kilat sapuan (sweep reflection) pada tombol */}
                   <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />

@@ -4,7 +4,7 @@ import { arenaRooms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { upsertArenaSession } from "@/lib/arena-session-store";
 
-const MIN_ARENA_ROUNDS = 3;
+const MIN_ARENA_ROUNDS = 1;
 
 export async function POST(
   req: Request,

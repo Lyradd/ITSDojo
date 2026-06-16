@@ -47,7 +47,7 @@ type ArenaSession = {
   updatedAt: string;
 };
 
-const QUESTIONS_PER_ROUND = 3;
+const QUESTIONS_PER_ROUND = 10;
 
 function getRoundQuestions(pool: Question[], roundNumber: number) {
   if (pool.length <= QUESTIONS_PER_ROUND) {
@@ -613,7 +613,7 @@ function ArenaQuizContent() {
           {startCountdown}
         </motion.div>
         <span className="text-xl font-bold mt-8 tracking-wider text-zinc-400 uppercase">
-          Arena Ronde {currentRound} Dimulai!
+          Arena Dimulai!
         </span>
         <span className="text-sm text-zinc-500 mt-2 font-medium">Topik: {topicName}</span>
       </div>
@@ -872,8 +872,10 @@ function ArenaQuizContent() {
       {/* Header HUD */}
       <div className="mb-6 grid grid-cols-3 items-center p-4 rounded-2xl bg-card/60 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-lg">
         <div className="text-left">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Ronde</span>
-          <p className="text-lg font-black text-zinc-700 dark:text-zinc-200">{currentRound} / 3</p>
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Topik</span>
+          <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200 truncate max-w-[200px]" title={topicName}>
+            {topicName}
+          </p>
         </div>
 
         <div className="text-center">

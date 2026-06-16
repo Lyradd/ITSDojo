@@ -11,7 +11,7 @@ import {
 import { recordHeartbeat, cleanupInactivePlayers } from "@/lib/arena-heartbeat";
 import { updateUserGameFinished } from "@/lib/gamification/streak";
 
-const MIN_ARENA_ROUNDS = 3;
+const MIN_ARENA_ROUNDS = 1;
 
 type SessionSubmitBody = {
   playerId?: string;

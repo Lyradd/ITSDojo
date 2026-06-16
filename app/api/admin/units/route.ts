@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { units } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth-guard";
+import { requireAdminOrDosen } from "@/lib/auth-guard";
+// force reload
 
 // POST /api/admin/units — Buat unit baru untuk sebuah kursus
 export async function POST(req: Request) {
-  const authError = await requireAdmin(req);
+  const authError = await requireAdminOrDosen(req);
   if (authError) return authError;
 
   try {

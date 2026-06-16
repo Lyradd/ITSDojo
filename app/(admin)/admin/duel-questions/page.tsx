@@ -272,7 +272,11 @@ export default function DuelQuestionsAdminPage() {
       }
 
       toast.success("Soal duel berhasil ditambahkan.");
-      setQuestions((current) => [payload as DuelQuestionRow, ...current]);
+      const enrichedPayload = {
+        ...payload,
+        topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
+      };
+      setQuestions((current) => [enrichedPayload as DuelQuestionRow, ...current]);
       resetForm();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal menyimpan soal");

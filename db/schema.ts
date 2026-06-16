@@ -229,6 +229,9 @@ export const duelQuestions = pgTable('duel_questions', {
   answerMargin: integer('answer_margin'),
   timeLimit: integer('time_limit').default(30).notNull(),
   order: integer('order').notNull(),
+  bloomCategory: text('bloom_category').default('Remember').notNull(),
+  bloomLevel: text('bloom_level').default('C1').notNull(),
+  bloomWeight: integer('bloom_weight').default(10).notNull(),
 
 });
 

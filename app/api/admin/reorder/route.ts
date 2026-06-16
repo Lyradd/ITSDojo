@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { units, lessons } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { requireAdmin } from "@/lib/auth-guard";
+import { requireAdminOrDosen } from "@/lib/auth-guard";
 
 export async function PUT(req: Request) {
-  const authError = await requireAdmin(req);
+  const authError = await requireAdminOrDosen(req);
   if (authError) return authError;
 
   try {

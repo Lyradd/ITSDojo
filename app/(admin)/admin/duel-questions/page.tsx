@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, Check, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -75,6 +75,7 @@ export default function DuelQuestionsAdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [topicFilter, setTopicFilter] = useState("all");
   const [form, setForm] = useState<QuestionFormState>(DEFAULT_FORM);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -195,12 +196,61 @@ export default function DuelQuestionsAdminPage() {
   };
 
   const resetForm = () => {
+    setEditingId(null);
     const firstTopicId = topics[0]?.id ? String(topics[0].id) : "";
     setForm({
       ...DEFAULT_FORM,
       topicId: firstTopicId,
       order: String(questions.filter((question) => String(question.topicId) === firstTopicId).length + 1 || 1),
     });
+  };
+
+  const handleStartEdit = (question: DuelQuestionRow) => {
+    setEditingId(question.id);
+    setForm({
+      topicId: String(question.topicId),
+      questionText: question.questionText,
+      questionType: question.questionType,
+      options: question.options && question.options.length > 0
+        ? [...question.options, ...Array(Math.max(0, 4 - question.options.length)).fill("")]
+        : ["", "", "", ""],
+      correctAnswer: question.correctAnswer,
+      sliderMin: question.sliderMin !== null ? String(question.sliderMin) : "1",
+      sliderMax: question.sliderMax !== null ? String(question.sliderMax) : "10",
+      answerMargin: question.answerMargin !== null ? String(question.answerMargin) : "1",
+      points: String(question.points ?? 10),
+      timeLimit: String(question.timeLimit ?? 30),
+      order: String(question.order ?? 1),
+    });
+    toast.success("Detail soal dimuat ke form.");
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus soal ini?")) return;
+
+    try {
+      const response = await fetch(`/api/admin/duel-questions/${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-role": role || "admin",
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Gagal menghapus soal");
+      }
+
+      toast.success("Soal berhasil dihapus.");
+      setQuestions((current) => current.filter((q) => q.id !== id));
+      
+      if (editingId === id) {
+        setEditingId(null);
+        resetForm();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menghapus soal");
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -242,11 +292,13 @@ export default function DuelQuestionsAdminPage() {
 
     setSaving(true);
     try {
-      const response = await fetch("/api/admin/duel-questions", {
-        method: "POST",
+      const url = editingId ? `/api/admin/duel-questions/${editingId}` : "/api/admin/duel-questions";
+      const method = editingId ? "PATCH" : "POST";
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
-          "x-user-role": "admin",
+          "x-user-role": role || "admin",
         },
         body: JSON.stringify({
           topicId: Number(form.topicId),
@@ -259,7 +311,7 @@ export default function DuelQuestionsAdminPage() {
           sliderMin: form.questionType === "slider" ? Number(form.sliderMin) : null,
           sliderMax: form.questionType === "slider" ? Number(form.sliderMax) : null,
           answerMargin: form.questionType === "slider" ? Number(form.answerMargin) : null,
-  points: Number(form.points),
+          points: Number(form.points),
           timeLimit: Number(form.timeLimit),
           order: Number(form.order),
         }),
@@ -271,12 +323,22 @@ export default function DuelQuestionsAdminPage() {
         throw new Error(payload.error || "Gagal menyimpan soal");
       }
 
-      toast.success("Soal duel berhasil ditambahkan.");
-      const enrichedPayload = {
-        ...payload,
-        topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
-      };
-      setQuestions((current) => [enrichedPayload as DuelQuestionRow, ...current]);
+      if (editingId) {
+        toast.success("Soal duel berhasil diperbarui.");
+        setQuestions((current) =>
+          current.map((q) => (q.id === editingId ? {
+            ...(payload as DuelQuestionRow),
+            topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
+          } : q))
+        );
+      } else {
+        toast.success("Soal duel berhasil ditambahkan.");
+        const enrichedPayload = {
+          ...payload,
+          topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
+        };
+        setQuestions((current) => [enrichedPayload as DuelQuestionRow, ...current]);
+      }
       resetForm();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal menyimpan soal");
@@ -308,6 +370,11 @@ export default function DuelQuestionsAdminPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <Card className="rounded-3xl border-2 bg-white/90 p-6 shadow-lg dark:bg-zinc-900/90">
+            <div className="mb-4 border-b pb-3 border-zinc-100 dark:border-zinc-800">
+              <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+                {editingId ? "Edit Soal Duel" : "Tambah Soal Duel"}
+              </h2>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -498,11 +565,11 @@ export default function DuelQuestionsAdminPage() {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
                   <Save className="mr-2 h-4 w-4" />
-                  {saving ? "Menyimpan..." : "Simpan Soal"}
+                  {saving ? "Menyimpan..." : (editingId ? "Perbarui Soal" : "Simpan Soal")}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Reset Form
+                  {editingId ? "Batal Edit" : "Reset Form"}
                 </Button>
               </div>
             </form>
@@ -558,14 +625,34 @@ export default function DuelQuestionsAdminPage() {
                               {question.questionType}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
-                            
-                            <span>•</span>
-                            
-                            <span>•</span>
-                            <span>{question.timeLimit}s</span>
-                            <span>•</span>
-                            <span>{question.points} pts</span>
+                          <div className="mt-3 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800/80 pt-3">
+                            <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
+                              <span>{question.timeLimit}s</span>
+                              <span>•</span>
+                              <span>{question.points} pts</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="icon"
+                                type="button"
+                                variant="ghost"
+                                onClick={() => handleStartEdit(question)}
+                                className="h-8 w-8 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg cursor-pointer"
+                                title="Edit Soal"
+                              >
+                                <Pencil className="h-4.5 w-4.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                type="button"
+                                variant="ghost"
+                                onClick={() => handleDelete(question.id)}
+                                className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer"
+                                title="Hapus Soal"
+                              >
+                                <Trash2 className="h-4.5 w-4.5" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}

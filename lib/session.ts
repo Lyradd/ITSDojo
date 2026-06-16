@@ -54,7 +54,7 @@ export interface SessionData {
  * Membuat sesi baru: set HTTP-only signed cookie.
  * Dipanggil setelah login berhasil (dari Server Action).
  */
-export async function createSession(data: SessionData): Promise<void> {
+export async function createSession(data: SessionData, rememberMe: boolean = false): Promise<void> {
   const payload = JSON.stringify(data);
   const signature = sign(payload);
   const cookieValue = `${Buffer.from(payload).toString("base64")}.${signature}`;
@@ -65,7 +65,7 @@ export async function createSession(data: SessionData): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 hari
+    maxAge: rememberMe ? 60 * 60 * 24 * 30 : undefined, // 30 hari jika rememberMe, session-only jika tidak
   });
 }
 

@@ -59,7 +59,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMsg(null);
 
-    const res = await validateLogin(email, password);
+    const res = await validateLogin(email, password, rememberMe);
 
     if (!res.success || !res.user) {
       setIsLoading(false);

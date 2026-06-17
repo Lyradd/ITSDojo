@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { duelQuestions, duelSubject } from "@/db/schema";
-import { MOCK_QUESTIONS, MOCK_WEB_DEV_QUESTIONS } from "@/lib/quiz-mock-data";
 
 type DuelQuestionResponse = {
   id: string;
@@ -16,6 +15,7 @@ type DuelQuestionResponse = {
 
   timeLimit: number;
   order: number;
+  points: number;
 };
 
 function mapDbQuestion(question: typeof duelQuestions.$inferSelect, index: number): DuelQuestionResponse {
@@ -31,39 +31,8 @@ function mapDbQuestion(question: typeof duelQuestions.$inferSelect, index: numbe
 
     timeLimit: question.timeLimit,
     order: question.order ?? index + 1,
+    points: question.bloomWeight,
   };
-}
-
-function mapMockQuestion(question: typeof MOCK_QUESTIONS[number] | typeof MOCK_WEB_DEV_QUESTIONS[number]): DuelQuestionResponse {
-  return {
-    id: question.id,
-    questionText: question.questionText,
-    questionType: question.questionType,
-    options: question.options,
-    correctAnswer: question.correctAnswer,
-    sliderMin: question.sliderMin,
-    sliderMax: question.sliderMax,
-    answerMargin: question.answerMargin,
-
-    timeLimit: question.timeLimit,
-    order: question.order,
-  };
-}
-
-function getFallbackQuestions(topicName: string) {
-  const normalizedTopic = topicName.toLowerCase();
-
-  if (normalizedTopic.includes("web") || normalizedTopic.includes("html") || normalizedTopic.includes("css") || normalizedTopic.includes("javascript")) {
-    return MOCK_WEB_DEV_QUESTIONS.map(mapMockQuestion);
-  }
-
-  if (normalizedTopic.includes("python") || normalizedTopic.includes("algoritma") || normalizedTopic.includes("program")) {
-    return MOCK_QUESTIONS.map(mapMockQuestion);
-  }
-
-  return [...MOCK_QUESTIONS, ...MOCK_WEB_DEV_QUESTIONS]
-    .map(mapMockQuestion)
-    .sort((left, right) => left.order - right.order);
 }
 
 export async function GET(
@@ -93,15 +62,13 @@ export async function GET(
     .where(eq(duelQuestions.topicId, topicId))
     .orderBy(duelQuestions.order);
 
-  const questions = rows.length > 0
-    ? rows.map((question, index) => mapDbQuestion(question, index))
-    : getFallbackQuestions(topic.subjectName);
+  const questions = rows.map((question, index) => mapDbQuestion(question, index));
 
   return NextResponse.json(
     {
       topic,
       questions,
-      source: rows.length > 0 ? "database" : "fallback",
+      source: "database",
     },
     {
       headers: {

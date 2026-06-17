@@ -15,6 +15,7 @@ type UpdateDuelQuestionBody = {
   sliderMin?: number | string | null;
   sliderMax?: number | string | null;
   answerMargin?: number | string | null;
+  points?: number | string;
   timeLimit?: number | string;
   order?: number | string;
 };
@@ -104,6 +105,7 @@ export async function PATCH(
     if (body.sliderMin !== undefined) updatePayload.sliderMin = toNumber(body.sliderMin);
     if (body.sliderMax !== undefined) updatePayload.sliderMax = toNumber(body.sliderMax);
     if (body.answerMargin !== undefined) updatePayload.answerMargin = toNumber(body.answerMargin);
+    if (body.points !== undefined) updatePayload.bloomWeight = toNumber(body.points) ?? 10;
     if (body.timeLimit !== undefined) updatePayload.timeLimit = toNumber(body.timeLimit) ?? 30;
     if (body.order !== undefined) updatePayload.order = toNumber(body.order) ?? existingQuestion.order;
 
@@ -123,6 +125,7 @@ export async function PATCH(
     const result = {
       ...updatedQuestion,
       topicName: topicData?.subjectName ?? null,
+      points: updatedQuestion.bloomWeight,
     };
 
     return NextResponse.json(result);

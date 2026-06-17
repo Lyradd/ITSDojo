@@ -15,6 +15,7 @@ const questionSchema = z.object({
   sliderMin: z.coerce.number().nullable().optional().catch(null),
   sliderMax: z.coerce.number().nullable().optional().catch(null),
   answerMargin: z.coerce.number().nullable().optional().catch(null),
+  points: z.coerce.number().default(10),
   timeLimit: z.coerce.number().default(30),
   order: z.coerce.number().optional()
 });
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
         sliderMin: duelQuestions.sliderMin,
         sliderMax: duelQuestions.sliderMax,
         answerMargin: duelQuestions.answerMargin,
-
+        points: duelQuestions.bloomWeight,
         timeLimit: duelQuestions.timeLimit,
         order: duelQuestions.order,
         topicName: duelSubject.subjectName,
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
       sliderMin,
       sliderMax,
       answerMargin,
+      points,
       timeLimit,
     } = parsed.data;
 
@@ -110,12 +112,18 @@ export async function POST(req: Request) {
         sliderMin,
         sliderMax,
         answerMargin,
+        bloomWeight: points,
         timeLimit,
         order: nextOrder,
       })
       .returning();
 
-    return NextResponse.json(createdQuestion, { status: 201 });
+    const responsePayload = {
+      ...createdQuestion,
+      points: createdQuestion.bloomWeight,
+    };
+
+    return NextResponse.json(responsePayload, { status: 201 });
   } catch (error: any) {
     console.error("Drizzle Insert Error:", error);
     const message = error?.message || "Failed to create duel question";

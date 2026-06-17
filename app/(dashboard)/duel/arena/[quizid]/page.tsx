@@ -49,16 +49,41 @@ type ArenaSession = {
 
 const QUESTIONS_PER_ROUND = 10;
 
-function getRoundQuestions(pool: Question[], roundNumber: number) {
-  if (pool.length <= QUESTIONS_PER_ROUND) {
-    return pool.slice(0, QUESTIONS_PER_ROUND);
+function getRoundQuestions(pool: Question[], roundNumber: number, roomId: string | null) {
+  if (pool.length === 0) return [];
+
+  // Stable seeded Fisher-Yates shuffle based on roomId (the lobby/session identifier)
+  // This ensures the shuffle is the same for all players in the same lobby.
+  const seedString = `${roomId ?? "default-seed"}`;
+  
+  let seedValue = 0;
+  for (let i = 0; i < seedString.length; i++) {
+    seedValue = (seedValue << 5) - seedValue + seedString.charCodeAt(i);
+    seedValue |= 0;
+  }
+  
+  const random = () => {
+    const x = Math.sin(seedValue++) * 10000;
+    return x - Math.floor(x);
+  };
+
+  const items = [...pool];
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const temp = items[i];
+    items[i] = items[j];
+    items[j] = temp;
   }
 
-  const startIndex = ((roundNumber - 1) * QUESTIONS_PER_ROUND) % pool.length;
+  if (items.length <= QUESTIONS_PER_ROUND) {
+    return items;
+  }
+
+  const startIndex = ((roundNumber - 1) * QUESTIONS_PER_ROUND) % items.length;
   const selected = [];
 
   for (let i = 0; i < QUESTIONS_PER_ROUND; i += 1) {
-    selected.push(pool[(startIndex + i) % pool.length]);
+    selected.push(items[(startIndex + i) % items.length]);
   }
 
   return selected;
@@ -177,7 +202,7 @@ function ArenaQuizContent() {
     };
   }, [currentTopicId]);
 
-  const questions = useMemo(() => getRoundQuestions(topicQuestions, currentRound), [topicQuestions, currentRound]);
+  const questions = useMemo(() => getRoundQuestions(topicQuestions, currentRound, roomId), [topicQuestions, currentRound, roomId]);
   const isFinalQuestion = questions.length > 0 && currentIndex === questions.length - 1;
 
   const currentPlayerId = id ?? "";

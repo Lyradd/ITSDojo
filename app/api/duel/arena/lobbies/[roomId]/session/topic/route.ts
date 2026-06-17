@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { arenaRooms, duelSubject } from "@/db/schema";
 import { getArenaSession, setArenaSession } from "@/lib/arena-session-store";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 type TopicChoiceBody = {
   playerId?: string;
@@ -25,8 +25,17 @@ export async function POST(
       return NextResponse.json({ error: "Missing playerId or topicId" }, { status: 400 });
     }
 
-    const rooms = await db.select().from(arenaRooms);
-    const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+    const parsedId = Number(requestedRoomId);
+    const isNumeric = Number.isInteger(parsedId) && parsedId > 0;
+    const [lobby] = await db
+      .select()
+      .from(arenaRooms)
+      .where(
+        isNumeric
+          ? or(eq(arenaRooms.id, parsedId), eq(arenaRooms.inviteCode, requestedRoomId))
+          : eq(arenaRooms.inviteCode, requestedRoomId)
+      )
+      .limit(1);
 
     if (!lobby) {
       return NextResponse.json({ error: "Arena lobby not found" }, { status: 404 });

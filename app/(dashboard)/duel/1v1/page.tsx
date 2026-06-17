@@ -365,6 +365,40 @@ export default function DuelPage() {
 
         {/* Right column: Room and player state */}
         <aside className="space-y-6">
+          <AnimatePresence mode="wait">
+            {activeTopicData ? (
+              <motion.div
+                key={activeTopicData.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-xl">
+                  <h4 className="font-bold text-lg mb-2">{activeTopicData.subjectname}</h4>
+                  <p className="text-xs text-blue-100 leading-relaxed">
+                    {activeTopicData.description || "Tidak ada deskripsi untuk topik ini."}
+                  </p>
+                </Card>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
+                  <h4 className="font-bold text-lg mb-2 text-zinc-800 dark:text-zinc-100">Silakan Pilih Topik Duel</h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    Arahkan kursor atau pilih salah satu topik di sebelah kiri untuk melihat deskripsi.
+                  </p>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {inviteLink && (
             <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
               <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-2">Undang Temanmu</h3>
@@ -427,7 +461,7 @@ export default function DuelPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                          {p.name}
+                           {p.name}
                           {p.isHost && (
                             <span className="text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 rounded">
                               Host
@@ -456,40 +490,6 @@ export default function DuelPage() {
               )}
             </Card>
           )}
-
-          <AnimatePresence mode="wait">
-            {activeTopicData ? (
-              <motion.div
-                key={activeTopicData.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-xl">
-                  <h4 className="font-bold text-lg mb-2">{activeTopicData.subjectname}</h4>
-                  <p className="text-xs text-blue-100 leading-relaxed">
-                    {activeTopicData.description || "Tidak ada deskripsi untuk topik ini."}
-                  </p>
-                </Card>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="placeholder"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-card/60 backdrop-blur-md rounded-2xl shadow-xl">
-                  <h4 className="font-bold text-lg mb-2 text-zinc-800 dark:text-zinc-100">Silakan Pilih Topik Duel</h4>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    Arahkan kursor atau pilih salah satu topik di sebelah kiri untuk melihat deskripsi.
-                  </p>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Guide Modal */}
           <AnimatePresence>

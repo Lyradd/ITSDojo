@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { getLobbyState, upsertLobbyState } from "@/lib/lobby-bus";
 
 export async function GET(
@@ -11,8 +11,17 @@ export async function GET(
   const resolvedParams = await Promise.resolve(params);
   const requestedRoomId = resolvedParams.roomId;
 
-  const rooms = await db.select().from(duelRooms);
-  const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+  const parsedId = Number(requestedRoomId);
+  const isNumeric = Number.isInteger(parsedId) && parsedId > 0;
+  const [lobby] = await db
+    .select()
+    .from(duelRooms)
+    .where(
+      isNumeric
+        ? or(eq(duelRooms.id, parsedId), eq(duelRooms.inviteCode, requestedRoomId))
+        : eq(duelRooms.inviteCode, requestedRoomId)
+    )
+    .limit(1);
 
   if (!lobby) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });
@@ -64,6 +73,9 @@ export async function PATCH(
     const resolvedParams = await Promise.resolve(params);
     const requestedRoomId = resolvedParams.roomId;
 
+    const parsedId = Number(requestedRoomId);
+    const isNumeric = Number.isInteger(parsedId) && parsedId > 0;
+
     const body = await req.json();
     const topicId = Number(body.topicId);
 
@@ -71,8 +83,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid topicId" }, { status: 400 });
     }
 
-    const rooms = await db.select().from(duelRooms);
-    const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+    const [lobby] = await db
+      .select()
+      .from(duelRooms)
+      .where(
+        isNumeric
+          ? or(eq(duelRooms.id, parsedId), eq(duelRooms.inviteCode, requestedRoomId))
+          : eq(duelRooms.inviteCode, requestedRoomId)
+      )
+      .limit(1);
 
     if (!lobby) {
       return NextResponse.json({ error: "Lobby not found" }, { status: 404 });

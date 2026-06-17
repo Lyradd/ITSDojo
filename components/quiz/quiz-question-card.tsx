@@ -61,7 +61,8 @@ export function QuizQuestionCard({
                 return (
                   <div
                     key={index}
-                    className={`flex items-center space-x-3 rounded-lg border-2 p-4 transition-all duration-200 ${optionStyle}`}
+                    onClick={() => !isSubmitted && setAnswer(option)}
+                    className={`flex items-center space-x-3 rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${optionStyle}`}
                   >
                     <RadioGroupItem value={option} id={`option-${index}`} />
                     <Label
@@ -110,7 +111,8 @@ export function QuizQuestionCard({
                 return (
                   <div
                     key={val}
-                    className={`flex items-center justify-center space-x-3 rounded-lg border-2 p-6 transition-all duration-200 ${optionStyle}`}
+                    onClick={() => !isSubmitted && setAnswer(val)}
+                    className={`flex items-center justify-center space-x-3 rounded-lg border-2 p-6 transition-all duration-200 cursor-pointer ${optionStyle}`}
                   >
                     <RadioGroupItem value={val} id={val.toLowerCase()} />
                     <Label

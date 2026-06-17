@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { arenaRooms, duelSubject, users } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, or } from "drizzle-orm";
 import {
   ArenaSessionState,
   getArenaSession,
@@ -277,8 +277,17 @@ export async function GET(
     const resolvedParams = await Promise.resolve(params);
     const requestedRoomId = resolvedParams.roomId;
 
-    const rooms = await db.select().from(arenaRooms);
-    const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+    const parsedId = Number(requestedRoomId);
+    const isNumeric = Number.isInteger(parsedId) && parsedId > 0;
+    const [lobby] = await db
+      .select()
+      .from(arenaRooms)
+      .where(
+        isNumeric
+          ? or(eq(arenaRooms.id, parsedId), eq(arenaRooms.inviteCode, requestedRoomId))
+          : eq(arenaRooms.inviteCode, requestedRoomId)
+      )
+      .limit(1);
 
     if (!lobby) {
       const session = getArenaSession(requestedRoomId);
@@ -354,6 +363,8 @@ export async function POST(
   try {
     const resolvedParams = await Promise.resolve(params);
     const requestedRoomId = resolvedParams.roomId;
+    const parsedId = Number(requestedRoomId);
+    const isNumeric = Number.isInteger(parsedId) && parsedId > 0;
 
     const body = (await req.json()) as SessionSubmitBody;
     const playerId = typeof body.playerId === "string" ? body.playerId.trim() : "";
@@ -364,8 +375,15 @@ export async function POST(
       return NextResponse.json({ error: "Missing playerId" }, { status: 400 });
     }
 
-    const rooms = await db.select().from(arenaRooms);
-    const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+    const [lobby] = await db
+      .select()
+      .from(arenaRooms)
+      .where(
+        isNumeric
+          ? or(eq(arenaRooms.id, parsedId), eq(arenaRooms.inviteCode, requestedRoomId))
+          : eq(arenaRooms.inviteCode, requestedRoomId)
+      )
+      .limit(1);
 
     if (!lobby) {
       const session = getArenaSession(requestedRoomId);

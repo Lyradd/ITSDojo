@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, Check, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { Plus, RefreshCw, Search, BookOpen, ListChecks, Save, Trash2, Check, ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 type TopicOption = {
   id: number;
@@ -76,6 +77,9 @@ export default function DuelQuestionsDosenPage() {
   const [topicFilter, setTopicFilter] = useState("all");
   const [form, setForm] = useState<QuestionFormState>(DEFAULT_FORM);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<QuestionFormState>(DEFAULT_FORM);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -162,8 +166,6 @@ export default function DuelQuestionsDosenPage() {
 
   if (!isMounted || role !== "dosen" || loading) return null;
 
-  const selectedTopic = topics.find((topic) => String(topic.id) === form.topicId);
-
   const handleQuestionTypeChange = (questionType: QuestionFormState["questionType"]) => {
     const nextState: QuestionFormState = {
       ...form,
@@ -195,6 +197,37 @@ export default function DuelQuestionsDosenPage() {
     });
   };
 
+  const handleEditQuestionTypeChange = (questionType: QuestionFormState["questionType"]) => {
+    const nextState: QuestionFormState = {
+      ...editForm,
+      questionType,
+      correctAnswer: questionType === "true_false" ? "True" : (questionType === "slider" ? "5" : ""),
+      options: questionType === "true_false"
+        ? ["True", "False"]
+        : questionType === "multiple_choice"
+          ? editForm.options.length === 4
+            ? editForm.options
+            : ["", "", "", ""]
+          : ["", "", "", ""],
+    };
+
+    setEditForm(nextState);
+  };
+
+  const handleEditOptionChange = (index: number, value: string) => {
+    setEditForm((current) => {
+      const nextOptions = [...current.options];
+      const oldValue = nextOptions[index];
+      nextOptions[index] = value;
+      const isCorrect = current.correctAnswer !== "" && current.correctAnswer === oldValue;
+      return {
+        ...current,
+        options: nextOptions,
+        correctAnswer: isCorrect ? value : current.correctAnswer,
+      };
+    });
+  };
+
   const resetForm = () => {
     setEditingId(null);
     const firstTopicId = topics[0]?.id ? String(topics[0].id) : "";
@@ -207,7 +240,7 @@ export default function DuelQuestionsDosenPage() {
 
   const handleStartEdit = (question: DuelQuestionRow) => {
     setEditingId(question.id);
-    setForm({
+    setEditForm({
       topicId: String(question.topicId),
       questionText: question.questionText,
       questionType: question.questionType,
@@ -222,14 +255,91 @@ export default function DuelQuestionsDosenPage() {
       timeLimit: String(question.timeLimit ?? 30),
       order: String(question.order ?? 1),
     });
-    toast.success("Detail soal dimuat ke form.");
+    setIsEditOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus soal ini?")) return;
+  const handleEditSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!editingId) return;
+
+    if (!editForm.topicId) {
+      toast.error("Pilih topik terlebih dahulu.");
+      return;
+    }
+
+    if (!editForm.questionText.trim()) {
+      toast.error("Teks soal wajib diisi.");
+      return;
+    }
+
+    if (editForm.questionType === "multiple_choice") {
+      const trimmedOptions = editForm.options.map((option) => option.trim()).filter(Boolean);
+      if (trimmedOptions.length < 2) {
+        toast.error("Minimal dua opsi jawaban diperlukan.");
+        return;
+      }
+      if (!editForm.correctAnswer || !trimmedOptions.includes(editForm.correctAnswer.trim())) {
+        toast.error("Pilih salah satu opsi sebagai jawaban benar.");
+        return;
+      }
+    }
+
+    if (editForm.questionType === "true_false") {
+      if (editForm.correctAnswer !== "True" && editForm.correctAnswer !== "False") {
+        toast.error("Pilih True atau False sebagai jawaban benar.");
+        return;
+      }
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/duel-questions/${editingId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": role || "dosen",
+        },
+        body: JSON.stringify({
+          topicId: Number(editForm.topicId),
+          questionText: editForm.questionText,
+          questionType: editForm.questionType,
+          options: editForm.questionType === "multiple_choice" || editForm.questionType === "true_false"
+            ? editForm.options.filter((option) => option.trim())
+            : undefined,
+          correctAnswer: editForm.correctAnswer,
+          points: Number(editForm.points),
+          timeLimit: Number(editForm.timeLimit),
+          order: Number(editForm.order),
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Gagal menyimpan soal");
+      }
+
+      toast.success("Soal duel berhasil diperbarui.");
+      setQuestions((current) =>
+        current.map((q) => (q.id === editingId ? {
+          ...(payload as DuelQuestionRow),
+          topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
+        } : q))
+      );
+      setIsEditOpen(false);
+      setEditingId(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan soal");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmId === null) return;
 
     try {
-      const response = await fetch(`/api/admin/duel-questions/${id}`, {
+      const response = await fetch(`/api/admin/duel-questions/${deleteConfirmId}`, {
         method: "DELETE",
         headers: {
           "x-user-role": role || "dosen",
@@ -242,14 +352,16 @@ export default function DuelQuestionsDosenPage() {
       }
 
       toast.success("Soal berhasil dihapus.");
-      setQuestions((current) => current.filter((q) => q.id !== id));
-      
-      if (editingId === id) {
+      setQuestions((current) => current.filter((q) => q.id !== deleteConfirmId));
+
+      if (editingId === deleteConfirmId) {
         setEditingId(null);
         resetForm();
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal menghapus soal");
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -292,10 +404,8 @@ export default function DuelQuestionsDosenPage() {
 
     setSaving(true);
     try {
-      const url = editingId ? `/api/admin/duel-questions/${editingId}` : "/api/admin/duel-questions";
-      const method = editingId ? "PATCH" : "POST";
-      const response = await fetch(url, {
-        method,
+      const response = await fetch("/api/admin/duel-questions", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-user-role": role || "dosen",
@@ -307,10 +417,7 @@ export default function DuelQuestionsDosenPage() {
           options: form.questionType === "multiple_choice" || form.questionType === "true_false"
             ? form.options.filter((option) => option.trim())
             : undefined,
-          correctAnswer: form.questionType === "slider" ? Number(form.correctAnswer) : form.correctAnswer,
-          sliderMin: form.questionType === "slider" ? Number(form.sliderMin) : null,
-          sliderMax: form.questionType === "slider" ? Number(form.sliderMax) : null,
-          answerMargin: form.questionType === "slider" ? Number(form.answerMargin) : null,
+          correctAnswer: form.correctAnswer,
           points: Number(form.points),
           timeLimit: Number(form.timeLimit),
           order: Number(form.order),
@@ -323,22 +430,12 @@ export default function DuelQuestionsDosenPage() {
         throw new Error(payload.error || "Gagal menyimpan soal");
       }
 
-      if (editingId) {
-        toast.success("Soal duel berhasil diperbarui.");
-        setQuestions((current) =>
-          current.map((q) => (q.id === editingId ? {
-            ...(payload as DuelQuestionRow),
-            topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
-          } : q))
-        );
-      } else {
-        toast.success("Soal duel berhasil ditambahkan.");
-        const enrichedPayload = {
-          ...payload,
-          topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
-        };
-        setQuestions((current) => [enrichedPayload as DuelQuestionRow, ...current]);
-      }
+      toast.success("Soal duel berhasil ditambahkan.");
+      const enrichedPayload = {
+        ...payload,
+        topicName: topics.find(t => String(t.id) === String(payload.topicId))?.subjectName || null,
+      };
+      setQuestions((current) => [enrichedPayload as DuelQuestionRow, ...current]);
       resetForm();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal menyimpan soal");
@@ -372,7 +469,7 @@ export default function DuelQuestionsDosenPage() {
           <Card className="rounded-3xl border-2 bg-white/90 p-6 shadow-lg dark:bg-zinc-900/90">
             <div className="mb-4 border-b pb-3 border-zinc-100 dark:border-zinc-800">
               <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                {editingId ? "Edit Soal Duel" : "Tambah Soal Duel"}
+                Tambah Soal Duel
               </h2>
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -402,10 +499,8 @@ export default function DuelQuestionsDosenPage() {
                     onChange={(event) => handleQuestionTypeChange(event.target.value as QuestionFormState["questionType"])}
                     className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
                   >
-                    <option value="multiple_choice">Multiple Choice</option>
-                    <option value="true_false">True / False</option>
-                    <option value="short_answer">Short Answer</option>
-                    <option value="slider">Slider</option>
+                    <option value="multiple_choice">Pilihan Ganda</option>
+                    <option value="true_false">Benar / Salah</option>
                   </select>
                 </div>
               </div>
@@ -536,7 +631,7 @@ export default function DuelQuestionsDosenPage() {
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="points">Poin</Label>
                   <Input id="points" type="number" value={form.points} onChange={(event) => setForm((current) => ({ ...current, points: event.target.value }))} />
@@ -546,30 +641,21 @@ export default function DuelQuestionsDosenPage() {
                   <Label htmlFor="timeLimit">Waktu (detik)</Label>
                   <Input id="timeLimit" type="number" value={form.timeLimit} onChange={(event) => setForm((current) => ({ ...current, timeLimit: event.target.value }))} />
                 </div>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="order">Urutan</Label>
                   <Input id="order" type="number" value={form.order} onChange={(event) => setForm((current) => ({ ...current, order: event.target.value }))} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Topik Terpilih</Label>
-                  <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-                    {selectedTopic ? selectedTopic.subjectName : "Pilih topik untuk mulai"}
-                  </div>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
                   <Save className="mr-2 h-4 w-4" />
-                  {saving ? "Menyimpan..." : (editingId ? "Perbarui Soal" : "Simpan Soal")}
+                  {saving ? "Menyimpan..." : "Simpan Soal"}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {editingId ? "Batal Edit" : "Reset Form"}
+                  Reset Form
                 </Button>
               </div>
             </form>
@@ -646,7 +732,7 @@ export default function DuelQuestionsDosenPage() {
                                 size="icon"
                                 type="button"
                                 variant="ghost"
-                                onClick={() => handleDelete(question.id)}
+                                onClick={() => setDeleteConfirmId(question.id)}
                                 className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer"
                                 title="Hapus Soal"
                               >
@@ -723,6 +809,235 @@ export default function DuelQuestionsDosenPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Question Modal */}
+      <AnimatePresence>
+        {isEditOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800 text-zinc-850 dark:text-zinc-100 max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setEditingId(null);
+                }}
+                className="absolute top-4 right-4 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer text-zinc-500"
+                title="Tutup"
+                type="button"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="mb-4 border-b pb-3 border-zinc-100 dark:border-zinc-800">
+                <h3 className="text-2xl font-black text-zinc-800 dark:text-white leading-tight">Edit Soal Duel</h3>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="editTopic">Topik</Label>
+                    <select
+                      id="editTopic"
+                      value={editForm.topicId}
+                      onChange={(event) => setEditForm((current) => ({ ...current, topicId: event.target.value }))}
+                      className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                    >
+                      <option value="">Pilih topik</option>
+                      {topics.map((topic) => (
+                        <option key={topic.id} value={topic.id}>
+                          {topic.subjectName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="editQuestionType">Tipe Soal</Label>
+                    <select
+                      id="editQuestionType"
+                      value={editForm.questionType}
+                      onChange={(event) => handleEditQuestionTypeChange(event.target.value as QuestionFormState["questionType"])}
+                      className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                    >
+                      <option value="multiple_choice">Multiple Choice</option>
+                      <option value="true_false">True / False</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="editQuestionText">Pertanyaan</Label>
+                  <Textarea
+                    id="editQuestionText"
+                    value={editForm.questionText}
+                    onChange={(event) => setEditForm((current) => ({ ...current, questionText: event.target.value }))}
+                    rows={4}
+                    placeholder="Tulis pertanyaan di sini..."
+                  />
+                </div>
+
+                {editForm.questionType === "multiple_choice" && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>Opsi Jawaban</Label>
+                      <span className="text-xs text-zinc-500">Pilih salah satu sebagai jawaban benar</span>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {editForm.options.map((option, index) => {
+                        const isCorrect = editForm.correctAnswer !== "" && editForm.correctAnswer === option;
+                        return (
+                          <div key={`edit-mc-${index}`} className="flex items-center gap-2">
+                            <Input
+                              value={option}
+                              onChange={(event) => handleEditOptionChange(index, event.target.value)}
+                              placeholder={`Opsi ${index + 1}`}
+                            />
+                            <Button
+                              type="button"
+                              variant={isCorrect ? "default" : "outline"}
+                              size="icon"
+                              onClick={() => {
+                                if (option.trim()) {
+                                  setEditForm((current) => ({ ...current, correctAnswer: option }));
+                                } else {
+                                  toast.error("Opsi harus diisi sebelum menjadikannya jawaban benar.");
+                                }
+                              }}
+                              className={cn(
+                                "h-11 w-11 shrink-0 transition-all duration-200",
+                                isCorrect
+                                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                  : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                              )}
+                              title="Tandai sebagai jawaban benar"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {editForm.questionType === "true_false" && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>Opsi Jawaban</Label>
+                      <span className="text-xs text-zinc-500">Pilih salah satu sebagai jawaban benar</span>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {["True", "False"].map((option) => {
+                        const isCorrect = editForm.correctAnswer === option;
+                        return (
+                          <div key={`edit-tf-${option}`} className="flex items-center gap-2">
+                            <div className="flex h-11 w-full items-center rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm font-semibold dark:border-zinc-800 dark:bg-zinc-900/50">
+                              {option === "True" ? "True / Benar" : "False / Salah"}
+                            </div>
+                            <Button
+                              type="button"
+                              variant={isCorrect ? "default" : "outline"}
+                              size="icon"
+                              onClick={() => {
+                                setEditForm((current) => ({ ...current, correctAnswer: option }));
+                              }}
+                              className={cn(
+                                "h-11 w-11 shrink-0 transition-all duration-200",
+                                isCorrect
+                                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                  : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                              )}
+                              title="Tandai sebagai jawaban benar"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="editPoints">Poin</Label>
+                    <Input id="editPoints" type="number" value={editForm.points} onChange={(event) => setEditForm((current) => ({ ...current, points: event.target.value }))} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="editTimeLimit">Waktu (detik)</Label>
+                    <Input id="editTimeLimit" type="number" value={editForm.timeLimit} onChange={(event) => setEditForm((current) => ({ ...current, timeLimit: event.target.value }))} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="editOrder">Urutan</Label>
+                    <Input id="editOrder" type="number" value={editForm.order} onChange={(event) => setEditForm((current) => ({ ...current, order: event.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? "Menyimpan..." : "Perbarui Soal"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditOpen(false);
+                      setEditingId(null);
+                    }}
+                  >
+                    Batal
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmId !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className="bg-white dark:bg-zinc-900 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative border-2 border-zinc-100 dark:border-zinc-800 text-zinc-850 dark:text-zinc-100"
+            >
+              <h3 className="text-xl font-bold text-zinc-800 dark:text-white mb-2">Hapus Soal Duel?</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+                Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div className="flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteConfirmId(null)}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleConfirmDelete}
+                  className="bg-red-600 hover:bg-red-755 text-white"
+                >
+                  Hapus
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

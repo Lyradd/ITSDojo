@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { duelRooms, duelSubject } from "@/db/schema";
 import { getDuelSession, setDuelSession } from "@/lib/duel-session-store";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 type TopicChoiceBody = {
   playerId?: string;
@@ -24,8 +24,17 @@ export async function POST(
     return NextResponse.json({ error: "Missing playerId or topicId" }, { status: 400 });
   }
 
-  const rooms = await db.select().from(duelRooms);
-  const lobby = rooms.find((room) => String(room.id) === requestedRoomId || room.inviteCode === requestedRoomId);
+  const parsedId = Number(requestedRoomId);
+  const isNumeric = Number.isInteger(parsedId) && parsedId > 0;
+  const [lobby] = await db
+    .select()
+    .from(duelRooms)
+    .where(
+      isNumeric
+        ? or(eq(duelRooms.id, parsedId), eq(duelRooms.inviteCode, requestedRoomId))
+        : eq(duelRooms.inviteCode, requestedRoomId)
+    )
+    .limit(1);
 
   if (!lobby) {
     return NextResponse.json({ error: "Lobby not found" }, { status: 404 });

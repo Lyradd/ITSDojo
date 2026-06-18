@@ -37,14 +37,7 @@ const StreakCalendarWidget = dynamic(() => import("@/components/shared/streak-ca
 const AlertModal = dynamic(() => import("@/components/shared/alert-modal").then(mod => mod.AlertModal), { ssr: false });
 import { StreakDisplay } from "@/components/shared/streak-display";
 
-// Helper: Warna tema berdasarkan kursus aktif
-const getCourseTheme = (courseId: string) => {
-  switch (courseId) {
-    case 'fe-basic': return { bg: 'bg-pink-600', shadow: 'shadow-pink-600/20', text: 'text-pink-600', pill: 'bg-pink-600 shadow-pink-500/30 border-pink-400' };
-    case 'react-mastery': return { bg: 'bg-blue-600', shadow: 'shadow-blue-600/20', text: 'text-blue-600', pill: 'bg-blue-600 shadow-blue-500/30 border-blue-400' };
-    default: return { bg: 'bg-emerald-600', shadow: 'shadow-emerald-600/20', text: 'text-emerald-600', pill: 'bg-emerald-600 shadow-emerald-500/30 border-emerald-400' };
-  }
-};
+// removed getCourseTheme helper since headers are now standardized
 
 export default function LearnPage() {
   const router = useRouter();
@@ -159,7 +152,7 @@ export default function LearnPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  const theme = getCourseTheme(activeCourseId);
+  // Theme logic is now inline
 
   // Hitung Peringkat & Leaderboard
   const computedLeaderboard = [
@@ -334,7 +327,7 @@ export default function LearnPage() {
           )}
 
           {/* 1. HEADER KURSUS (Card Warna-Warni) */}
-          <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${theme.bg} ${theme.shadow}`}>
+          <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${isUnitComplete ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 shadow-blue-600/20'}`}>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
                 <h2 className="text-lg sm:text-xl font-bold mb-1 flex items-start sm:items-center justify-center sm:justify-start gap-2">
@@ -361,7 +354,7 @@ export default function LearnPage() {
                 >
                   <RotateCcw className="w-4 h-4" />
                 </Button> */}
-                <Button asChild variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${theme.text}`}>
+                <Button asChild variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${isUnitComplete ? 'text-emerald-600' : 'text-blue-600'}`}>
                   <Link href="/courses">
                     Ganti Kursus
                   </Link>
@@ -419,9 +412,9 @@ export default function LearnPage() {
                   {/* ===== UNIT HEADER BANNER ===== */}
                   <div className={`w-full rounded-2xl overflow-hidden shadow-lg mb-8 ${
                     isUnitDone
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-500'
+                      ? 'bg-emerald-600'
                       : unitIdx === 0 || globalStartIdx <= activeNodeIndex
-                        ? `${theme.bg}`
+                        ? 'bg-blue-600'
                         : 'bg-zinc-300 dark:bg-zinc-800'
                   }`}>
                     <div className="p-5 flex items-center justify-between">

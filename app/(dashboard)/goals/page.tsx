@@ -247,7 +247,7 @@ export default function GoalsPage() {
           <MultiplierBanner />
 
           {/* BANNER 2: Hadiah Harian Hero */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
+          <div className="relative overflow-hidden rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex-1 space-y-2 text-center md:text-left">
                 <h2 className="text-xl font-bold flex items-center justify-center md:justify-start gap-2">
@@ -495,19 +495,19 @@ export default function GoalsPage() {
           </Card>
 
           {/* Monthly Challenge Badge - Enhanced UI */}
-          <Card className="group relative p-0 rounded-3xl border-2 overflow-hidden border-purple-200 dark:border-purple-900/30">
+          <Card className="group relative p-0 rounded-3xl border-2 overflow-hidden border-blue-200 dark:border-blue-900/30">
             {/* Background Pattern/Gradient */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none bg-linear-to-br from-purple-600 via-indigo-600 to-pink-600" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-blue-600" />
 
             <div className="flex flex-col relative z-10 p-6">
               {/* Header */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-purple-500 to-indigo-600 text-white shadow-lg flex items-center justify-center shrink-0">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white shadow-lg flex items-center justify-center shrink-0">
                     <Trophy className="w-7 h-7" />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-widest truncate">Misi Bulanan</span>
+                    <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-widest truncate">Misi Bulanan</span>
                     <h4 className="font-black text-xl leading-tight text-zinc-800 dark:text-white truncate">
                       Misi {currentMonth || "..."}
                     </h4>
@@ -517,20 +517,20 @@ export default function GoalsPage() {
               </div>
 
               {/* Progressive Milestones - Horizontal Layout */}
-              <div className="mt-4 p-4 bg-white/50 dark:bg-zinc-950/30 rounded-3xl border border-purple-100 dark:border-purple-900/30 pb-16">
+              <div className="mt-4 p-4 bg-white/50 dark:bg-zinc-950/30 rounded-3xl border border-blue-100 dark:border-blue-900/30 pb-16">
                 <div className="flex justify-between items-end mb-4 px-2">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Progres Misi</span>
                     <span className="text-sm font-black text-zinc-700 dark:text-zinc-200">{monthlyCompletedGoals} <span className="text-zinc-400 font-bold">/ 45 Misi</span></span>
                   </div>
-                  <span className="text-sm font-black text-purple-600">{Math.floor(Math.min((monthlyCompletedGoals / 45) * 100, 100))}%</span>
+                  <span className="text-sm font-black text-blue-600">{Math.floor(Math.min((monthlyCompletedGoals / 45) * 100, 100))}%</span>
                 </div>
 
                 <div className="mx-4 relative h-8 mt-6">
                   {/* The Background Track & Filled Part */}
                   <div className="absolute inset-0 bg-zinc-200/50 dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden">
                     <div
-                      className="absolute top-0 left-0 h-full bg-linear-to-r from-purple-400 to-purple-600 transition-all duration-1000 ease-out"
+                      className="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-1000 ease-out"
                       style={{ width: `${Math.min((monthlyCompletedGoals / 45) * 100, 100)}%` }}
                     >
                       <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
@@ -589,9 +589,9 @@ export default function GoalsPage() {
                           className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 transition-all ${isClaimed
                               ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
                               : isAvailable
-                                ? 'bg-purple-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                                ? 'bg-blue-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
                                 : isReached
-                                  ? 'bg-purple-600 border-white dark:border-zinc-950 text-white'
+                                  ? 'bg-blue-600 border-white dark:border-zinc-950 text-white'
                                   : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
                             }`}
                         >
@@ -601,7 +601,7 @@ export default function GoalsPage() {
                         </div>
                         {/* Labels */}
                         <div className="absolute top-14 flex flex-col items-center w-24">
-                          <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-purple-600 dark:text-purple-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${isReached ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
                             {milestone.target} Misi
                           </span>
                           <span className={`text-[9px] font-bold flex items-center gap-0.5 ${isClaimed ? 'text-zinc-400 line-through' : 'text-blue-500'}`}>

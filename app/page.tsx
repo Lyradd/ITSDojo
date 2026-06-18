@@ -759,7 +759,8 @@ export default function LandingPage() {
 
       {/* 3.5 INFINITE SOCIAL PROOF MARQUEE */}
       <section className="py-6 sm:py-10 border-y border-white/5 bg-[#050505]/80 backdrop-blur-md relative z-10 overflow-hidden flex flex-col items-center">
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes marquee-scroll {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
@@ -771,7 +772,7 @@ export default function LandingPage() {
           <div className="absolute top-0 left-0 w-20 sm:w-32 h-full bg-gradient-to-r from-[#050505] to-transparent z-10" />
           <div className="absolute top-0 right-0 w-20 sm:w-32 h-full bg-gradient-to-l from-[#050505] to-transparent z-10" />
 
-          <div 
+          <div
             className="flex whitespace-nowrap items-center w-max will-change-transform"
             style={{ animation: 'marquee-scroll 25s linear infinite' }}
           >
@@ -816,13 +817,17 @@ export default function LandingPage() {
             <SpotlightCard className="flex-1 w-full">
               <div className="p-8 flex flex-col items-center gap-4 py-4 w-full h-full relative z-10">
                 {/* Node 1 */}
-                <motion.button 
-                  type="button" 
-                  aria-label="Roadmap Dasar Pemrograman" 
-                  onClick={() => setActiveNode(1)} 
-                  whileHover={{ scale: 1.1 }}
-                  animate={activeNode === 1 ? { y: [0, -10, 0] } : {}}
-                  transition={activeNode === 1 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : {}}
+                <motion.button
+                  type="button"
+                  aria-label="Roadmap Dasar Pemrograman"
+                  onClick={() => setActiveNode(1)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={{ y: activeNode === 1 ? [0, -10, 0] : 0 }}
+                  transition={{
+                    y: activeNode === 1 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : { type: "spring", bounce: 0.5 },
+                    scale: { type: "spring", stiffness: 400, damping: 25 }
+                  }}
                   className={`flex flex-col items-center cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2 relative z-10`}
                 >
                   <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${activeNode === 1 ? 'bg-blue-600 text-white ring-4 ring-blue-500/40 shadow-[0_0_25px_rgba(37,99,235,0.8)]' : 'bg-blue-600/80 text-blue-100 shadow-lg'}`}>
@@ -832,66 +837,74 @@ export default function LandingPage() {
                 </motion.button>
 
                 {/* Animated SVG Connections (Garis Energi) */}
-                <div className="relative w-full max-w-[280px] h-16 flex justify-center items-center -my-4 z-0">
+                <div className="relative w-[152px] md:w-[224px] h-12 md:h-16 flex justify-center items-center -mt-2 md:-mt-4 -mb-2 md:-mb-4 z-0">
                   <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                     {/* Path to Left (Node 2) */}
-                    <path d="M50 0 C 50 50, 15 50, 15 100" fill="none" stroke="rgba(59,130,246,0.15)" strokeWidth="3" strokeLinecap="round" />
-                    <motion.path 
-                      d="M50 0 C 50 50, 15 50, 15 100" 
-                      fill="none" 
-                      stroke="rgba(59,130,246,0.8)" 
-                      strokeWidth="3" 
-                      strokeLinecap="round" 
+                    <path d="M50 0 C 50 50, 0 50, 0 100" fill="none" stroke="rgba(59,130,246,0.15)" strokeWidth="3" strokeLinecap="round" />
+                    <motion.path
+                      d="M50 0 C 50 50, 0 50, 0 100"
+                      fill="none"
+                      stroke="rgba(59,130,246,0.8)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
                       strokeDasharray="40 100"
                       animate={{ strokeDashoffset: [140, 0] }}
                       transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                     />
-                    
+
                     {/* Path to Right (Node 3) */}
-                    <path d="M50 0 C 50 50, 85 50, 85 100" fill="none" stroke="rgba(59,130,246,0.1)" strokeWidth="3" strokeLinecap="round" />
-                    <motion.path 
-                      d="M50 0 C 50 50, 85 50, 85 100" 
-                      fill="none" 
-                      stroke="rgba(59,130,246,0.4)" 
-                      strokeWidth="3" 
-                      strokeLinecap="round" 
+                    <path d="M50 0 C 50 50, 100 50, 100 100" fill="none" stroke="rgba(59,130,246,0.1)" strokeWidth="3" strokeLinecap="round" />
+                    <motion.path
+                      d="M50 0 C 50 50, 100 50, 100 100"
+                      fill="none"
+                      stroke="rgba(59,130,246,0.4)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
                       strokeDasharray="40 100"
                       animate={{ strokeDashoffset: [140, 0] }}
-                      transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 1 }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                     />
                   </svg>
                 </div>
 
                 {/* Split Nodes */}
-                <div className="flex gap-12 md:gap-24 items-start mt-2 relative z-10">
-                  <motion.button 
-                    type="button" 
-                    aria-label="Roadmap Pemrograman Web" 
-                    onClick={() => setActiveNode(2)} 
-                    whileHover={{ scale: 1.1 }}
-                    animate={activeNode === 2 ? { y: [0, -10, 0] } : {}}
-                    transition={activeNode === 2 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : {}}
-                    className={`flex flex-col items-center cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2`}
+                <div className="flex gap-8 md:gap-16 items-start mt-2 relative z-10">
+                  <motion.button
+                    type="button"
+                    aria-label="Roadmap Pemrograman Web"
+                    onClick={() => setActiveNode(2)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{ y: activeNode === 2 ? [0, -10, 0] : 0 }}
+                    transition={{
+                      y: activeNode === 2 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : { type: "spring", bounce: 0.5 },
+                      scale: { type: "spring", stiffness: 400, damping: 25 }
+                    }}
+                    className={`flex flex-col items-center justify-start cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-2xl p-2 w-[120px] md:w-[160px] text-center`}
                   >
                     <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${activeNode === 2 ? 'bg-zinc-800 border-4 border-blue-500 text-blue-400 shadow-[0_0_25px_rgba(37,99,235,0.8)]' : 'bg-zinc-900 border-4 border-zinc-700 text-zinc-500'}`}>
                       <Monitor className="w-10 h-10" />
                     </div>
-                    <span className={`font-bold mt-4 ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Pemrograman Web</span>
+                    <span className={`font-bold mt-4 text-sm md:text-base leading-tight ${activeNode === 2 ? 'text-white' : 'text-zinc-400'}`}>Pemrograman Web</span>
                   </motion.button>
 
-                  <motion.button 
-                    type="button" 
-                    aria-label="Roadmap Sains Data" 
-                    onClick={() => setActiveNode(3)} 
-                    whileHover={{ scale: 1.1, x: [-3, 3, -3, 3, 0] }}
-                    animate={activeNode === 3 ? { y: [0, -10, 0] } : {}}
-                    transition={activeNode === 3 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : { duration: 0.3 }}
-                    className={`flex flex-col items-center cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 rounded-2xl p-2`}
+                  <motion.button
+                    type="button"
+                    aria-label="Roadmap Sains Data"
+                    onClick={() => setActiveNode(3)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{ y: activeNode === 3 ? [0, -10, 0] : 0 }}
+                    transition={{
+                      y: activeNode === 3 ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : { type: "spring", bounce: 0.5 },
+                      scale: { type: "spring", stiffness: 400, damping: 25 }
+                    }}
+                    className={`flex flex-col items-center justify-start cursor-pointer group transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 rounded-2xl p-2 w-[120px] md:w-[160px] text-center`}
                   >
                     <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${activeNode === 3 ? 'bg-zinc-800 border-4 border-zinc-400 text-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-zinc-900 border-4 border-zinc-800 text-zinc-600'}`}>
                       <BrainCircuit className="w-10 h-10" />
                     </div>
-                    <span className={`font-bold mt-4 ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Sains Data</span>
+                    <span className={`font-bold mt-4 text-sm md:text-base leading-tight ${activeNode === 3 ? 'text-white' : 'text-zinc-500'}`}>Sains Data</span>
                   </motion.button>
                 </div>
               </div>
@@ -924,7 +937,7 @@ export default function LandingPage() {
                           </div>
                           <h3 className="text-2xl font-black text-white mb-2">{node?.title}</h3>
                           <p className="text-zinc-400 mb-6 leading-relaxed">{node?.desc}</p>
-                          
+
                           <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-xl mb-6">
                             <Code2 className="w-5 h-5 shrink-0 mt-0.5" />
                             <span className="text-sm font-medium leading-relaxed">

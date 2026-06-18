@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  BookOpen, Star, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List, Search, Bookmark, BookmarkCheck
+  BookOpen, Zap, Lock, ListFilter, ChevronDown, Check, LayoutGrid, List, Search, Bookmark, BookmarkCheck
 } from "lucide-react";
 import { useUserStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,9 +30,9 @@ import {
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { 
-    setActiveCourse, level, completedLessonIds, semester, 
-    courseAccessHistory, bookmarkedCourseIds, toggleBookmarkCourse 
+  const {
+    setActiveCourse, level, completedLessonIds, semester,
+    courseAccessHistory, bookmarkedCourseIds, toggleBookmarkCourse
   } = useUserStore();
 
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
@@ -105,9 +105,9 @@ export default function CoursesPage() {
 
   const formatDate = (date: Date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
 
-  // Fungsi Handler saat kursus dipilih
+  // Fungsi Handler saat kelas dipilih
   const handleSelectCourse = (courseId: string) => {
-    setActiveCourse(courseId); // 1. Set kursus aktif di global state
+    setActiveCourse(courseId); // 1. Set kelas aktif di global state
     router.push("/learn");     // 2. Pindah ke halaman Learn
   };
 
@@ -130,11 +130,10 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl min-h-screen">
-      {/* --- HEADER SECTION --- */}
-      <div className="mb-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-10 blur-3xl" />
-        <div className="relative">
+    <div className="w-full min-h-screen bg-[#F8FAFC] dark:bg-[#09090B]">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* --- HEADER SECTION --- */}
+        <div className="mb-8">
           {/* Row 1: Title and Saved Toggle */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
@@ -147,8 +146,8 @@ export default function CoursesPage() {
 
             <div className="shrink-0 self-start sm:self-auto">
               {/* Saved Toggle Button */}
-              <Button 
-                variant={showSavedOnly ? "secondary" : "outline"} 
+              <Button
+                variant={showSavedOnly ? "secondary" : "outline"}
                 className={`gap-2 ${showSavedOnly ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : ""}`}
                 onClick={() => setShowSavedOnly(!showSavedOnly)}
               >
@@ -163,9 +162,9 @@ export default function CoursesPage() {
             {/* Search Bar */}
             <div className="relative w-full md:w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
-              <Input 
-                type="text" 
-                placeholder="Cari kelas..." 
+              <Input
+                type="text"
+                placeholder="Cari kelas..."
                 className="pl-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -180,9 +179,9 @@ export default function CoursesPage() {
                     <div className="flex items-center gap-2">
                       <ListFilter className="w-4 h-4 text-zinc-500" />
                       <span>{
-                        sortOption === "name-asc" ? "Nama Kelas (A-Z)" : 
-                        sortOption === "progress-desc" ? "Progres Tertinggi" : 
-                        "Terakhir Diakses"
+                        sortOption === "name-asc" ? "Nama Kelas (A-Z)" :
+                          sortOption === "progress-desc" ? "Progres Tertinggi" :
+                            "Terakhir Diakses"
                       }</span>
                     </div>
                     <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`} />
@@ -218,210 +217,215 @@ export default function CoursesPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* --- CONTENT AREA --- */}
+        {/* --- CONTENT AREA --- */}
 
-      {/* Empty State: Saved filter active but nothing bookmarked */}
-      {sortedCourses.length === 0 && showSavedOnly ? (
-        <EmptyState 
-          icon={<Bookmark className="w-10 h-10" />}
-          title="Belum ada kursus yang disimpan"
-          description="Klik ikon bookmark pada kursus untuk menyimpannya agar mudah diakses kembali."
-          animate="float"
-          action={<Button variant="outline" onClick={() => setShowSavedOnly(false)}>Tampilkan Semua Kursus</Button>}
-        />
-      ) : sortedCourses.length === 0 ? (
-        <EmptyState 
-          icon={<Search className="w-10 h-10" />}
-          title="Tidak ada hasil ditemukan"
-          description="Coba ubah kata kunci pencarian Anda."
-          animate="float"
-        />
-      ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedCourses.map((course, index) => (
-            <div 
-              key={course.id} 
-              className="group relative flex flex-col h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/25 hover:-translate-y-2 hover:border-blue-500 dark:hover:border-blue-500 overflow-hidden"
-              onMouseEnter={() => setHoveredCourseId(course.id)}
-              onMouseLeave={() => setHoveredCourseId(null)}
-            >
-              {/* Header Gambar */}
-              <div className={`h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
-                <div className={`absolute inset-0 ${course.color} opacity-20`} />
-                {course.image && !imageErrorIds.includes(course.id) ? (
-                  <Image 
-                    src={course.image} 
-                    alt={course.title} 
-                    fill 
-                    priority={index < 6}
-                    className="object-cover transition-transform duration-500 group-hover:scale-105" 
-                    onError={() => setImageErrorIds(prev => [...prev, course.id])}
-                  />
-                ) : (
-                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40 transition-transform duration-500 group-hover:scale-105`}>
-                    <BookOpen className="w-12 h-12 text-white/50" />
-                  </div>
-                )}
-                {/* Bookmark Button Overlay */}
-                <button 
-                  aria-label={bookmarkedCourseIds.includes(course.id) ? "Hapus dari simpanan" : "Simpan kelas"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleBookmark(course.id);
-                  }}
-                  className={`absolute top-2 right-2 p-3 md:p-2 rounded-full backdrop-blur-md shadow-md transition-all active:scale-90 ${
-                    bookmarkedCourseIds.includes(course.id) 
-                      ? "bg-blue-600 text-white" 
-                      : "bg-white/50 text-zinc-800 hover:bg-white"
-                  }`}
-                >
-                  {bookmarkedCourseIds.includes(course.id) 
-                    ? <BookmarkCheck className="w-4 h-4" /> 
-                    : <Bookmark className="w-4 h-4" />
-                  }
-                </button>
-              </div>
-
-              <div className="p-6 flex flex-col flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                    {course.difficulty}
-                  </span>
-                  <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
-                    <Star className="w-3 h-3 fill-current" />
-                    <span>+{course.xpReward} XP</span>
-                  </div>
+        {/* Empty State: Saved filter active but nothing bookmarked */}
+        {sortedCourses.length === 0 && showSavedOnly ? (
+          <EmptyState
+            icon={<Bookmark className="w-10 h-10" />}
+            title="Belum ada kelas yang disimpan"
+            description="Klik ikon bookmark pada kelas untuk menyimpannya agar mudah diakses kembali."
+            animate="float"
+            action={<Button variant="outline" onClick={() => setShowSavedOnly(false)}>Tampilkan Semua Kelas</Button>}
+          />
+        ) : sortedCourses.length === 0 ? (
+          <EmptyState
+            icon={<Search className="w-10 h-10" />}
+            title="Tidak ada hasil ditemukan"
+            description="Coba ubah kata kunci pencarian Anda."
+            animate="float"
+          />
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedCourses.map((course, index) => (
+              <div
+                key={course.id}
+                className="group relative flex flex-col h-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 text-card-foreground shadow-sm dark:shadow-none transition-all duration-300 hover:shadow-lg dark:hover:shadow-none hover:-translate-y-1 hover:border-blue-500/50 dark:hover:border-blue-500/50 overflow-hidden cursor-pointer"
+                onMouseEnter={() => setHoveredCourseId(course.id)}
+                onMouseLeave={() => setHoveredCourseId(null)}
+                onClick={() => handleSelectCourse(course.id)}
+              >
+                {/* Header Gambar */}
+                <div className={`h-32 w-full flex items-center justify-center relative overflow-hidden transition-all duration-300 ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
+                  <div className={`absolute inset-0 ${course.color} opacity-20`} />
+                  {course.image && !imageErrorIds.includes(course.id) ? (
+                    <Image
+                      src={course.image}
+                      alt={course.title}
+                      fill
+                      priority={index < 6}
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={() => setImageErrorIds(prev => [...prev, course.id])}
+                    />
+                  ) : (
+                    <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40 transition-transform duration-500 group-hover:scale-105`}>
+                      <BookOpen className="w-12 h-12 text-white/50" />
+                    </div>
+                  )}
+                  {/* Bookmark Button Overlay */}
+                  <button
+                    aria-label={bookmarkedCourseIds.includes(course.id) ? "Hapus dari simpanan" : "Simpan kelas"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleBookmark(course.id);
+                    }}
+                    className={`absolute top-2 right-2 p-3 md:p-2 rounded-full backdrop-blur-md shadow-md transition-all active:scale-90 ${bookmarkedCourseIds.includes(course.id)
+                        ? "bg-blue-600 text-white"
+                        : "bg-white/50 text-zinc-800 hover:bg-white"
+                      }`}
+                  >
+                    {bookmarkedCourseIds.includes(course.id)
+                      ? <BookmarkCheck className="w-4 h-4" />
+                      : <Bookmark className="w-4 h-4" />
+                    }
+                  </button>
                 </div>
 
-                <h2 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors">
-                  {course.title}
-                </h2>
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                      {course.difficulty}
+                    </span>
+                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                      <Zap className="w-3 h-3 fill-current" />
+                      <span>+{course.xpReward} XP</span>
+                    </div>
+                  </div>
 
-                <p className="text-xs text-zinc-500 mb-2">
-                  Aktivitas terakhir: {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
-                </p>
+                  <h2 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors">
+                    {course.title}
+                  </h2>
 
-                {/* Progress */}
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Status Belajar</span>
-                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                      Tersedia
+                  <p className="text-xs text-zinc-500 mb-2">
+                    Aktivitas terakhir: {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
+                  </p>
+
+                  {/* Progress */}
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Status Belajar</span>
+                      <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                        Tersedia
+                      </span>
+                    </div>
+                    <CircularProgress progress={course.progress} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
+                  </div>
+
+                  <p className="text-sm text-zinc-500 mb-4 line-clamp-2 mt-2">
+                    {course.description}
+                  </p>
+
+                  <div className="mt-auto pt-4 border-t flex flex-col gap-3">
+                    <div className="text-xs text-zinc-500 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>{course.unitsCount} Unit • {course.lessonsCount} Materi</span>
+                    </div>
+
+                    <Button size="sm" className="w-full font-bold">
+                      {course.progress > 0 ? "Lanjutkan Belajar" : "Mulai Belajar"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* MODE 2: LIST VIEW */
+          <div className="flex flex-col gap-4">
+            {sortedCourses.map((course, index) => (
+              <div
+                key={course.id}
+                className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 shadow-sm dark:shadow-none hover:shadow-lg dark:hover:shadow-none hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all duration-300 cursor-pointer"
+                onClick={() => handleSelectCourse(course.id)}
+              >
+                {/* Icon Box */}
+                <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
+                  <div className={`absolute inset-0 ${course.color} opacity-20`} />
+                  {course.image && !imageErrorIds.includes(course.id) ? (
+                    <Image
+                      src={course.image}
+                      alt={course.title}
+                      fill
+                      priority={index < 4}
+                      className="object-cover"
+                      onError={() => setImageErrorIds(prev => [...prev, course.id])}
+                    />
+                  ) : (
+                    <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40`}>
+                      <BookOpen className="w-8 h-8 text-white/50" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Content Center */}
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-bold truncate group-hover:text-blue-600 transition-colors">
+                        {course.title}
+                      </h2>
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:text-zinc-300 dark:bg-zinc-800">
+                        {course.difficulty}
+                      </span>
+                      <button
+                        aria-label={bookmarkedCourseIds.includes(course.id) ? "Hapus dari simpanan" : "Simpan kelas"}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleToggleBookmark(course.id);
+                        }}
+                        className={`ml-2 p-3 md:p-1.5 rounded-lg transition-all active:scale-90 ${bookmarkedCourseIds.includes(course.id)
+                            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40"
+                            : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          }`}
+                      >
+                        {bookmarkedCourseIds.includes(course.id)
+                          ? <BookmarkCheck className="w-4 h-4" />
+                          : <Bookmark className="w-4 h-4" />
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-zinc-500 line-clamp-1 mb-3">
+                    {course.description}
+                  </p>
+
+                  {/* Circular Progress (LIST) */}
+                  <div className="flex items-center gap-3 mb-3 max-w-md">
+                    <CircularProgress progress={course.progress} size={36} strokeWidth={3} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Progres Belajar</span>
+                      <span className="text-[10px] text-zinc-500">{course.progress}% Tuntas</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" /> {course.unitsCount} Unit • {course.lessonsCount} Materi
+                    </span>
+                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                      <Zap className="w-3 h-3 fill-current" /> +{course.xpReward} XP
+                    </span>
+                    <span>
+                      • {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
                     </span>
                   </div>
-                  <CircularProgress progress={course.progress} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
                 </div>
 
-                <p className="text-sm text-zinc-500 mb-4 line-clamp-2 mt-2">
-                  {course.description}
-                </p>
-
-                <div className="mt-auto pt-4 border-t flex flex-col gap-3">
-                  <div className="text-xs text-zinc-500 flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{course.unitsCount} Unit • {course.lessonsCount} Materi</span>
-                  </div>
-
-                  <Button size="sm" className="w-full font-bold" onClick={() => handleSelectCourse(course.id)}>
-                    {course.progress > 0 ? "Lanjutkan Belajar" : "Mulai Belajar"}
+                {/* Action Right */}
+                <div className="shrink-0 self-end sm:self-center mt-2 sm:mt-0 w-full sm:w-auto">
+                  <Button size="sm" className="w-full sm:w-auto">
+                    {course.progress > 0 ? "Lanjutkan" : "Mulai Belajar"}
                   </Button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        /* MODE 2: LIST VIEW */
-        <div className="flex flex-col gap-4">
-          {sortedCourses.map((course, index) => (
-            <div key={course.id} className="group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border bg-card hover:bg-zinc-50/50 hover:border-blue-500/30 transition-all dark:hover:bg-zinc-900">
-              {/* Icon Box */}
-              <div className={`h-16 w-16 sm:h-20 sm:w-20 rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden ${course.status === 'semester-locked' ? 'grayscale opacity-60' : ''}`}>
-                <div className={`absolute inset-0 ${course.color} opacity-20`} />
-                {course.image && !imageErrorIds.includes(course.id) ? (
-                  <Image 
-                    src={course.image} 
-                    alt={course.title} 
-                    fill 
-                    priority={index < 4}
-                    className="object-cover" 
-                    onError={() => setImageErrorIds(prev => [...prev, course.id])}
-                  />
-                ) : (
-                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${course.color} opacity-40`}>
-                    <BookOpen className="w-8 h-8 text-white/50" />
-                  </div>
-                )}
-              </div>
-
-              {/* Content Center */}
-              <div className="flex-1 min-w-0 w-full">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-2">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold truncate group-hover:text-blue-600 transition-colors">
-                      {course.title}
-                    </h2>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 dark:text-zinc-300 dark:bg-zinc-800">
-                      {course.difficulty}
-                    </span>
-                    <button 
-                      aria-label={bookmarkedCourseIds.includes(course.id) ? "Hapus dari simpanan" : "Simpan kelas"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleBookmark(course.id);
-                      }}
-                      className={`ml-2 p-3 md:p-1.5 rounded-lg transition-all active:scale-90 ${
-                        bookmarkedCourseIds.includes(course.id) 
-                          ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40" 
-                          : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                    >
-                      {bookmarkedCourseIds.includes(course.id) 
-                        ? <BookmarkCheck className="w-4 h-4" /> 
-                        : <Bookmark className="w-4 h-4" />
-                      }
-                    </button>
-                  </div>
-                </div>
-
-                <p className="text-sm text-zinc-500 line-clamp-1 mb-3">
-                  {course.description}
-                </p>
-
-                {/* Circular Progress (LIST) */}
-                <div className="flex items-center gap-3 mb-3 max-w-md">
-                  <CircularProgress progress={course.progress} size={36} strokeWidth={3} color={course.progress === 100 ? "text-green-500" : "text-blue-600"} />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Progres Belajar</span>
-                    <span className="text-[10px] text-zinc-500">{course.progress}% Tuntas</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" /> {course.unitsCount} Unit • {course.lessonsCount} Materi
-                  </span>
-                  <span className="flex items-center gap-1 text-amber-500 font-medium">
-                    <Star className="w-3 h-3 fill-current" /> +{course.xpReward} XP
-                  </span>
-                  <span>
-                    • {course.lastAccessed.getTime() === 0 ? "Belum diakses" : formatDate(course.lastAccessed)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Right */}
-              <div className="shrink-0 self-end sm:self-center mt-2 sm:mt-0 w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSelectCourse(course.id)}>
-                  {course.progress > 0 ? "Lanjutkan" : "Mulai Belajar"}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

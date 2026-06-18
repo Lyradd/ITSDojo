@@ -138,7 +138,7 @@ export default function EvaluationPage() {
 
   if (!isMounted || !isLoggedIn) return null;
 
-  // Filter evaluasi berdasarkan semester user — kursus yang requiredSemester ≤ semester user
+  // Filter evaluasi berdasarkan semester user — kelas yang requiredSemester ≤ semester user
   // otomatis bisa diakses (tidak perlu enrollment).
   const accessibleCourseIds = coursesList
     .filter((c) => c.requiredSemester <= semester)

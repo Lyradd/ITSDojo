@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
                     <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Kursus</div>
+                    <div className="font-bold text-zinc-800 dark:text-zinc-100">Kelola Kelas</div>
                     <div className="text-sm text-zinc-600 dark:text-zinc-400">Tambah & edit materi</div>
                   </div>
                   <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />

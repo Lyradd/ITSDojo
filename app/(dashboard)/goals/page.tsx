@@ -87,7 +87,7 @@ const MultiplierBanner = React.memo(() => {
 const getGoalCardStyle = (goal: any) => {
   if (goal.isClaimed) return "bg-zinc-50 border-zinc-100 opacity-60 dark:bg-zinc-900/50 dark:border-zinc-800 grayscale-[0.5]";
   if (goal.isCompleted) return "border-green-400 bg-green-50 shadow-md ring-1 ring-green-200 dark:bg-green-900/20 dark:border-green-600 dark:ring-green-800";
-  return "border-zinc-200 hover:border-blue-300 dark:border-zinc-700 dark:hover:border-blue-600";
+  return "border-zinc-200 dark:border-zinc-700";
 };
 
 const getGoalIconBoxStyle = (goal: any) => {
@@ -138,8 +138,8 @@ export default function GoalsPage() {
   const [currentMonth, setCurrentMonth] = useState("");
 
   // 1. Cek Mounted 
-  useEffect(() => { 
-    setIsMounted(true); 
+  useEffect(() => {
+    setIsMounted(true);
     setCurrentMonth(new Date().toLocaleString('id-ID', { month: 'long', timeZone: 'Asia/Jakarta' }));
   }, []);
 
@@ -178,23 +178,23 @@ export default function GoalsPage() {
     try {
       const res = await claimDailyGoalAction(goalId);
       if (res.success && res.gamificationData) {
-         // Sync state from server response (OCC Safe)
-         useUserStore.getState().syncFromServer({
-             level: res.newLevel as number,
-             profileXp: res.newXp as number,
-             xp: res.newLeaderboardXp as number,
-             gems: res.newGems as number,
-             streak: useUserStore.getState().streak, 
-             accuracy: useUserStore.getState().accuracy,
-             gamificationData: res.gamificationData
-         });
-         
-         triggerConfetti();
-         playCoinSound();
-         useUserStore.getState().triggerReward('gem', Math.min(res.earnedGems as number, 10));
-         if ((res.earnedXp as number) > 0) useUserStore.getState().triggerReward('xp', Math.min(res.earnedXp as number, 10));
+        // Sync state from server response (OCC Safe)
+        useUserStore.getState().syncFromServer({
+          level: res.newLevel as number,
+          profileXp: res.newXp as number,
+          xp: res.newLeaderboardXp as number,
+          gems: res.newGems as number,
+          streak: useUserStore.getState().streak,
+          accuracy: useUserStore.getState().accuracy,
+          gamificationData: res.gamificationData
+        });
+
+        triggerConfetti();
+        playCoinSound();
+        useUserStore.getState().triggerReward('gem', Math.min(res.earnedGems as number, 10));
+        if ((res.earnedXp as number) > 0) useUserStore.getState().triggerReward('xp', Math.min(res.earnedXp as number, 10));
       } else {
-         console.error("Gagal klaim misi:", res.error);
+        console.error("Gagal klaim misi:", res.error);
       }
     } catch (err) {
       console.error(err);
@@ -247,21 +247,125 @@ export default function GoalsPage() {
           <MultiplierBanner />
 
           {/* BANNER 2: Hadiah Harian Hero */}
-          <div className="relative overflow-hidden rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex-1 space-y-2 text-center md:text-left">
-                <h2 className="text-xl font-bold flex items-center justify-center md:justify-start gap-2">
-                  <Gift className="w-6 h-6 animate-bounce" />
-                  Hadiah Misi
-                </h2>
-                <p className="text-blue-100 text-sm">
-                  Selesaikan misi untuk mendapatkan Gems dan XP Booster!
+          <div className="group relative overflow-hidden rounded-2xl bg-blue-600 dark:bg-blue-950/60 border border-blue-500/30 dark:border-blue-900/40 p-5 sm:p-6 shadow-md transition-all duration-300">
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex-1 space-y-2 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-2.5">
+                  <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
+                  <h2 className="text-lg font-black text-white">
+                    Hadiah Misi
+                  </h2>
+                </div>
+                <p className="text-blue-100 dark:text-zinc-350 text-sm leading-relaxed max-w-lg">
+                  Selesaikan misi harian untuk mengumpulkan Gems dan mendapatkan XP dari peti karun!
                 </p>
               </div>
-              <div className="text-6xl">🎁</div>
+
+              {/* Chest Animation Visual */}
+              <div className="shrink-0 flex items-center justify-center">
+                <motion.div
+                  className="relative w-28 h-28 flex items-center justify-center select-none"
+                  whileHover="hover"
+                >
+                  {/* Glow behind the chest */}
+                  <div className="absolute inset-0 bg-white/15 dark:bg-blue-400/10 rounded-full blur-xl animate-pulse" />
+
+                  <svg width="90" height="90" viewBox="0 -15 100 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Gems and Zaps shooting out of the chest */}
+                    <g>
+                      {/* Gem */}
+                      <motion.path
+                        d="M32 32 L38 24 L44 32 L38 40 Z"
+                        fill="#3B82F6"
+                        animate={{
+                          y: [-5, -28, -5],
+                          opacity: [0, 1, 0],
+                          scale: [0.6, 1, 0.6],
+                          rotate: [0, 45, 90]
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: 0.2
+                        }}
+                      />
+                      {/* Zap */}
+                      <motion.path
+                        d="M62 25 L56 33 L64 33 L58 42 L68 32 L60 32 Z"
+                        fill="#F59E0B"
+                        animate={{
+                          y: [-10, -32, -10],
+                          opacity: [0, 1, 0],
+                          scale: [0.5, 0.9, 0.5],
+                          rotate: [0, -20, 0]
+                        }}
+                        transition={{
+                          duration: 2.8,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: 1.2
+                        }}
+                      />
+                    </g>
+
+                    {/* Chest Body (Cyber Crate) */}
+                    <path
+                      d="M25 58 L75 58 L75 80 L68 87 L32 87 L25 80 Z"
+                      fill="#1E293B"
+                      stroke="#475569"
+                      strokeWidth="2.5"
+                      className="dark:fill-zinc-800 dark:stroke-zinc-700"
+                    />
+                    {/* Cyber bands (Neon Cyan) */}
+                    <rect x="34" y="58" width="4" height="29" fill="#06B6D4" opacity="0.6" className="dark:fill-blue-500" />
+                    <rect x="62" y="58" width="4" height="29" fill="#06B6D4" opacity="0.6" className="dark:fill-blue-500" />
+                    {/* Neon bottom corner highlights */}
+                    <path d="M68 87 L75 80" stroke="#06B6D4" strokeWidth="2" opacity="0.8" className="dark:stroke-blue-500" />
+                    <path d="M32 87 L25 80" stroke="#06B6D4" strokeWidth="2" opacity="0.8" className="dark:stroke-blue-500" />
+
+                    {/* Central Cyber Lock/Scanner Core */}
+                    <polygon points="44,58 50,51 56,58 50,65" fill="#0F172A" stroke="#06B6D4" strokeWidth="2" className="dark:stroke-blue-400" />
+                    <circle cx="50" cy="58" r="3" fill="#06B6D4" className="dark:fill-blue-400 animate-pulse" />
+
+                    {/* Chest Lid (Moving Lid on Hover) */}
+                    <motion.g
+                      variants={{
+                        hover: {
+                          y: -6,
+                          rotate: -4,
+                          transition: { duration: 0.3, ease: "easeInOut" }
+                        }
+                      }}
+                      animate={{
+                        y: [0, -2, 0]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      {/* Crate Lid */}
+                      <path
+                        d="M24 54 L32 36 L68 36 L76 54 Z"
+                        fill="#334155"
+                        stroke="#475569"
+                        strokeWidth="2.5"
+                        className="dark:fill-zinc-750 dark:stroke-zinc-600"
+                      />
+                      {/* Horizontal Neon Bar */}
+                      <line x1="32" y1="45" x2="68" y2="45" stroke="#06B6D4" strokeWidth="3" strokeLinecap="round" className="dark:stroke-blue-400" />
+                      {/* Cyber screws / hardware dots */}
+                      <circle cx="36" cy="40" r="1.5" fill="#94A3B8" />
+                      <circle cx="64" cy="40" r="1.5" fill="#94A3B8" />
+                      {/* Lid bottom seal */}
+                      <line x1="23" y1="54" x2="77" y2="54" stroke="#475569" strokeWidth="2.5" className="dark:stroke-zinc-650" />
+                    </motion.g>
+                  </svg>
+                </motion.div>
+              </div>
             </div>
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 -mr-8 -mt-8 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
           </div>
 
           {/* LIST GOALS */}
@@ -295,8 +399,8 @@ export default function GoalsPage() {
                               <div className="flex justify-between items-start sm:items-center mb-0.5 gap-2">
                                 <div className="flex items-center gap-2">
                                   <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md ${goal.category === 'academic' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' :
-                                      goal.category === 'competitive' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' :
-                                        'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400'
+                                    goal.category === 'competitive' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' :
+                                      'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400'
                                     }`}>
                                     {goal.category}
                                   </span>
@@ -403,10 +507,10 @@ export default function GoalsPage() {
                       {item.day}
                     </span>
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border-2 transition-all ${item.active
-                        ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
-                        : item.isFreeze
-                          ? 'bg-blue-100 border-blue-200 text-blue-500 dark:bg-blue-900/40 dark:border-blue-800 shadow-sm'
-                          : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
+                      ? 'bg-orange-500 border-orange-600 text-white shadow-sm'
+                      : item.isFreeze
+                        ? 'bg-blue-100 border-blue-200 text-blue-500 dark:bg-blue-900/40 dark:border-blue-800 shadow-sm'
+                        : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-transparent'
                       }`}>
                       {item.isFreeze ? <Snowflake className="w-3 h-3 sm:w-5 sm:h-5" /> : <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </div>
@@ -467,12 +571,12 @@ export default function GoalsPage() {
                             }
                           }}
                           className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all ${isClaimed
-                              ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
-                              : isAvailable
-                                ? 'bg-yellow-400 border-white dark:border-zinc-950 text-yellow-900 shadow-lg cursor-pointer hover:scale-110 animate-bounce'
-                                : isReached
-                                  ? 'bg-orange-500 border-white dark:border-zinc-950 text-white'
-                                  : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
+                            ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
+                            : isAvailable
+                              ? 'bg-yellow-400 border-white dark:border-zinc-950 text-yellow-900 shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                              : isReached
+                                ? 'bg-orange-500 border-white dark:border-zinc-950 text-white'
+                                : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
                             }`}
                         >
                           {isClaimed ? <CheckCircle className="w-5 h-5" /> : <Gift className={`w-5 h-5 ${isAvailable ? 'fill-current' : ''}`} />}
@@ -563,13 +667,13 @@ export default function GoalsPage() {
                                 const res = await claimMonthlyMilestoneAction(milestone.target, milestone.reward, milestone.tier);
                                 if (res.success && res.gamificationData) {
                                   useUserStore.getState().syncFromServer({
-                                      level: useUserStore.getState().level,
-                                      profileXp: useUserStore.getState().xp,
-                                      xp: useUserStore.getState().weeklyXp,
-                                      gems: res.newGems as number,
-                                      streak: useUserStore.getState().streak, 
-                                      accuracy: useUserStore.getState().accuracy,
-                                      gamificationData: res.gamificationData
+                                    level: useUserStore.getState().level,
+                                    profileXp: useUserStore.getState().xp,
+                                    xp: useUserStore.getState().weeklyXp,
+                                    gems: res.newGems as number,
+                                    streak: useUserStore.getState().streak,
+                                    accuracy: useUserStore.getState().accuracy,
+                                    gamificationData: res.gamificationData
                                   });
                                   triggerConfetti();
                                   playCoinSound();
@@ -587,12 +691,12 @@ export default function GoalsPage() {
                             }
                           }}
                           className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-4 transition-all ${isClaimed
-                              ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
-                              : isAvailable
-                                ? 'bg-blue-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
-                                : isReached
-                                  ? 'bg-blue-600 border-white dark:border-zinc-950 text-white'
-                                  : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
+                            ? 'bg-zinc-100 border-zinc-200 text-green-500 dark:bg-zinc-800 dark:border-zinc-700'
+                            : isAvailable
+                              ? 'bg-blue-500 border-white dark:border-zinc-950 text-white shadow-lg cursor-pointer hover:scale-110 animate-bounce'
+                              : isReached
+                                ? 'bg-blue-600 border-white dark:border-zinc-950 text-white'
+                                : 'bg-white border-zinc-200 text-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-600'
                             }`}
                         >
                           {isClaimed ? <CheckCircle className="w-6 h-6" /> : (

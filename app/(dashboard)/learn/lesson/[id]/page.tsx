@@ -56,7 +56,7 @@ export default function LessonIDEPage() {
   const params = useParams();
   const lessonId = params?.id as string;
 
-  const { level, completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email, unlockAchievement, updateProfile } = useUserStore();
+  const { id, level, completeLesson, completedLessonIds, activeCourseId, isLoggedIn, name, email, unlockAchievement, updateProfile } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<any>(null);
@@ -73,6 +73,7 @@ export default function LessonIDEPage() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customInput, setCustomInput] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState({ lineNumber: 1, column: 1 });
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
   const [isDiscussionOpen, setIsDiscussionOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
@@ -135,6 +136,7 @@ export default function LessonIDEPage() {
         const formatted = data.map((d: any) => ({
           id: d.id,
           sender: d.userName,
+          senderId: d.userId, // Save sender's user ID
           content: d.content,
           timestamp: new Date(d.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }));
@@ -157,6 +159,7 @@ export default function LessonIDEPage() {
     const optimisticMsg = {
       id: Date.now(),
       sender: name || "You",
+      senderId: id, // Store current user's ID
       content: chatInput,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -166,19 +169,17 @@ export default function LessonIDEPage() {
 
     // POST to Database
     try {
-      // Catatan: Karena kita tidak punya userStore.id di komponen ini, 
-      // kita mock userId "current_user_1" atau ambil dari store jika ada
       const res = await fetch(`/api/lessons/${lessonId}/discussions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: chatInput,
-          userId: email || "1",
+          userId: email || "1", // Use email as fallback for legacy route matching
           userName: name || "User"
         })
       });
       if (res.ok) {
-        fetchDiscussions(); // Refresh untuk mendapatkan ID asli
+        fetchDiscussions(); // Refresh to fetch actual IDs and records
       }
     } catch (e) {
       console.error("Failed to post discussion", e);
@@ -208,17 +209,29 @@ export default function LessonIDEPage() {
              <p className="text-sm text-zinc-500 max-w-sm mt-2">Jadilah yang pertama memulai diskusi mengenai materi ini!</p>
           </div>
         ) : (
-          messages.map(msg => (
-            <div key={msg.id} className="flex flex-col gap-1 max-w-[85%] self-end">
-              <div className="flex items-center justify-end gap-2 text-xs text-zinc-500">
-                <span className="font-bold text-zinc-700 dark:text-zinc-300">{msg.sender}</span>
-                <span>{msg.timestamp}</span>
+          messages.map(msg => {
+            const isMe = msg.senderId === id || msg.senderId === email;
+            return (
+              <div 
+                key={msg.id} 
+                className={`flex flex-col gap-1 max-w-[85%] ${isMe ? 'self-end' : 'self-start'}`}
+              >
+                <div className={`flex items-center gap-2 text-xs text-zinc-500 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                    {isMe ? 'Anda' : msg.sender}
+                  </span>
+                  <span>{msg.timestamp}</span>
+                </div>
+                <div className={`p-3 rounded-2xl shadow-sm text-sm text-left ${
+                  isMe 
+                    ? 'bg-blue-600 text-white rounded-tr-sm' 
+                    : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm'
+                }`}>
+                  {msg.content}
+                </div>
               </div>
-              <div className="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-sm shadow-sm text-sm text-left">
-                {msg.content}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
       <div className="p-4 bg-white dark:bg-zinc-900 border-t shrink-0">
@@ -267,24 +280,52 @@ export default function LessonIDEPage() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 1. Validation: File Extension
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const validExtensions = ['c', 'cpp', 'cc', 'cxx', 'js', 'jsx', 'py', 'txt'];
+    if (!extension || !validExtensions.includes(extension)) {
+      toast.error("Gagal: Hanya file koding yang diperbolehkan!");
+      e.target.value = '';
+      return;
+    }
+
+    // 2. Validation: File Size (max 100KB)
+    if (file.size > 100 * 1024) {
+      toast.error("Gagal: Ukuran file terlalu besar! (Maksimal 100KB)");
+      e.target.value = '';
+      return;
+    }
+
+    // 3. File Reading with error handling
     const reader = new FileReader();
+    
+    reader.onerror = () => {
+      toast.error("Gagal membaca file!");
+      e.target.value = '';
+    };
+
     reader.onload = (event) => {
       const fileContent = event.target?.result as string || "";
-      setCode(fileContent);
-
+      
       // Auto-detect language by file extension
-      const extension = file.name.split('.').pop()?.toLowerCase();
       let detectedLang = language;
       if (extension === 'c') detectedLang = 'c';
       else if (extension === 'cpp' || extension === 'cc' || extension === 'cxx') detectedLang = 'cpp';
       else if (extension === 'js' || extension === 'jsx') detectedLang = 'javascript';
+      else if (extension === 'py') detectedLang = 'python';
 
+      setCode(fileContent);
       setLanguage(detectedLang);
       setCodes(prev => ({
         ...prev,
         [detectedLang]: fileContent
       }));
+
+      toast.success("File berhasil diunggah!");
+      e.target.value = ''; // Reset input value so it can be re-uploaded
     };
+
     reader.readAsText(file);
   };
 
@@ -537,7 +578,7 @@ export default function LessonIDEPage() {
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 text-xs font-bold rounded-full uppercase tracking-wider">
                     {lesson.problemCategory || 'Materi Dasar'}
                   </span>
-                  <span className="text-sm font-bold text-zinc-400">Stage {stageNumber}</span>
+                  <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">Stage {stageNumber}</span>
                 </div>
                 <h1 className="text-3xl font-extrabold text-zinc-800 dark:text-white mb-4">
                   {lesson.title || 'Memahami Konsep Dasar'}
@@ -547,7 +588,7 @@ export default function LessonIDEPage() {
                 {!isVideo && (
                   <div className="ql-snow mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
                     {lesson.summaryContent ? (
-                      <div className="prose prose-zinc dark:prose-invert max-w-none ql-editor p-0 text-zinc-600 dark:text-zinc-400 [&_pre]:bg-gray-800 [&_pre]:text-gray-100 [&_code]:bg-transparent [&_code]:text-blue-300 [&_pre_*]:!bg-transparent [&_pre_*]:!text-gray-200" dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
+                      <div className="prose prose-zinc dark:prose-invert max-w-none ql-editor p-0 text-zinc-700 dark:text-zinc-300 [&_pre]:bg-zinc-100 [&_pre]:dark:bg-zinc-900/60 [&_pre]:border [&_pre]:border-zinc-200 [&_pre]:dark:border-zinc-800/50 [&_pre_*]:!bg-transparent [&_pre_*]:text-zinc-800 [&_pre_*]:dark:!text-zinc-200 [&_pre_code]:bg-transparent [&_pre_code]:text-inherit [&_code:not(pre_code)]:bg-zinc-200/60 [&_code:not(pre_code)]:text-zinc-900 [&_code:not(pre_code)]:dark:bg-zinc-800/80 [&_code:not(pre_code)]:dark:text-zinc-200 [&_code:not(pre_code)]:px-1.5 [&_code:not(pre_code)]:py-0.5 [&_code:not(pre_code)]:rounded" dangerouslySetInnerHTML={{ __html: lesson.summaryContent }} />
                     ) : (
                       <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center">
                         <p>Rangkuman belum tersedia untuk materi ini.</p>
@@ -596,11 +637,11 @@ export default function LessonIDEPage() {
           {/* RIGHT COLUMN: ACTION & TASKS */}
           <div className="flex flex-col gap-6">
             <Card className="p-6 rounded-3xl border-2 border-zinc-200 dark:border-zinc-800 shadow-sm top-8 sticky">
-              <h3 className="font-bold text-xl text-zinc-800 dark:text-white mb-6">Tugas Sesi Ini</h3>
+              <h3 className="font-bold text-xl text-zinc-900 dark:text-white mb-6">Tugas Sesi Ini</h3>
 
               <div className="space-y-6 mb-10">
                 {/* 1. Tonton Video */}
-                <div className={`flex items-start gap-4 transition-all duration-500 ${!isVideo ? 'opacity-70' : ''}`}>
+                <div className={`flex items-start gap-4 transition-all duration-500 ${!isVideo ? 'opacity-80 dark:opacity-60' : ''}`}>
                   {isVideo ? (
                     <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mt-[-4px]">
                       <PlayCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-pulse" />
@@ -611,13 +652,13 @@ export default function LessonIDEPage() {
                     </div>
                   )}
                   <div>
-                    <p className={`font-bold text-sm mb-1 ${isVideo ? 'text-zinc-900 dark:text-white' : 'text-zinc-500 dark:text-zinc-400 line-through decoration-2'}`}>Tonton Video Materi</p>
-                    <p className="text-xs text-zinc-500 font-medium">{!isVideo ? 'Selesai ditonton' : 'Wajib disaksikan hingga habis'}</p>
+                    <p className={`font-bold text-sm mb-1 ${isVideo ? 'text-zinc-900 dark:text-white' : 'text-zinc-600 dark:text-zinc-400 line-through decoration-2'}`}>Tonton Video Materi</p>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-500 font-medium">{!isVideo ? 'Selesai ditonton' : 'Wajib disaksikan hingga habis'}</p>
                   </div>
                 </div>
 
                 {/* 2. Baca Rangkuman */}
-                <div className={`flex items-start gap-4 transition-all duration-500 ${isVideo ? 'opacity-30 grayscale' : ''}`}>
+                <div className={`flex items-start gap-4 transition-all duration-500 ${isVideo ? 'opacity-60 dark:opacity-40 grayscale' : ''}`}>
                   {!isVideo ? (
                     <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mt-[-4px]">
                       <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-pulse" />
@@ -628,19 +669,19 @@ export default function LessonIDEPage() {
                     </div>
                   )}
                   <div>
-                    <p className={`font-bold text-sm mb-1 ${!isVideo ? 'text-zinc-900 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'}`}>Baca Rangkuman Modul</p>
-                    <p className="text-xs text-zinc-500 font-medium">Pahami konsep dasar input-output</p>
+                    <p className={`font-bold text-sm mb-1 ${!isVideo ? 'text-zinc-900 dark:text-white' : 'text-zinc-600 dark:text-zinc-400'}`}>Baca Rangkuman Modul</p>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-500 font-medium">Pahami konsep dasar input-output</p>
                   </div>
                 </div>
 
                 {/* 3. Latihan */}
-                <div className={`flex items-start gap-4 transition-all opacity-30 grayscale`}>
+                <div className={`flex items-start gap-4 transition-all opacity-60 dark:opacity-40 grayscale`}>
                   <div className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full mt-[-4px]">
                     <Code className="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-zinc-500 dark:text-zinc-400 mb-1">Latihan Praktik Dasar</p>
-                    <p className="text-xs text-zinc-500 font-medium">Eksekusi kode pertama Anda</p>
+                    <p className="font-bold text-sm text-zinc-600 dark:text-zinc-400 mb-1">Latihan Praktik Dasar</p>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-500 font-medium">Eksekusi kode pertama Anda</p>
                   </div>
                 </div>
               </div>
@@ -657,7 +698,7 @@ export default function LessonIDEPage() {
                 <div className="flex flex-col gap-3">
                   <Button
                     size="lg"
-                    className="w-full font-extrabold text-md h-14 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xl shadow-blue-900/40 transition-all hover:scale-[1.02] active:scale-[0.98] border-none"
+                    className="w-full font-extrabold text-md h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-950/10 dark:shadow-blue-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] border-none"
                     onClick={() => setStep('practice')}
                   >
                     Lanjut Latihan Coding <Code className="w-4 h-4 ml-2" />
@@ -738,13 +779,13 @@ export default function LessonIDEPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div>
                 <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Input</h2>
-                <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre shadow-inner">
+                <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 px-4 py-3 rounded-lg font-mono text-sm text-zinc-700 dark:text-slate-200 whitespace-pre overflow-x-auto w-full min-h-[46px] shadow-inner">
                   {lesson.sampleInput}
                 </div>
               </div>
               <div>
                 <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-2">Sample Output</h2>
-                <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl font-mono text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre shadow-inner">
+                <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 px-4 py-3 rounded-lg font-mono text-sm text-zinc-700 dark:text-slate-200 whitespace-pre overflow-x-auto w-full min-h-[46px] shadow-inner">
                   {lesson.sampleOutput}
                 </div>
               </div>
@@ -818,6 +859,14 @@ export default function LessonIDEPage() {
               theme="vs-dark"
               value={code}
               onChange={(val) => setCode(val || "")}
+              onMount={(editor) => {
+                editor.onDidChangeCursorPosition((e) => {
+                  setCursorPosition({
+                    lineNumber: e.position.lineNumber,
+                    column: e.position.column
+                  });
+                });
+              }}
               options={{
                 minimap: { enabled: false },
                 fontSize: 15,
@@ -836,8 +885,17 @@ export default function LessonIDEPage() {
           </div>
 
           {/* Editor Bottom Info Bar */}
-          <div className="h-8 border-t border-[#2d2d2d] flex items-center justify-end px-4 shrink-0 bg-[#007acc]/10 text-xs text-blue-400 font-mono">
-            Ln {code.split("\n").length}, Col 1
+          <div className="h-8 border-t border-[#2d2d2d] flex items-center justify-between px-4 shrink-0 bg-[#18181b] text-[11px] text-zinc-400 font-mono select-none">
+            <div className="flex items-center gap-4 text-zinc-500">
+              <span>UTF-8</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+              <span className="font-bold text-zinc-400">
+                {language === 'cpp' ? 'C++' : language === 'javascript' ? 'JavaScript' : language === 'python' ? 'Python' : language.toUpperCase()}
+              </span>
+            </div>
+            <div className="text-blue-400 font-bold bg-blue-500/5 dark:bg-blue-500/10 px-2.5 py-0.5 rounded border border-blue-500/10 dark:border-blue-500/20">
+              Ln {cursorPosition.lineNumber}, Col {cursorPosition.column}
+            </div>
           </div>
           </ResizablePanel>
 
@@ -879,44 +937,52 @@ export default function LessonIDEPage() {
           </ResizablePanelGroup>
 
           {/* Editor Bottom Actions Bar (Submit / Run) */}
-          <div className="h-20 border-t border-[#2d2d2d] flex items-center justify-between px-6 bg-[#252526] shrink-0">
-            <div className="flex items-center gap-6">
+          <div className="h-20 border-t border-[#2d2d2d] flex items-center justify-between w-full p-4 gap-2 bg-[#252526] shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div 
-                className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white cursor-pointer transition-colors px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10"
+                className="flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white cursor-pointer transition-colors px-3 h-10 rounded-lg bg-white/5 hover:bg-white/10 whitespace-nowrap shrink-0"
                 onClick={() => fileInputRef.current?.click()}
+                title="Upload File"
               >
-                <Upload className="w-4 h-4" /> Upload File
+                <Upload className="w-4 h-4" /> 
+                <span className="hidden lg:inline">Upload</span>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileUpload} 
-                  accept=".c,.cpp,.cc,.cxx,.js,.jsx" 
+                  accept=".c,.cpp,.cc,.cxx,.js,.jsx,.py,.txt" 
                   className="hidden" 
                 />
               </div>
-              <label className="flex items-center gap-2 text-xs font-bold text-zinc-400 cursor-pointer hover:text-white transition-colors">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 cursor-pointer hover:text-white transition-colors whitespace-nowrap select-none shrink-0">
                 <input 
                   type="checkbox" 
                   className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 accent-blue-500"
                   checked={showCustomInput}
                   onChange={(e) => setShowCustomInput(e.target.checked)}
                 />
-                Custom Input
+                <span className="hidden md:inline">Custom Input</span>
+                <span className="md:hidden">Custom</span>
               </label>
             </div>
 
-            <div className="flex items-center gap-4">
-              <Button variant="secondary" disabled={isRunning || isSubmitting} className="bg-zinc-800 hover:bg-zinc-700 text-white h-11 px-8 font-bold text-sm shadow-lg border border-zinc-700" onClick={handleRunCode}>
-                {isRunning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />} 
-                {isRunning ? 'Running...' : 'Run Code'}
+            <div className="flex items-center gap-2 shrink-0">
+              <Button 
+                variant="secondary" 
+                disabled={isRunning || isSubmitting} 
+                className="bg-zinc-800 hover:bg-zinc-700 text-white h-10 px-3 font-bold text-sm border border-zinc-700 flex items-center gap-1.5 transition-colors duration-200 shrink-0 whitespace-nowrap" 
+                onClick={handleRunCode}
+              >
+                {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} 
+                <span>{isRunning ? 'Running...' : 'Run'}</span>
               </Button>
               <Button
                 disabled={isSubmitting || isRunning}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white h-11 px-8 font-extrabold text-sm border-none shadow-xl shadow-blue-900/50 hover:scale-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-3.5 font-bold text-sm border-none flex items-center gap-1.5 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
                 onClick={handleSubmit}
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                {isSubmitting ? 'Menguji...' : 'Submit & Selesai'}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                <span>{isSubmitting ? 'Menguji...' : 'Submit'}</span>
               </Button>
             </div>
           </div>

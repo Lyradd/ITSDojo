@@ -21,7 +21,7 @@ export async function GET(req: Request) {
         imageSrc: courses.imageSrc,
         color: courses.color,
         difficulty: courses.difficulty,
-        xpReward: courses.xpReward,
+        xpReward: sql<number>`coalesce(sum(${lessons.xpReward}), 0)::int`,
         requiredSemester: courses.requiredSemester,
         unitsCount: sql<number>`count(distinct ${units.id})::int`,
         lessonsCount: sql<number>`count(distinct ${lessons.id})::int`,

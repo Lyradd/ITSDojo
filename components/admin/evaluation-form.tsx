@@ -52,12 +52,12 @@ export function EvaluationForm({ metadata, onChange, totalPointsFromQuestions }:
           onChange={(e) => updateField('courseId', e.target.value)}
           className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
         >
-          <option value="">— Pilih Kursus —</option>
+          <option value="">— Pilih Kelas —</option>
           {courses.map(course => (
             <option key={course.id} value={course.id}>{course.title}</option>
           ))}
         </select>
-        <p className="text-xs text-zinc-500 mt-1">Evaluasi akan tampil di mahasiswa yang enrolled di kursus ini.</p>
+        <p className="text-xs text-zinc-500 mt-1">Evaluasi akan tampil di mahasiswa yang terdaftar di kelas ini.</p>
       </div>
 
       {/* Description */}

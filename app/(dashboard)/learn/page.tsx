@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store";
 import { completeLessonAction, resetLearningProgressAction } from "@/actions/gamification";
+import { getLeaderboardData } from "@/actions/leaderboard";
 import { INITIAL_LEADERBOARD } from "@/lib/evaluation-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,7 +22,8 @@ import {
   Play,
   PartyPopper,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  BookX
 } from "lucide-react";
 import { triggerConfetti } from "@/lib/confetti";
 import { playSuccessSound } from "@/lib/sounds";
@@ -29,6 +31,7 @@ import { StatWidget } from "@/components/shared/stat-widget";
 import { CourseSelectorDropdown } from "@/components/shared/course-selector-dropdown";
 import { ComputedLessonNode, RoadmapNode } from "@/components/learn/roadmap-node";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AnimatedNinja } from "@/components/shared/animated-ninja";
 import dynamic from "next/dynamic";
 
 const DailyGoalWidget = dynamic(() => import("@/components/shared/daily-goal-widget").then(mod => mod.DailyGoalWidget));
@@ -36,6 +39,7 @@ const LeaderboardWidget = dynamic(() => import("@/components/shared/leaderboard-
 const StreakCalendarWidget = dynamic(() => import("@/components/shared/streak-calendar-widget").then(mod => mod.StreakCalendarWidget));
 const AlertModal = dynamic(() => import("@/components/shared/alert-modal").then(mod => mod.AlertModal), { ssr: false });
 import { StreakDisplay } from "@/components/shared/streak-display";
+import { LeaderboardHoverContent } from "@/components/shared/leaderboard-hover-content";
 
 // removed getCourseTheme helper since headers are now standardized
 
@@ -72,6 +76,16 @@ export default function LearnPage() {
   const [allCoursesList, setAllCoursesList] = useState<any[]>([]);
   const [allUnits, setAllUnits] = useState<any[]>([]);
   const [lessonNodes, setLessonNodes] = useState<any[]>([]);
+  const [realLeaderboard, setRealLeaderboard] = useState<any[]>([]);
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const data = await getLeaderboardData();
+      setRealLeaderboard(data);
+    } catch (err) {
+      console.error("Failed to fetch leaderboard data:", err);
+    }
+  }, []);
 
   const fetchCourseData = useCallback(async () => {
     setLoading(true);
@@ -141,8 +155,9 @@ export default function LearnPage() {
     // Mencegah Race Condition: Pastikan data user (terutama semester) sudah siap dari Zustand
     if (isMounted && isLoggedIn && semester !== undefined) {
       fetchCourseData(); 
+      fetchLeaderboard();
     }
-  }, [isMounted, isLoggedIn, semester, fetchCourseData]);
+  }, [isMounted, isLoggedIn, semester, fetchCourseData, fetchLeaderboard]);
 
   useEffect(() => {
     if (isMounted && !isLoggedIn) {
@@ -155,12 +170,37 @@ export default function LearnPage() {
   // Theme logic is now inline
 
   // Hitung Peringkat & Leaderboard
-  const computedLeaderboard = [
-    ...INITIAL_LEADERBOARD,
-    { userId: 'current', name: `${name} (You)`, score: weeklyXp, avatar: "bg-blue-200 text-blue-700", rank: 0, totalQuestions: 0, answeredQuestions: 0, accuracy: 0, lastUpdate: 0 }
-  ];
-  computedLeaderboard.sort((a, b) => b.score - a.score);
-  const userRank = computedLeaderboard.findIndex(u => u.userId === 'current') + 1;
+  const baseLeaderboard = realLeaderboard.length > 0 ? realLeaderboard : INITIAL_LEADERBOARD;
+  const hasUser = baseLeaderboard.some(u => u.userId === 'current' || u.name.includes("(You)") || u.name === name);
+  
+  const computedLeaderboard = [...baseLeaderboard];
+  if (!hasUser) {
+    computedLeaderboard.push({
+      userId: 'current',
+      name: `${name} (You)`,
+      score: weeklyXp || xp || 0,
+      avatar: "bg-blue-200 text-blue-700",
+      rank: 0,
+      totalQuestions: 0,
+      answeredQuestions: 0,
+      accuracy: 0,
+      lastUpdate: Date.now()
+    });
+  } else {
+    const idx = computedLeaderboard.findIndex(u => u.userId === 'current' || u.name === name || u.name.includes("(You)"));
+    if (idx !== -1) {
+      computedLeaderboard[idx].score = weeklyXp || xp || 0;
+      computedLeaderboard[idx].name = `${name} (You)`;
+      computedLeaderboard[idx].userId = 'current';
+    }
+  }
+
+  computedLeaderboard.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const finalLeaderboard = computedLeaderboard.map((u, index) => ({
+    ...u,
+    rank: index + 1
+  }));
+  const userRank = finalLeaderboard.find(u => u.userId === 'current')?.rank || 1;
 
   const handleSimulateLesson = async () => {
     const activeNodeData = lessonNodes.find((n: any) => !completedLessonIds.includes(String(n.id)));
@@ -188,6 +228,7 @@ export default function LearnPage() {
         completeLesson(String(activeNodeData.id), true);
         triggerConfetti();
         playSuccessSound();
+        fetchLeaderboard(); // Update leaderboard ranking in real time
       }
     } else {
       setAlertConfig({
@@ -223,15 +264,15 @@ export default function LearnPage() {
     );
   }
 
-  // Empty state: belum ada kursus di database
+  // Empty state: belum ada kelas di database
   if (!activeCourse) {
     return (
       <div className="container mx-auto max-w-6xl px-4 py-16 text-center">
         <GraduationCap className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-700" />
-        <h2 className="text-xl font-bold text-zinc-600 dark:text-zinc-400 mb-2">Belum ada kursus tersedia</h2>
-        <p className="text-sm text-zinc-500 mb-4">Admin perlu menambahkan kursus dan lesson terlebih dahulu.</p>
+        <h2 className="text-xl font-bold text-zinc-600 dark:text-zinc-400 mb-2">Belum ada kelas tersedia</h2>
+        <p className="text-sm text-zinc-500 mb-4">Admin perlu menambahkan kelas dan materi terlebih dahulu.</p>
         <Link href="/courses">
-          <Button variant="outline">Lihat Halaman Kursus</Button>
+          <Button variant="outline">Lihat Halaman Daftar Kelas</Button>
         </Link>
       </div>
     );
@@ -275,7 +316,28 @@ export default function LearnPage() {
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <StatWidget align="center" icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+                  <StatWidget 
+                    align="right" 
+                    icon={Trophy} 
+                    color="text-yellow-500" 
+                    label="Peringkat" 
+                    value={userRank} 
+                    prefix="#" 
+                    href="/leaderboard" 
+                    hoverContent={
+                      <LeaderboardHoverContent
+                        userName={name}
+                        userRank={userRank}
+                        userXp={weeklyXp || xp || 0}
+                        topUsers={finalLeaderboard}
+                        isCurrentUser={true}
+                        completedLessonsCount={completedLessonIds?.length || 0}
+                        completedGoalsCount={dailyGoals?.filter((g: any) => g.progress >= g.target).length || 0}
+                        totalGoalsCount={dailyGoals?.length || 3}
+                        streakCount={streak || 0}
+                      />
+                    }
+                  />
                 </div>
               </>
             )}
@@ -293,13 +355,13 @@ export default function LearnPage() {
                   <PartyPopper className="w-6 h-6 sm:w-7 sm:h-7 text-yellow-300" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base sm:text-lg leading-tight">Selamat! Kursus Selesai 🎉</h3>
-                  <p className="text-sm opacity-90 mt-1 line-clamp-2">Anda telah menyelesaikan seluruh materi di kursus {activeCourse?.title || 'ini'}.</p>
+                  <h3 className="font-bold text-base sm:text-lg leading-tight">Selamat! Kelas Selesai 🎉</h3>
+                  <p className="text-sm opacity-90 mt-1 line-clamp-2">Anda telah menyelesaikan seluruh materi di kelas {activeCourse?.title || 'ini'}.</p>
                 </div>
               </div>
               <Button asChild size="sm" className="w-full sm:w-auto bg-white text-green-700 hover:bg-white/90 border-none gap-2 rounded-xl font-bold px-4">
                 <Link href="/courses">
-                  Pilih Kursus Lain <ArrowRight className="w-4 h-4 shrink-0" />
+                  Pilih Kelas Lain <ArrowRight className="w-4 h-4 shrink-0" />
                 </Link>
               </Button>
             </motion.div>
@@ -326,7 +388,7 @@ export default function LearnPage() {
             </motion.div>
           )}
 
-          {/* 1. HEADER KURSUS (Card Warna-Warni) */}
+          {/* 1. HEADER KELAS (Card Warna-Warni) */}
           <div className={`p-6 rounded-2xl text-white shadow-lg flex flex-col gap-6 transition-colors duration-500 ${isUnitComplete ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-blue-600 shadow-blue-600/20'}`}>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
@@ -356,16 +418,16 @@ export default function LearnPage() {
                 </Button> */}
                 <Button asChild variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${isUnitComplete ? 'text-emerald-600' : 'text-blue-600'}`}>
                   <Link href="/courses">
-                    Ganti Kursus
+                    Ganti Kelas
                   </Link>
                 </Button>
               </div>
             </div>
 
-            {/* Progress Bar Kursus Keseluruhan */}
+            {/* Progress Bar Kelas Keseluruhan */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="opacity-80">PROGRES KURSUS</span>
+                <span className="opacity-80">PROGRES KELAS</span>
                 <span>{progressPercent}% ({completedCount}/{totalCount})</span>
               </div>
               <div className="h-3 bg-black/20 rounded-full overflow-hidden p-0.5">
@@ -475,8 +537,29 @@ export default function LearnPage() {
                   <div className="w-full relative flex flex-col items-center">
                     <div className="flex flex-col items-center gap-28 sm:gap-16 relative z-20 w-full max-w-md mx-auto">
                       {unitLessons.length === 0 ? (
-                        <div className="text-center py-8 text-zinc-400 text-sm">
-                          <p>Belum ada lesson di unit ini.</p>
+                        <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                          <div className="mb-2">
+                            <AnimatedNinja />
+                          </div>
+                          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Unit Ini Masih Kosong</h3>
+                          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 max-w-sm">
+                            Materi dan tantangan untuk unit ini sedang dipersiapkan oleh Sensei. Silakan kembali lagi nanti atau eksplorasi unit lainnya!
+                          </p>
+                          <div className="mt-6">
+                            {role === 'dosen' ? (
+                              <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-md">
+                                <Link href={`/dosen/courses/${activeCourse.id}`}>
+                                  + Tambah Lesson Baru
+                                </Link>
+                              </Button>
+                            ) : (
+                              <Button asChild variant="outline" className="border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-750 dark:text-zinc-300 font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm">
+                                <Link href="/courses">
+                                  Jelajahi Kelas Lain
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         unitLessons.map((origLesson: any, lessonIdx: number) => {
@@ -520,7 +603,7 @@ export default function LearnPage() {
                   </div>
 
                   {/* Jarak (Spacing) bersih antar unit / akhir unit agar tidak tumpang tindih dengan widget */}
-                  <div className={`w-full ${unitIdx < allUnits.length - 1 ? 'h-16' : 'h-32'}`} />
+                  <div className={`w-full ${unitLessons.length === 0 ? 'h-6' : unitIdx < allUnits.length - 1 ? 'h-16' : 'h-32'}`} />
                 </div>
               );
             })
@@ -559,7 +642,28 @@ export default function LearnPage() {
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <StatWidget align="center" icon={Trophy} color="text-yellow-500" label="Peringkat" value={userRank} prefix="#" href="/leaderboard" />
+                  <StatWidget 
+                    align="right" 
+                    icon={Trophy} 
+                    color="text-yellow-500" 
+                    label="Peringkat" 
+                    value={userRank} 
+                    prefix="#" 
+                    href="/leaderboard" 
+                    hoverContent={
+                      <LeaderboardHoverContent
+                        userName={name}
+                        userRank={userRank}
+                        userXp={weeklyXp || xp || 0}
+                        topUsers={finalLeaderboard}
+                        isCurrentUser={true}
+                        completedLessonsCount={completedLessonIds?.length || 0}
+                        completedGoalsCount={dailyGoals?.filter((g: any) => g.progress >= g.target).length || 0}
+                        totalGoalsCount={dailyGoals?.length || 3}
+                        streakCount={streak || 0}
+                      />
+                    }
+                  />
                 </div>
               </>
             )}
@@ -585,10 +689,10 @@ export default function LearnPage() {
           {role === 'mahasiswa' && (
             <Suspense fallback={<div className="h-64 w-full animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-2xl" />}>
               <LeaderboardWidget
-                topUsers={computedLeaderboard}
+                topUsers={finalLeaderboard}
                 currentUserId="current"
                 currentUserName={name}
-                currentUserXp={weeklyXp}
+                currentUserXp={weeklyXp || xp || 0}
                 currentUserRank={userRank}
               />
             </Suspense>

@@ -17,7 +17,7 @@ export default function CalendarPage() {
           Calendar Feature
         </h1>
         <p className="text-zinc-600 dark:text-zinc-400 mb-8 max-w-md mx-auto">
-          Fitur kalender untuk jadwal kursus dan evaluasi akan segera hadir!
+          Fitur kalender untuk jadwal kelas dan evaluasi akan segera hadir!
         </p>
         
         <Link href="/learn">

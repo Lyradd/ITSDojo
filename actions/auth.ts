@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { users, enrollments, userProgress } from "@/db/schema";
+import { users, enrollments, userProgress, evaluationResults } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { MOCK_STUDENTS } from "@/lib/admin-data";
 import { createSession, destroySession } from "@/lib/session";
@@ -101,6 +101,38 @@ export async function validateLogin(email: string, password: string, rememberMe:
       .where(eq(userProgress.userId, user.id));
     const completedLessonIds = progressRows.map((r) => r.lessonId.toString());
 
+    // Hitung rata-rata akurasi evaluasi secara dinamis
+    const statsQuery = await db.select({
+      avgAccuracy: sql<number>`COALESCE(ROUND(AVG(${evaluationResults.accuracy})), 0)::int`,
+      totalEvals: sql<number>`COUNT(*)::int`
+    })
+    .from(evaluationResults)
+    .where(eq(evaluationResults.studentId, user.id));
+
+    const totalEvals = Number(statsQuery[0]?.totalEvals ?? 0);
+    const accuracy = totalEvals > 0 ? Number(statsQuery[0].avgAccuracy) : (user.accuracy ?? 0);
+
+    // Hitung selesai 3 besar secara dinamis
+    const top3Query = await db.execute(sql`
+      WITH ranked_results AS (
+        SELECT 
+          evaluation_id,
+          student_id,
+          score,
+          time_spent,
+          DENSE_RANK() OVER (
+            PARTITION BY evaluation_id 
+            ORDER BY score DESC, time_spent ASC
+          ) as rank
+        FROM evaluation_results
+      )
+      SELECT COUNT(*)::int as count
+      FROM ranked_results
+      WHERE student_id = ${user.id} AND rank <= 3
+    `);
+    const rows = 'rows' in top3Query ? (top3Query.rows as any[]) : (top3Query as any[]);
+    const top3Finishes = Number(rows[0]?.count ?? 0);
+
     // Set HTTP-only signed session cookie
     await createSession({ userId: user.id, role: user.role }, rememberMe);
 
@@ -116,7 +148,8 @@ export async function validateLogin(email: string, password: string, rememberMe:
         xp: user.xp,
         profileXp: user.profileXp,
         gems: user.gems,
-        accuracy: user.accuracy ?? 0,
+        accuracy,
+        top3Finishes,
         streak: user.streak,
         avatar: user.avatar ?? "bg-blue-200 text-blue-700",
         enrolledCourseIds,
@@ -184,6 +217,38 @@ export async function getUserProfile(userId: string) {
       .where(eq(userProgress.userId, user.id));
     const completedLessonIds = progressRows.map((r) => r.lessonId.toString());
 
+    // Hitung rata-rata akurasi evaluasi secara dinamis
+    const statsQuery = await db.select({
+      avgAccuracy: sql<number>`COALESCE(ROUND(AVG(${evaluationResults.accuracy})), 0)::int`,
+      totalEvals: sql<number>`COUNT(*)::int`
+    })
+    .from(evaluationResults)
+    .where(eq(evaluationResults.studentId, user.id));
+
+    const totalEvals = Number(statsQuery[0]?.totalEvals ?? 0);
+    const accuracy = totalEvals > 0 ? Number(statsQuery[0].avgAccuracy) : (user.accuracy ?? 0);
+
+    // Hitung selesai 3 besar secara dinamis
+    const top3Query = await db.execute(sql`
+      WITH ranked_results AS (
+        SELECT 
+          evaluation_id,
+          student_id,
+          score,
+          time_spent,
+          DENSE_RANK() OVER (
+            PARTITION BY evaluation_id 
+            ORDER BY score DESC, time_spent ASC
+          ) as rank
+        FROM evaluation_results
+      )
+      SELECT COUNT(*)::int as count
+      FROM ranked_results
+      WHERE student_id = ${user.id} AND rank <= 3
+    `);
+    const rows = 'rows' in top3Query ? (top3Query.rows as any[]) : (top3Query as any[]);
+    const top3Finishes = Number(rows[0]?.count ?? 0);
+
     return {
       success: true,
       user: {
@@ -196,7 +261,8 @@ export async function getUserProfile(userId: string) {
         xp: user.xp,
         profileXp: user.profileXp,
         gems: user.gems,
-        accuracy: user.accuracy ?? 0,
+        accuracy,
+        top3Finishes,
         streak: user.streak,
         avatar: user.avatar ?? "bg-blue-200 text-blue-700",
         enrolledCourseIds,

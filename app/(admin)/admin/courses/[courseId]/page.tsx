@@ -180,7 +180,7 @@ export default function CourseDetailAdminPage() {
   const availableDosen = allDosen.filter(d => !assignedDosen.some(ad => ad.userId === d.id));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Toaster position="top-center" />
       
       <div className="container mx-auto max-w-7xl px-4 py-8">

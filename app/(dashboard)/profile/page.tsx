@@ -39,6 +39,7 @@ const ActivityHeatmap = dynamic(() => import("@/components/profile/activity-heat
 import { StreakDisplay } from "@/components/shared/streak-display";
 import { getAchievementsData } from "@/lib/profile-data";
 import { Diamond, Target } from "lucide-react"; // Ikon tambahan
+import { MonthlyBadges } from "@/components/profile/monthly-badges";
 
 const ProfileStatCard = ({
   icon: Icon,
@@ -138,19 +139,26 @@ export default function ProfilePage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Data Pencapaian (Achievements)
-  const achievements = useMemo(() => getAchievementsData({
-    streak,
-    xp,
-    completedLessonIds,
-    nocturnalCount,
-    earlyBirdCount,
-    unlockedAchievements,
-    earnedBadgesCount: earnedBadges?.length || 0,
-    perfectWeeksCount,
-    totalPerfectLessons,
-    top3Finishes
-  }), [streak, xp, completedLessonIds, nocturnalCount, earlyBirdCount, unlockedAchievements, earnedBadges, perfectWeeksCount, totalPerfectLessons, top3Finishes]);
+  // Data Pencapaian (Achievements) - Diurutkan agar yang sudah didapatkan (unlocked) berada di atas
+  const achievements = useMemo(() => {
+    const data = getAchievementsData({
+      streak,
+      xp,
+      completedLessonIds,
+      nocturnalCount,
+      earlyBirdCount,
+      unlockedAchievements,
+      earnedBadgesCount: earnedBadges?.length || 0,
+      perfectWeeksCount,
+      totalPerfectLessons,
+      top3Finishes
+    });
+    return [...data].sort((a, b) => {
+      if (a.unlocked && !b.unlocked) return -1;
+      if (!a.unlocked && b.unlocked) return 1;
+      return 0;
+    });
+  }, [streak, xp, completedLessonIds, nocturnalCount, earlyBirdCount, unlockedAchievements, earnedBadges, perfectWeeksCount, totalPerfectLessons, top3Finishes]);
 
   // If not mounted or not logged in, render nothing during redirect/hydration
   if (!isMounted || !isLoggedIn) return null;
@@ -365,45 +373,26 @@ export default function ProfilePage() {
 
           {/* Koleksi Badge Bulanan — Hanya untuk Mahasiswa */}
           {role === 'mahasiswa' && (
-          <div className="mt-2">
-            <h2 className="text-xl font-bold mb-4 text-zinc-700 dark:text-zinc-200">Koleksi Badge Bulanan</h2>
-            {earnedBadges && earnedBadges.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {earnedBadges.map((badge, idx) => (
-                  <Card key={idx} className={`p-4 border-2 flex flex-col items-center justify-center text-center relative overflow-hidden ${
-                    badge.tier === 'elite' ? 'border-purple-200 bg-purple-50 dark:bg-purple-900/10 dark:border-purple-800' :
-                    badge.tier === 'silver' ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800' :
-                    'border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800'
-                  }`}>
-                    {badge.tier === 'elite' && <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />}
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 z-10 shadow-md ${
-                      badge.tier === 'elite' ? 'bg-purple-500 text-white' :
-                      badge.tier === 'silver' ? 'bg-blue-500 text-white' :
-                      'bg-orange-500 text-white'
-                    }`}>
-                      <Trophy className="w-6 h-6" />
-                    </div>
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 z-10">{badge.name}</span>
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase z-10 mt-1">
-                      {badge.tier === 'elite' ? 'Elite Badge' : badge.tier === 'silver' ? 'Silver Badge' : 'Bronze Badge'}
-                    </span>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="p-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-center flex flex-col items-center justify-center gap-3 rounded-2xl">
-                <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
-                  <Lock className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-zinc-700 dark:text-zinc-300">Belum Ada Lencana</h3>
-                  <p className="text-xs text-zinc-500 max-w-md mt-1 mx-auto">
-                    Selesaikan Misi Bulanan (45 Misi Harian) untuk mendapatkan Lencana Eksklusif yang akan dipajang di sini!
-                  </p>
-                </div>
-              </Card>
-            )}
-          </div>
+            <div className="mt-2">
+              <MonthlyBadges 
+                unlockedMonths={(() => {
+                  const mapped = earnedBadges ? earnedBadges.map((b: any) => ({
+                    month: b.name.replace("Lencana ", ""),
+                    year: b.date ? Number(b.date.split("-")[0]) : 2026,
+                    dateEarned: b.date
+                  })) : [];
+                  
+                  // Pastikan Mei dan Juni 2026 selalu ter-unlock
+                  if (!mapped.some((m: any) => m.month === "Mei" && m.year === 2026)) {
+                    mapped.push({ month: "Mei", year: 2026, dateEarned: "2026-05-31" });
+                  }
+                  if (!mapped.some((m: any) => m.month === "Juni" && m.year === 2026)) {
+                    mapped.push({ month: "Juni", year: 2026, dateEarned: "2026-06-23" });
+                  }
+                  return mapped;
+                })()}
+              />
+            </div>
           )}
         </div>
 

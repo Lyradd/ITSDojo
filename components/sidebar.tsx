@@ -115,7 +115,16 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
       {/* --- NAVIGATION MENU --- */}
       <div className="flex-1 flex flex-col gap-2 px-3 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
         {sidebarItems.map((item, index) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/learn" &&
+            item.href !== "/dosen" &&
+            item.href !== "/admin" &&
+            item.href !== "/"
+              ? pathname.startsWith(item.href)
+              : item.href === "/learn"
+              ? pathname.startsWith("/learn")
+              : false);
 
           // Unified colors for both roles (Blue/Cyan theme)
           const activeColors = "bg-linear-to-r from-blue-100 to-cyan-100 text-blue-700 border-blue-300 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-400 dark:border-blue-700 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30";

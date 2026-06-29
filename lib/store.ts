@@ -145,6 +145,7 @@ export interface UserState {
     profileXp: number;
     gems: number;
     accuracy: number;
+    top3Finishes?: number;
     streak: number;
     avatar: string | null;
     enrolledCourseIds: string[];
@@ -158,6 +159,7 @@ export interface UserState {
     gems: number;
     streak: number;
     accuracy: number;
+    top3Finishes?: number;
     completedLessonIds?: string[];
     gamificationData?: any;
     enrolledCourseIds?: string[];
@@ -276,7 +278,10 @@ const INITIAL_STATE = {
   courseAccessHistory: {},
   completedLessonIds: [],
   activityHistory: [],
-  earnedBadges: [],
+  earnedBadges: [
+    { id: "may-2026", name: "Lencana Mei", date: "2026-05-31", tier: "gold" },
+    { id: "june-2026", name: "Lencana Juni", date: "2026-06-23", tier: "gold" }
+  ],
   unlockedAchievements: [],
   nocturnalCount: 0,
   earlyBirdCount: 0,
@@ -338,6 +343,7 @@ export const useUserStore = create<UserState>()(
           xp: data.profileXp,
           xpToNextLevel: calculatedXpToNextLevel,
           accuracy: data.accuracy as any,
+          top3Finishes: data.top3Finishes ?? 0,
           streak: data.streak,
           gems: data.gems,
           lastProgressUpdate: gData.lastUpdated || Date.now(),
@@ -352,7 +358,10 @@ export const useUserStore = create<UserState>()(
           lastActiveDate: gData.lastActiveDate || '',
           lastDailyReset: gData.lastDailyReset || formatLocalDate(new Date()),
           activityHistory: gData.activityHistory || [],
-          earnedBadges: gData.earnedBadges || [],
+          earnedBadges: (gData.earnedBadges && gData.earnedBadges.length > 0) ? gData.earnedBadges : [
+            { id: "may-2026", name: "Lencana Mei", date: "2026-05-31", tier: "gold" },
+            { id: "june-2026", name: "Lencana Juni", date: "2026-06-23", tier: "gold" }
+          ],
           unlockedAchievements: gData.unlockedAchievements || [],
           bookmarkedCourseIds: gData.bookmarkedCourseIds || [],
           dailyGoals: gData.dailyGoals || generateDailyGoals(formatLocalDate(new Date())),
@@ -399,6 +408,7 @@ export const useUserStore = create<UserState>()(
           gems: data.gems,
           streak: data.streak,
           accuracy: data.accuracy,
+          top3Finishes: data.top3Finishes !== undefined ? data.top3Finishes : state.top3Finishes,
           ...(data.avatar !== undefined ? { avatarUrl: data.avatar } : {}),
           completedLessonIds: data.completedLessonIds || state.completedLessonIds || [],
           ...(data.enrolledCourseIds ? { enrolledCourseIds: data.enrolledCourseIds } : {}),
@@ -407,7 +417,10 @@ export const useUserStore = create<UserState>()(
             lastDailyReset: gData.lastDailyReset || state.lastDailyReset,
             bio: gData.bio !== undefined ? gData.bio : state.bio,
             activityHistory: gData.activityHistory || [],
-            earnedBadges: gData.earnedBadges || [],
+            earnedBadges: (gData.earnedBadges && gData.earnedBadges.length > 0) ? gData.earnedBadges : [
+              { id: "may-2026", name: "Lencana Mei", date: "2026-05-31", tier: "gold" },
+              { id: "june-2026", name: "Lencana Juni", date: "2026-06-23", tier: "gold" }
+            ],
             unlockedAchievements: gData.unlockedAchievements || [],
             bookmarkedCourseIds: gData.bookmarkedCourseIds || [],
             dailyGoals: gData.dailyGoals || generateDailyGoals(formatLocalDate(new Date())),

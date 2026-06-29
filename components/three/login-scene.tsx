@@ -202,6 +202,12 @@ export function LoginScene({ showShapes = true }: { showShapes?: boolean }) {
   );
 }
 
+// Reusable static vectors to avoid GC overhead in the frame loop
+const _v1 = new THREE.Vector3();
+const _v2 = new THREE.Vector3();
+const _v3 = new THREE.Vector3();
+const _v4 = new THREE.Vector3();
+
 function PhysicsScene({ showShapes }: { showShapes: boolean }) {
   const { size, camera } = useThree();
   const meshesRef = useRef<(THREE.Mesh | null)[]>([]);
@@ -309,29 +315,29 @@ function PhysicsScene({ showShapes }: { showShapes: boolean }) {
 
         if (distSq < radSum * radSum && distSq > 0.0001) {
           const dist = Math.sqrt(distSq);
-          // Collision Normal
-          const normal = new THREE.Vector3().subVectors(meshA.position, meshB.position).normalize();
+          // Collision Normal (using static scratch Vector3 to avoid GC)
+          const normal = _v1.subVectors(meshA.position, meshB.position).normalize();
 
-          // Relative Velocity
-          const relVel = new THREE.Vector3().subVectors(pA.vel, pB.vel);
+          // Relative Velocity (using static scratch Vector3 to avoid GC)
+          const relVel = _v2.subVectors(pA.vel, pB.vel);
           const speed = relVel.dot(normal);
 
           // If objects are moving towards each other
           if (speed < 0) {
             // Elastic collision impulse (assuming equal mass)
-            const impulse = normal.multiplyScalar(speed * 0.7); // 0.7 bounce factor
+            const impulse = _v3.copy(normal).multiplyScalar(speed * 0.7); // 0.7 bounce factor
 
             pA.vel.sub(impulse);
             pB.vel.add(impulse);
 
             // Add a little spin on collision
-            pA.rotVel.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).multiplyScalar(0.2));
-            pB.rotVel.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).multiplyScalar(0.2));
+            pA.rotVel.add(_v4.set(Math.random() - 0.5, Math.random() - 0.5, 0).multiplyScalar(0.2));
+            pB.rotVel.add(_v4.set(Math.random() - 0.5, Math.random() - 0.5, 0).multiplyScalar(0.2));
           }
 
           // Positional correction to prevent sticking
           const overlap = radSum - dist;
-          const correction = normal.clone().multiplyScalar(overlap / 2.01);
+          const correction = _v3.copy(normal).multiplyScalar(overlap / 2.01);
           meshA.position.add(correction);
           meshB.position.sub(correction);
         }

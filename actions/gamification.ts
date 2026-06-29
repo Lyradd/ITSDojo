@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { users, userProgress } from "@/db/schema";
+import { users, userProgress, lessons } from "@/db/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
@@ -113,6 +113,12 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
       const lessonId = parseInt(lessonIdStr);
       if (isNaN(lessonId)) return { success: false, error: "Invalid lesson ID" };
 
+      const lessonRecord = await db.query.lessons.findFirst({
+        where: eq(lessons.id, lessonId),
+        columns: { xpReward: true, gemReward: true }
+      });
+      if (!lessonRecord) return { success: false, error: "Lesson not found" };
+
       const user = await db.query.users.findFirst({
         where: eq(users.id, session.userId),
         columns: { xp: true, profileXp: true, gems: true, level: true, streak: true, gamificationData: true, id: true }
@@ -142,10 +148,14 @@ export async function completeLessonAction(lessonIdStr: string, isPerfect: boole
       const multTime = gData.multiplierEndTime || null;
       const isMultActive = multTime && multTime > Date.now();
 
-      let earnedXp = isNew ? (baseRewardXp || 50) : (!isReviewedToday ? 10 : 0);
+      // Secure rewards: Use database values instead of client parameter values
+      const secureXp = lessonRecord.xpReward ?? 50;
+      const secureGems = lessonRecord.gemReward ?? 10;
+
+      let earnedXp = isNew ? secureXp : (!isReviewedToday ? 10 : 0);
       if (isMultActive) earnedXp *= mult;
 
-      let earnedGems = isNew ? (baseRewardGems || 10) : 0;
+      let earnedGems = isNew ? secureGems : 0;
       if (hasMiner) earnedGems *= 2;
 
 

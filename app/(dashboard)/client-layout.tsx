@@ -55,6 +55,7 @@ export default function ClientLayout({
             gems: isMahasiswa ? res.user.gems : 0,
             streak: isMahasiswa ? res.user.streak : 0,
             accuracy: isMahasiswa ? res.user.accuracy : 0,
+            top3Finishes: isMahasiswa ? res.user.top3Finishes : 0,
             completedLessonIds: isMahasiswa ? res.user.completedLessonIds : [],
             gamificationData: isMahasiswa ? res.user.gamificationData : null,
             enrolledCourseIds: res.user.enrolledCourseIds,

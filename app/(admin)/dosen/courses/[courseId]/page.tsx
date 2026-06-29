@@ -373,7 +373,7 @@ export default function CourseDetailPage() {
   
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <div className="container mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">

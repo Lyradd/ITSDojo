@@ -64,10 +64,28 @@ export function StreakDisplay({ variant, hoverContent }: StreakDisplayProps) {
   }
 
   if (variant === "stat-widget") {
+    const CustomStreakIcon = (props: any) => (
+      <div className="relative">
+        {isFrozenState ? (
+          <Snowflake className={props.className} fill="currentColor" />
+        ) : (
+          <>
+            <Flame 
+              className={props.className} 
+              fill={isActiveToday ? "currentColor" : "none"} 
+            />
+            {isProtected && (
+              <Shield className="h-3 w-3 absolute -bottom-1 -right-1 text-cyan-500 fill-current" />
+            )}
+          </>
+        )}
+      </div>
+    );
+
     return (
       <StatWidget 
         align="center"
-        icon={isFrozenState ? Snowflake : Flame} 
+        icon={CustomStreakIcon as any} 
         color={fireColorClass} 
         label="Streak" 
         value={streak} 

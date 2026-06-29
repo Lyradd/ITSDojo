@@ -95,30 +95,30 @@ export default function LearnPage() {
       const coursesRes = await fetch(`/api/courses?semester=${semester}`);
       const allCourses = await coursesRes.json();
       setAllCoursesList(allCourses);
-      
+
       // LOGIKA CERDAS: Pilih active course berdasarkan semester
       let courseToActivate = null;
-      
+
       // Jika pengguna sudah pernah memilih course aktif sebelumnya, gunakan itu
       if (activeCourseId) {
-         courseToActivate = allCourses.find((c: any) => c.id === activeCourseId);
+        courseToActivate = allCourses.find((c: any) => c.id === activeCourseId);
       }
-      
+
       // Jika tidak ada active course, cari course yang cocok dengan semesternya
       if (!courseToActivate) {
-         courseToActivate = allCourses.find((c: any) => c.requiredSemester === semester);
+        courseToActivate = allCourses.find((c: any) => c.requiredSemester === semester);
       }
-      
+
       // Fallback terakhir: Ambil index 0 (karena API sudah di-order berdasarkan semester di backend)
       if (!courseToActivate) {
-         courseToActivate = allCourses[0];
+        courseToActivate = allCourses[0];
       }
 
       setActiveCourse(courseToActivate);
-      
+
       // Simpan preferensi default ke state lokal jika sebelumnya belum ada
       if (!activeCourseId && courseToActivate) {
-         setZustandActiveCourse(courseToActivate.id);
+        setZustandActiveCourse(courseToActivate.id);
       }
 
       // Fetch units + lessons
@@ -151,10 +151,10 @@ export default function LearnPage() {
   }, [activeCourseId, semester, setZustandActiveCourse]);
 
   useEffect(() => { setIsMounted(true); }, []);
-  useEffect(() => { 
+  useEffect(() => {
     // Mencegah Race Condition: Pastikan data user (terutama semester) sudah siap dari Zustand
     if (isMounted && isLoggedIn && semester !== undefined) {
-      fetchCourseData(); 
+      fetchCourseData();
       fetchLeaderboard();
     }
   }, [isMounted, isLoggedIn, semester, fetchCourseData, fetchLeaderboard]);
@@ -172,7 +172,7 @@ export default function LearnPage() {
   // Hitung Peringkat & Leaderboard
   const baseLeaderboard = realLeaderboard.length > 0 ? realLeaderboard : INITIAL_LEADERBOARD;
   const hasUser = baseLeaderboard.some(u => u.userId === 'current' || u.name.includes("(You)") || u.name === name);
-  
+
   const computedLeaderboard = [...baseLeaderboard];
   if (!hasUser) {
     computedLeaderboard.push({
@@ -295,13 +295,13 @@ export default function LearnPage() {
             {role === 'mahasiswa' && (
               <>
                 <div className="flex items-center justify-center">
-                  <StreakDisplay 
-                    variant="stat-widget" 
-                    hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
+                  <StreakDisplay
+                    variant="stat-widget"
+                    hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>}
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <StatWidget 
+                  <StatWidget
                     align="center"
                     icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
                     hoverContent={
@@ -316,14 +316,14 @@ export default function LearnPage() {
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <StatWidget 
-                    align="right" 
-                    icon={Trophy} 
-                    color="text-yellow-500" 
-                    label="Peringkat" 
-                    value={userRank} 
-                    prefix="#" 
-                    href="/leaderboard" 
+                  <StatWidget
+                    align="right"
+                    icon={Trophy}
+                    color="text-yellow-500"
+                    label="Peringkat"
+                    value={userRank}
+                    prefix="#"
+                    href="/leaderboard"
                     hoverContent={
                       <LeaderboardHoverContent
                         userName={name}
@@ -399,7 +399,8 @@ export default function LearnPage() {
                 <p className="text-white/90 text-xs sm:text-sm max-w-md line-clamp-3 break-words mt-1.5">{activeCourse.description}</p>
               </div>
               <div className="flex gap-2">
-                {/* <Button
+                {/* 
+                <Button
                   variant="outline"
                   onClick={async () => {
                     if (confirm("Apakah Anda yakin ingin mereset progress belajar Anda untuk keperluan testing?")) {
@@ -415,7 +416,8 @@ export default function LearnPage() {
                   title="Reset Pembelajaran (Testing)"
                 >
                   <RotateCcw className="w-4 h-4" />
-                </Button> */}
+                </Button>
+                */}
                 <Button asChild variant="secondary" className={`font-bold whitespace-nowrap border-none shadow-md ${isUnitComplete ? 'text-emerald-600' : 'text-blue-600'}`}>
                   <Link href="/courses">
                     Ganti Kelas
@@ -443,7 +445,7 @@ export default function LearnPage() {
 
           {/* 2. UNIT-BASED ROADMAP — Setiap unit terpisah seperti Duolingo */}
           {allUnits.length === 0 ? (
-            <EmptyState 
+            <EmptyState
               icon={<GraduationCap className="w-12 h-12" />}
               title="Dojo Masih Kosong"
               description="Master belum memberikan gulungan instruksi. Silakan kembali nanti atau eksplorasi kelas lain sementara admin menyusun materi."
@@ -472,38 +474,34 @@ export default function LearnPage() {
                 <div key={unit.id} className="flex flex-col items-center gap-0">
 
                   {/* ===== UNIT HEADER BANNER ===== */}
-                  <div className={`w-full rounded-2xl overflow-hidden shadow-lg mb-8 ${
-                    isUnitDone
+                  <div className={`w-full rounded-2xl overflow-hidden shadow-lg mb-8 ${isUnitDone
                       ? 'bg-emerald-600'
                       : unitIdx === 0 || globalStartIdx <= activeNodeIndex
                         ? 'bg-blue-600'
                         : 'bg-zinc-300 dark:bg-zinc-800'
-                  }`}>
+                    }`}>
                     <div className="p-5 flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
-                          isUnitDone
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${isUnitDone
                             ? 'bg-white/20 text-white'
                             : unitIdx === 0 || globalStartIdx <= activeNodeIndex
                               ? 'bg-white/20 text-white'
                               : 'bg-zinc-400/30 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400'
-                        }`}>
+                          }`}>
                           {isUnitDone ? <CheckCircle className="w-6 h-6" /> : unitIdx + 1}
                         </div>
                         <div>
-                          <h3 className={`font-bold text-sm sm:text-base line-clamp-2 break-words leading-tight ${
-                            isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                          <h3 className={`font-bold text-sm sm:text-base line-clamp-2 break-words leading-tight ${isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
                               ? 'text-white'
                               : 'text-zinc-500 dark:text-zinc-400'
-                          }`}>
+                            }`}>
                             {unit.title}
                           </h3>
                           {unit.description && (
-                            <p className={`text-[10px] sm:text-xs mt-1.5 line-clamp-2 break-words leading-snug ${
-                              isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                            <p className={`text-[10px] sm:text-xs mt-1.5 line-clamp-2 break-words leading-snug ${isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
                                 ? 'text-white/70'
                                 : 'text-zinc-400 dark:text-zinc-500'
-                            }`}>
+                              }`}>
                               {unit.description}
                             </p>
                           )}
@@ -512,16 +510,14 @@ export default function LearnPage() {
 
                       {/* Mini progress */}
                       <div className="text-right">
-                        <span className={`text-xs font-bold ${
-                          isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
+                        <span className={`text-xs font-bold ${isUnitDone || unitIdx === 0 || globalStartIdx <= activeNodeIndex
                             ? 'text-white/80'
                             : 'text-zinc-400'
-                        }`}>
+                          }`}>
                           {unitCompletedCount}/{unitTotalCount}
                         </span>
-                        <div className={`h-2 w-24 rounded-full overflow-hidden mt-1 ${
-                          isUnitDone ? 'bg-white/20' : unitIdx === 0 || globalStartIdx <= activeNodeIndex ? 'bg-black/20' : 'bg-zinc-400/30 dark:bg-zinc-700'
-                        }`}>
+                        <div className={`h-2 w-24 rounded-full overflow-hidden mt-1 ${isUnitDone ? 'bg-white/20' : unitIdx === 0 || globalStartIdx <= activeNodeIndex ? 'bg-black/20' : 'bg-zinc-400/30 dark:bg-zinc-700'
+                          }`}>
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${unitProgress}%` }}
@@ -621,13 +617,13 @@ export default function LearnPage() {
             {role === 'mahasiswa' && (
               <>
                 <div className="flex items-center justify-center">
-                  <StreakDisplay 
-                    variant="stat-widget" 
-                    hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>} 
+                  <StreakDisplay
+                    variant="stat-widget"
+                    hoverContent={<Suspense fallback={<div className="w-64 h-64 bg-zinc-900 rounded-2xl animate-pulse" />}><StreakCalendarWidget activityHistory={activityHistory} streak={streak} /></Suspense>}
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <StatWidget 
+                  <StatWidget
                     align="center"
                     icon={Zap} color="text-blue-500" label="XP" value={xp} href="/profile"
                     hoverContent={
@@ -642,14 +638,14 @@ export default function LearnPage() {
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <StatWidget 
-                    align="right" 
-                    icon={Trophy} 
-                    color="text-yellow-500" 
-                    label="Peringkat" 
-                    value={userRank} 
-                    prefix="#" 
-                    href="/leaderboard" 
+                  <StatWidget
+                    align="right"
+                    icon={Trophy}
+                    color="text-yellow-500"
+                    label="Peringkat"
+                    value={userRank}
+                    prefix="#"
+                    href="/leaderboard"
                     hoverContent={
                       <LeaderboardHoverContent
                         userName={name}
